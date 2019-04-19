@@ -1,0 +1,13 @@
+syntax:glob
+
+.DS_Store
+.idea/*
+dist/*
+doc*
+node_modules/*
+*.js
+
+package-lock.json
+npm-debug.log
+
+fontawesome
