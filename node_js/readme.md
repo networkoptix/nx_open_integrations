@@ -183,6 +183,9 @@ To get latest beta version - apply for Developer Early Access Program here:
 7) Open a camera on the grid. There should be a soft trigger called "Node callback - simple".
 8) Press the soft trigger and you will see a log message in the terminal that says "Callback
     works".
+    
+## Troubleshooting
+If you run into an issue with bluebird when compiling the code, run 'npm install @types/bluebird@ts2.2' to fix the issue.
 
 ## Authors
 
