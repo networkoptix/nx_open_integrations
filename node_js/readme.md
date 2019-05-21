@@ -1,9 +1,9 @@
-<!---
+<!--
  Copyright 2017-present Network Optix, Inc.
  This source code file is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
  file, you can obtain one at http://mozilla.org/MPL/2.0/.
---->
+-->
 # Nx Node.js Integration
 
 A framework that allows developers and integrators to quickly and easily make integrations with Nx
@@ -152,7 +152,7 @@ To get latest beta version - apply for Developer Early Access Program here:
 3. Run 'tsc *.ts'
 4. Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
     scripts will fill it in automatically.**
-    ```json
+    ```javascript
     {
        "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
        "myIp": "{{The Ip address of the machine running this script}}",
@@ -164,7 +164,7 @@ To get latest beta version - apply for Developer Early Access Program here:
     ```
     
     Example nodeConfig.json
-    ```json
+    ```javascript
     {
        "systemUrl": "0.0.0.0:7001",
        "myIp": "0.0.0.0",
