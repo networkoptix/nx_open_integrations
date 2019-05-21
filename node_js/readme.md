@@ -3,7 +3,7 @@
  This source code file is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
  file, you can obtain one at http://mozilla.org/MPL/2.0/.
--->
+--->
 # Nx Node.js Integration
 
 A framework that allows developers and integrators to quickly and easily make integrations with Nx
@@ -153,32 +153,35 @@ To get latest beta version - apply for Developer Early Access Program here:
 4. Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
     scripts will fill it in automatically.**
     ```json
-       {
-           "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
-           "myIp": "{{The Ip address of the machine running this script}}",
-           "myPort": "{{The port you want the node.js express server to listen to}}",
-           "username": "{{The user name of an account with at least administrator level permissions}}",
-           "password": "{{The password for this account from the previous line}}",
-           "rules": {}
-       }
+    {
+       "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
+       "myIp": "{{The Ip address of the machine running this script}}",
+       "myPort": "{{The port you want the node.js express server to listen to}}",
+       "username": "{{The user name of an account with at least administrator level permissions}}",
+       "password": "{{The password for this account from the previous line}}",
+       "rules": {}
+    }
     ```
+    
     Example nodeConfig.json
     ```json
-       {
-           "systemUrl": "0.0.0.0:7001",
-           "myIp": "0.0.0.0",
-           "myPort": "3000",
-           "username": "admin",
-           "password": "password1234",
-           "rules": {}
-       }
+    {
+       "systemUrl": "0.0.0.0:7001",
+       "myIp": "0.0.0.0",
+       "myPort": "3000",
+       "username": "admin",
+       "password": "password1234",
+       "rules": {}
+    }
     ```
+    
 5. Pick an example js file to run from the examples directory. Then, run the example using
     'node {{file}}.js'.
 
     ```
     node softTriggerHttpAction.js
     ```
+    
 6. Open the NxWitness desktop client.
 7. Open a camera on the grid. There should be a soft trigger called "Node callback - simple".
 8. Press the soft trigger and you will see a log message in the terminal that says "Callback
