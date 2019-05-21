@@ -152,7 +152,7 @@ To get latest beta version - apply for Developer Early Access Program here:
 3. Run 'tsc *.ts'
 4. Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
     scripts will fill it in automatically.**
-        ```json
+    
         {
             "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
             "myIp": "{{The Ip address of the machine running this script}}",
@@ -161,10 +161,9 @@ To get latest beta version - apply for Developer Early Access Program here:
             "password": "{{The password for this account from the previous line}}",
             "rules": {}
         }
-        ```
     
     Example nodeConfig.json
-        ```json
+    
         {
             "systemUrl": "0.0.0.0:7001",
             "myIp": "0.0.0.0",
@@ -173,7 +172,7 @@ To get latest beta version - apply for Developer Early Access Program here:
             "password": "password1234",
             "rules": {}
         }
-        ```
+        
 5. Pick an example js file to run from the examples directory. Then, run the example using
     'node {{file}}.js'.
 
