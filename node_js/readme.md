@@ -152,29 +152,28 @@ To get latest beta version - apply for Developer Early Access Program here:
 3. Run 'tsc *.ts'
 4. Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
     scripts will fill it in automatically.**
-    ```javascript
-    {
-       "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
-       "myIp": "{{The Ip address of the machine running this script}}",
-       "myPort": "{{The port you want the node.js express server to listen to}}",
-       "username": "{{The user name of an account with at least administrator level permissions}}",
-       "password": "{{The password for this account from the previous line}}",
-       "rules": {}
-    }
-    ```
+        ```json
+        {
+            "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
+            "myIp": "{{The Ip address of the machine running this script}}",
+            "myPort": "{{The port you want the node.js express server to listen to}}",
+            "username": "{{The user name of an account with at least administrator level permissions}}",
+            "password": "{{The password for this account from the previous line}}",
+            "rules": {}
+        }
+        ```
     
     Example nodeConfig.json
-    ```javascript
-    {
-       "systemUrl": "0.0.0.0:7001",
-       "myIp": "0.0.0.0",
-       "myPort": "3000",
-       "username": "admin",
-       "password": "password1234",
-       "rules": {}
-    }
-    ```
-    
+        ```json
+        {
+            "systemUrl": "0.0.0.0:7001",
+            "myIp": "0.0.0.0",
+            "myPort": "3000",
+            "username": "admin",
+            "password": "password1234",
+            "rules": {}
+        }
+        ```
 5. Pick an example js file to run from the examples directory. Then, run the example using
     'node {{file}}.js'.
 
