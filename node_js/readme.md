@@ -1,4 +1,4 @@
-<!--
+<!---
  Copyright 2017-present Network Optix, Inc.
  This source code file is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -138,50 +138,50 @@ Required Versions
 * Nx Witness: 4.0.0 beta or newer
 
 Install node.js, npm, and typescript,
-1) Install node.js on your machine https://nodejs.org/en/download/.
-2) Run 'npm install npm@latest -g' to update npm.
-3) Run 'npm install typescript -g'.
+1. Install node.js on your machine https://nodejs.org/en/download/.
+2. Run 'npm install npm@latest -g' to update npm.
+3. Run 'npm install typescript -g'.
 
 Install Nx Witness or other Powered-by-Nx product, version 4.0 beta or newer.  
 To get latest beta version - apply for Developer Early Access Program here:
     http://www.networkoptix.com/develop-with-meta/
 
 ### Quick Start
-1) Run 'npm install'.
-2) Go to the examples directory
-3) Run 'tsc *.ts'
-4) Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
+1. Run 'npm install'.
+2. Go to the examples directory
+3. Run 'tsc *.ts'
+4. Edit the nodeConfig.json file with the following. **Note: Leave the rules section empty, the 
     scripts will fill it in automatically.**
-  ```json
-   {
-       "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
-       "myIp": "{{The Ip address of the machine running this script}}",
-       "myPort": "{{The port you want the node.js express server to listen to}}",
-       "username": "{{The user name of an account with at least administrator level permissions}}",
-       "password": "{{The password for this account from the previous line}}",
-       "rules": {}
-   }
-   ```
-   Example nodeConfig.json
-  ```json
-   {
-       "systemUrl": "0.0.0.0:7001",
-       "myIp": "0.0.0.0",
-       "myPort": "3000",
-       "username": "admin",
-       "password": "password1234",
-       "rules": {}
-   }
-   ```
-5) Pick an example js file to run from the examples directory. Then, run the example using
+    ```json
+       {
+           "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
+           "myIp": "{{The Ip address of the machine running this script}}",
+           "myPort": "{{The port you want the node.js express server to listen to}}",
+           "username": "{{The user name of an account with at least administrator level permissions}}",
+           "password": "{{The password for this account from the previous line}}",
+           "rules": {}
+       }
+    ```
+    Example nodeConfig.json
+    ```json
+       {
+           "systemUrl": "0.0.0.0:7001",
+           "myIp": "0.0.0.0",
+           "myPort": "3000",
+           "username": "admin",
+           "password": "password1234",
+           "rules": {}
+       }
+    ```
+5. Pick an example js file to run from the examples directory. Then, run the example using
     'node {{file}}.js'.
 
-  ```
-   node softTriggerHttpAction.js
-   ```
-6) Open the NxWitness desktop client.
-7) Open a camera on the grid. There should be a soft trigger called "Node callback - simple".
-8) Press the soft trigger and you will see a log message in the terminal that says "Callback
+    ```
+    node softTriggerHttpAction.js
+    ```
+6. Open the NxWitness desktop client.
+7. Open a camera on the grid. There should be a soft trigger called "Node callback - simple".
+8. Press the soft trigger and you will see a log message in the terminal that says "Callback
     works".
     
 ## Troubleshooting

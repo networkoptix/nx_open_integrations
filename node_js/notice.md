@@ -1,4 +1,4 @@
-<!--
+<!---
  Copyright 2017-present Network Optix, Inc.
  This source code file is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
