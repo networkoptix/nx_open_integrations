@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import { BaseAction, BaseEvent, GenericEvent, ShowPopup } from './index';
 
 import { factory } from '../../logConfig';
@@ -75,7 +74,7 @@ export class Rule {
     /**
      * Sets the action for the rule.
      * @param {BaseAction} action Takes any of the inherited actions.
-     * @returns {this} Allows for chaining.
+     * @return {this} Allows for chaining.
      */
     public do(action: BaseAction) {
         this.action = action;
@@ -85,7 +84,7 @@ export class Rule {
     /**
      * Sets the event for the rule.
      * @param {BaseEvent} event Takes any of the inherited events.
-     * @returns {this} Allows for chaining.
+     * @return {this} Allows for chaining.
      */
     public on(event: BaseEvent) {
         this.event = event;
@@ -94,7 +93,7 @@ export class Rule {
 
     /**
      * Converts the object into a json.
-     * @returns {{[p: string]: any}}
+     * @return {{[p: string]: any}}
      */
     public makeRuleJson() {
         if (typeof (this.action) === 'undefined' || typeof (this.event) === 'undefined') {

@@ -2,25 +2,16 @@
 
 declare const Promise: any;
 import {
-    HttpAction, Logger, NodeHttpAction, NodeServer,
-    Rule, SoftTrigger, System
+    HttpAction, Logger, NodeHttpAction, TriggerHttpCallback, NodeServer,
+    Rule, RuntimeConfigManager, SoftTrigger, System
 } from '../src';
 
 import * as express from 'express';
-import * as fs from 'fs';
 import * as path from 'path';
 
 const logging = Logger.getLogger('On Soft Trigger Click Do Http Action');
 
-// Saves the rule's comment/name and id to the config file.
-const saveRuleToConfig = (rule: Rule | null) => {
-    if (rule === null) {
-        return;
-    }
-    config.rules[rule.comment] = rule.ruleId;
-    fs.writeFileSync(path.resolve(__dirname, './nodeConfig.json'),
-            JSON.stringify(config, undefined, 4));
-};
+const runtimeConfigManager = new RuntimeConfigManager(path.resolve(__dirname, './nodeConfig.json'));
 
 /*
  * After all of the rules have been generated this function executes.
@@ -46,7 +37,7 @@ const makeExampleRules = () => {
     const httpAction: HttpAction = new HttpAction(`${config.myIp}:${config.myPort}/welcome/`);
     const rule2 = new Rule('Soft Trigger Http Action').on(softTrigger).do(httpAction);
     promiseRules.push(server.saveRuleToSystem(rule2).then((rule: Rule | null) => {
-        saveRuleToConfig(rule);
+        runtimeConfigManager.registerRule(rule);
         return rule;
     }));
 
@@ -68,7 +59,22 @@ const makeExampleRules = () => {
             .on(softTrigger2)
             .do(nodeHttpAction);
     promiseRules.push(server.saveRuleToSystem(rule4).then((rule: Rule | null) => {
-        saveRuleToConfig(rule);
+        runtimeConfigManager.registerRule(rule);
+        return rule;
+    }));
+
+    /*
+     * Simplified way to create soft trigger in the system with callback in node.js server
+     * TriggerHttpCallback hides details about creating node callback and configuring soft trigger rule
+     */
+
+    const rule5 = new TriggerHttpCallback(nodeServer,
+        'SimpleCallback',
+        'Node callback - simple',
+        SoftTrigger.Icons._lights_on,
+        () => { logging.info('Callback works'); });
+    promiseRules.push(server.saveRuleToSystem(rule5).then((rule: Rule | null) => {
+        runtimeConfigManager.registerRule(rule);
         return rule;
     }));
 
@@ -83,8 +89,10 @@ const addCustomExpressRoute = () => {
     });
 };
 
-const config = require('./nodeConfig');
+const config = runtimeConfigManager.config;
 const server: System = new System(config.systemUrl, config.username, config.password, config.rules);
 const nodeServer: NodeServer = new NodeServer(config.myIp, config.myPort);
 addCustomExpressRoute();
-server.getSystemRules().then(makeExampleRules).then(rulesGenerationComplete);
+server.login().then(() => {
+    return server.getSystemRules();
+}).then(makeExampleRules).then(rulesGenerationComplete);

@@ -1,7 +1,6 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 declare const Promise: any;
-import { EventRuleManager, MediaserverApi, Rule } from './index';
+import { EventRuleManager, MediaserverApi, Rule, WebPageManager, BaseWebPage } from './index';
 import { factory } from './logConfig';
 
 const logging = factory.getLogger('System');
@@ -11,7 +10,8 @@ const logging = factory.getLogger('System');
  * @class
  */
 export class System extends MediaserverApi {
-    public ruleManager: EventRuleManager; //< Helps manage rules on the system and in the code.
+    public webPageManager: WebPageManager; // Helps manage web pages on the system and in the code.
+    public ruleManager: EventRuleManager; // Helps manage rules on the system and in the code.
     public cameras: any = [];
 
     /**
@@ -19,19 +19,32 @@ export class System extends MediaserverApi {
      * @param {string} username
      * @param {string} password
      * @param {{[p: string]: string}} configRules Rules from the config file.
+     * @param {{[p: string]: string}} configPages Web pages from the config file.
      * @constructor
      */
     constructor(systemUrl: string, username: string, password: string,
-                configRules: { [key: string]: string }) {
-        super(systemUrl, username, password);
+                configRules: { [key: string]: string }, configPages?: { [key: string]: string },
+                serverVersion?: string) {
+        super(systemUrl, username, password, serverVersion);
         this.ruleManager = new EventRuleManager({ configRules });
-        this.cameras = this.getCameras();
+        logging.info(`${configPages}`);
+        this.webPageManager = new WebPageManager({ configPages });
         logging.info('Server is ready');
     }
 
     /**
      * Gets the rules from the system and sets them in the rule manager.
-     * @returns {Bluebird<EventRuleManager>}
+     * @return {Bluebird<WebPageManager>}
+     */
+    public getSystemPages() {
+        return this.getWebPages().then((pages: any) => {
+            return this.webPageManager.setPageIds(pages);
+        });
+    }
+
+    /**
+     * Gets the rules from the system and sets them in the rule manager.
+     * @return {Bluebird<EventRuleManager>}
      */
     public getSystemRules() {
         return this.getRules().then((rules: any) => {
@@ -54,7 +67,7 @@ export class System extends MediaserverApi {
     /**
      * Saves the rule to the system or sets the id of an already existing rule.
      * @param {Rule} rule
-     * @returns {any}
+     * @return {any}
      */
     public saveRuleToSystem(rule: Rule) {
         const ruleId = this.ruleManager.ruleExists(rule);
@@ -64,5 +77,14 @@ export class System extends MediaserverApi {
         } else {
             return this.saveRule(rule);
         }
+    }
+
+    /**
+     * Saves a web page to the system.
+     * @param {BaseWebPage} webpage
+     */
+    public saveWebPageToSystem(webpage: BaseWebPage) {
+        const pageId = this.webPageManager.pageExists(webpage);
+        return this.saveWebPage(pageId, webpage.pageName, webpage.url);
     }
 }

@@ -1,0 +1,25 @@
+<html class="{{#showText}}{{^showIcon}}only-text {{#isChar}}single{{/isChar}}{{/showIcon}}{{/showText}}{{^showText}}{{#showIcon}}only-icon{{/showIcon}}{{/showText}}">
+<head>
+    <title>Robot Controls</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+    <link rel="stylesheet" type="text/css" href="/static/font-awesome/css/font-awesome.css">
+</head>
+<body>
+    <button class="btn bg-{{background}}">
+        <span class="item text-{{color}}">
+            <i class="{{#showIcon}}fa {{icon}} {{/showIcon}}{{^showIcon}}d-none {{/showIcon}}{{^showText}}m-0{{/showText}}"></i>
+            <span class="{{^showText}}d-none{{/showText}}{{^showIcon}}d-block{{/showIcon}}">{{name}}</span>
+        </span>
+    </button>
+    <script>
+        function makeRequest(){
+            var Http = new XMLHttpRequest();
+            Http.open('GET', '{{{url}}}');
+            Http.send();
+        }
+        window.addEventListener(('mousedown'), function () {
+            makeRequest();
+        });
+    </script>
+</body>
+</html>

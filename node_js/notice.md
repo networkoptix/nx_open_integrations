@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 # Built With
 * [node.js](https://nodejs.org/) - Runtime environment for javascript.
 * [Express](https://expressjs.com/) - The web framework used.

@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import config from '../../../config';
 import { NodeServer } from '../../../nodeServer';
 import { HttpAction } from '../index';
@@ -35,7 +34,7 @@ export class NodeHttpAction extends HttpAction {
      * function to the default route handler with the route parameter as a key on the express server.
      * @param {string} routeParam The route parameter for the default route handler
      *     on the express server.
-     * @param callback The callback function that executes for the express route.
+     * @param {function} callback The callback function that executes for the express route.
      */
     public configDefaultHandler(routeParam: string, callback: any) {
         this.actionParams.url = `${this.nodeServer.address}/${config.defaultExpressRoute}/${routeParam}`;
@@ -43,10 +42,10 @@ export class NodeHttpAction extends HttpAction {
     }
 
     /**
-     * Allows you to provide a target route and callback function, and adds
-     * the callback to a custom route on the express server.
+     * Allows you to provide a target route and callback function, and adds the callback to a
+     * custom route on the express server.
      * @param {string} target The target route on the express server.
-     * @param callback The callback function that executes for the express route.
+     * @param {function} callback The callback function that executes for the express route.
      */
     public configCustomHandler(target: string, callback: any) {
         this.actionParams.url = `${this.nodeServer.address}/${target}`;

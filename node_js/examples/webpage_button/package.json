@@ -1,0 +1,26 @@
+{
+  "name": "nx-webpage-button",
+  "version": "0.1.0",
+  "description": "A node framework for NX",
+  "dependencies": {
+    "@types/express": "^4.16.1",
+    "@types/mustache": "^0.8.32",
+    "express": "^4.16.4",
+    "font-awesome": "^4.7.0",
+    "mustache": "^3.0.1",
+    "nx-node-integration": "file:../..",
+    "time-series-collection": "^1.2.0"
+  },
+  "devDependencies": {
+    "tslint": "5.11.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "typescript": "^3.3.3333",
+    "typescript-logging": "^0.6.2"
+  },
+  "main": "./index.js",
+  "scripts": {
+    "compile": "tsc ./*.ts",
+    "clean": "find ./ -name '*.js' -type f -delete"
+  },
+  "license": "ISC"
+}

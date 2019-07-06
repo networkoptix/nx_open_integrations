@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import { Rule } from '../index';
 import { factory } from '../logConfig';
 
@@ -36,7 +35,7 @@ export class EventRuleManager {
     /**
      * Checks if the rule has an id or not.
      * @param {Rule} rule
-     * @returns {string}
+     * @return {string}
      */
     public ruleExists(rule: Rule): string {
         if (rule.ruleId !== undefined) {
@@ -52,7 +51,7 @@ export class EventRuleManager {
     /**
      * Sets the rules from the system.
      * @param rules
-     * @returns {this}
+     * @return {this}
      */
     public setRulesIds(rules: any) {
         this.systemRuleIds = rules.map((rule: any) => rule.id);

@@ -1,10 +1,10 @@
 {
-    "systemUrl": "http://10.1.5.176:7001",
-    "myIp": "http://10.1.5.119",
+    "systemUrl": "System IP with port",
+    "myIp": "Ip of machine running scripts",
     "myPort": 3000,
+    "serverVersion": "4",
     "username": "",
     "password": "",
-    "rules": {
-
-    }
+    "rules": {},
+    "webPages": {}
 }

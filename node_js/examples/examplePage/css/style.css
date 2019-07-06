@@ -1,0 +1,30 @@
+body {
+    background-color: black;
+}
+
+h1 {
+    color: red;
+    text-align: center;
+    margin: auto;
+}
+
+.container {
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 200px;
+    width: 400px;
+    background-color: gainsboro;
+}
+
+.btn {
+    border-radius: 3px;
+    color: black;
+    margin: auto;
+    outline: none;
+    width: 20%;
+}

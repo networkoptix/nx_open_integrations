@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import config from '../../../config';
 import { factory } from '../../../logConfig';
 
@@ -31,7 +30,7 @@ export class BaseEvent {
 
     /**
      * Turns the class object into a querystring.
-     * @returns {{}}
+     * @return {{}}
      * @ignore
      */
     public formatQueryString() {

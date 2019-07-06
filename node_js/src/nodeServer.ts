@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import * as express from 'express';
 import config from './config';
 import { factory } from './logConfig';
@@ -42,22 +41,22 @@ export class NodeServer {
         });
 
         // The default callback route, but more can be defined using the addExpressHandler function.
-        this.app.use(`/${config.defaultExpressRoute}/:actionKey`,
+        this.addExpressHandler(`/${config.defaultExpressRoute}/:actionKey`,
                 (req: express.Request, res: express.Response) => {
-            logging.info(`${JSON.stringify(req.params)}`);
-            if (req.params.actionKey in this.httpActionCallbacks) {
-                return res.send(this.httpActionCallbacks[req.params.actionKey](req.query));
-            }
-            res.status(404);
-            res.send(`${req.params.actionKey} does not exist`);
-        });
+                    logging.info(`Button with ${JSON.stringify(req.params)} was pressed`);
+                    if (req.params.actionKey in this.httpActionCallbacks) {
+                        return res.send(this.httpActionCallbacks[req.params.actionKey](req.query));
+                    }
+                    res.status(404);
+                    res.send(`${req.params.actionKey} does not exist`);
+                });
     }
 
     /**
      * Adds routes to the express server.
      * @param {string} route The route you want to use. Example: /example
      * @param {(req?: any, res?: any, next?: any) => void} handler Callbacks for the route.
-     * @returns {this}
+     * @return {this}
      */
     public addExpressHandler(route: string, handler: (req?: any, res?: any, next?: any) => void) {
         this.app.use(route, handler);
@@ -67,7 +66,7 @@ export class NodeServer {
     /**
      * Adds the http callback to a route.
      * @param {string} key The key can be anything depending on which route you want it to be
-     * handled by.
+     *     handled by.
      * @param {boolean} isDefault States if the callback is being added to default route handler.
      * @param callback Callback function for route.
      */
@@ -84,3 +83,4 @@ export class NodeServer {
         }
     }
 }
+

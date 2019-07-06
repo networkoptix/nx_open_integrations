@@ -1,5 +1,4 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-
 import config from '../../../config';
 import { factory } from '../../../logConfig';
 import { BaseEvent } from './baseEvent';
@@ -53,7 +52,7 @@ export class GenericEvent extends BaseEvent {
 
     /**
      * Turns the class object into a querystring.
-     * @returns {{[p: string]: any}}
+     * @return {{[p: string]: any}}
      */
     public formatQueryString() {
         const queryString: { [key: string]: any } = {};
