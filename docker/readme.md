@@ -152,30 +152,30 @@ Host (recommended)
 Licenses in this mode will always have the MAC of the host and the MAC can't be modified 
 in "host" mode.
 
-###Pros:
+###Pros:####
 *  No need to do any network configuration
 *  Auto-discovery works
 *  Other systems on the network can see your server
-###Cons:
+####Cons:####
 *  Does not work on MacOS
     
-Bridge
-Pros:
+###Bridge###
+####Pros:####
 *  No need to do any network configuration
 *  Works on MacOS
-Cons:
+####Cons:####
 *  The MAC address can change if you start up Servers in a different order invalidating the 
 license.
 *  Must connect to server manually in the desktop client
 *  Auto-discovery does not work.  Cameras need to be added manually.
 
-Macvlan
+###Macvlan###
 For details see: https://docs.docker.com/v17.12/network/macvlan/
 
-Pros:
+####Pros:####
 *  Auto-discovery works
 *  You can run multiple servers on your host
-Cons:
+####Cons:####
 *  Requires complicated configuration, including changes in DHCP server in your network and 
 creating docker network. 
 (See for details: https://docs.docker.com/v17.09/engine/userguide/networking/get-started-macvlan/).
