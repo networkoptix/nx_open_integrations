@@ -39,7 +39,7 @@ build.sh ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
 # Or using url. It will download the debian package and build the image.
 build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness-server-4.0.0.28608-linux64-beta-prod.deb
 ```
-
+Parameter|Effect
 -d|--deb <path to deb file> Uses deb file as a source
 -b|--build <path to build folder    Uses build folder as a source
 -u|--url <url to download>  Uses URL as a source for debian file
@@ -105,18 +105,14 @@ The docker-compose.yaml file will give you one storage location for video. If yo
 locations you will need to mount additional volumes to the container.  Note that these need to be 
 separate volumes on the host as well. 
 
-## For example: ##
+### For example: ###
 
-/sys/fs/cgroup:/sys/fs/cgroup:ro
-*  Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode.
-./video:/recordings
-*  Mounts video storage on the volume ./video as /recordings in the Docker container
-./data/:/opt/networkoptix/mediaserver/var
-*  Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container.
-/media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2:/dock2 
-*  Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container
-/media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3:/dock3
-*  Mounts /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3 as /dock3 in Docker container.
+Mount location|Effect
+/sys/fs/cgroup:/sys/fs/cgroup:ro|Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode.
+./video:/recordings|Mounts video storage on the volume ./video as /recordings in the Docker container
+./data/:/opt/networkoptix/mediaserver/var|Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container.
+/media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2:/dock2|Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container
+/media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3:/dock3|Mounts /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3 as /dock3 in Docker container.
 
 Note that the video storage location, if modified, needs to be short. Changing the name 
 is fine but changing the path may result in no valid storage location.
