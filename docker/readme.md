@@ -103,7 +103,9 @@ storage location is inaccessible and  Invalid storage on the Storage Management 
 
 The docker-compose.yaml file will give you one storage location for video. If you want more storage 
 locations you will need to mount additional volumes to the container.  Note that these need to be 
-separate volumes on the host as well. For example:
+separate volumes on the host as well. 
+
+## For example: ##
 
 /sys/fs/cgroup:/sys/fs/cgroup:ro
 *  Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode.
