@@ -11,18 +11,20 @@ image allows such a behavior.
 
 ## Restrictions ##
 
-    * Only debian Linux container is supported.
-    * Only Linux hosts are supported.
+    Only Debian Linux container is supported.
+    Linux hosts are supported.
+    MacOS hosts can be used but with limitations.
+    Windows hosts not tested
 
 ## Nx Server Docker container support conditions ##
 
-    * Nx Server Docker container is an experimental feature.
-    * It has not been comprehensively tested.
-    * It is not recommended for critical systems.
-    * Please, test carefully that all features work in your environment before using it.
-    * We do not guarantee support, but we need your feedback and will try to address discovered 
-        issues in future releases.
-    * Any support provided implies knowledge and skills of Docker when using this feature.
+*  Nx Server Docker container is an experimental feature.
+*  It has not been comprehensively tested.
+*  It is not recommended for critical systems.
+*  Please, test carefully that all features work in your environment before using it.
+*  We do not guarantee support, but we need your feedback and will try to address discovered 
+issues in future releases.
+*  Any support provided implies knowledge and skills of Docker when using this feature.
 
 ## Building ##
 
@@ -150,37 +152,37 @@ Host (recommended)
 Licenses in this mode will always have the MAC of the host and the MAC can't be modified 
 in "host" mode.
 
-Pros:
-    * No need to do any network configuration
-    * Auto-discovery works
-    * Other systems on the network can see your server
-Cons:
-    * Does not work on MacOS
+###Pros:
+*  No need to do any network configuration
+*  Auto-discovery works
+*  Other systems on the network can see your server
+###Cons:
+*  Does not work on MacOS
     
 Bridge
 Pros:
-    * No need to do any network configuration
-    * Works on MacOS
+*  No need to do any network configuration
+*  Works on MacOS
 Cons:
-    * The MAC address can change if you start up Servers in a different order invalidating the 
-    license.
-    * Must connect to server manually in the desktop client
-    * Auto-discovery does not work.  Cameras need to be added manually.
+*  The MAC address can change if you start up Servers in a different order invalidating the 
+license.
+*  Must connect to server manually in the desktop client
+*  Auto-discovery does not work.  Cameras need to be added manually.
 
 Macvlan
 For details see: https://docs.docker.com/v17.12/network/macvlan/
 
 Pros:
-    * Auto-discovery works
-    * You can run multiple servers on your host
+*  Auto-discovery works
+*  You can run multiple servers on your host
 Cons:
-    * Requires complicated configuration, including changes in DHCP server in your network and 
-    creating docker network. 
-    (See for details: https://docs.docker.com/v17.09/engine/userguide/networking/get-started-macvlan/).
-    * Requires your network adapter to be in "Promiscuous" mode which can be a security risk. 
-    (Details here: https://searchsecurity.techtarget.com/definition/promiscuous-mode)
-    * IP changes will invalidate the license unless you specify a MAC address when running the 
-    container.
+*  Requires complicated configuration, including changes in DHCP server in your network and 
+creating docker network. 
+(See for details: https://docs.docker.com/v17.09/engine/userguide/networking/get-started-macvlan/).
+*  Requires your network adapter to be in "Promiscuous" mode which can be a security risk. 
+(Details here: https://searchsecurity.techtarget.com/definition/promiscuous-mode)
+*  IP changes will invalidate the license unless you specify a MAC address when running the 
+container.
 
 ## Licenses considerations ##
 
@@ -192,13 +194,13 @@ https://support.networkoptix.com/hc/en-us/articles/360036141153-HWID-changed-and
 
 There are several ways that changes to the network settings can cause the HWID to change:
 
-    * Switching container network mode from host to bridge;
-    * Starting up containers in bridged mode causes them to choose sequential MAC addresses.  If 
-    containers are started in a different order after license keys are <code>ssigned</code>, their 
-    MAC address will change, also changing the HWID, and invalidating the licenses;
-    * Deliberately changing the MAC address of a container;
-    * Changes to internal IP of the container can cause the MAC address to change as well;
-    * Moving the Docker image to another host.
+*  Switching container network mode from host to bridge;
+*  Starting up containers in bridged mode causes them to choose sequential MAC addresses.  If 
+containers are started in a different order after license keys are <code>ssigned</code>, their 
+MAC address will change, also changing the HWID, and invalidating the licenses;
+*  Deliberately changing the MAC address of a container;
+*  Changes to internal IP of the container can cause the MAC address to change as well;
+*  Moving the Docker image to another host.
 
 This can be solved by specifying MAC address in the docker run command or in docker-compose.yaml file. For example,
 ```
@@ -206,10 +208,10 @@ sudo docker run -d --mac-address="8a:ca:58:b9:e9:51" --network bridge --name med
 ```
 Actions that won't invalidate a license:
 
-    * In-client update;
-    * Building a new Docker image with a new Server version but same MAC address and DB on the same host;
-    * Stopping and starting the container;
-    * Removing the container and starting it again from the same image and DB on the same host.
+*  In-client update;
+*  Building a new Docker image with a new Server version but same MAC address and DB on the same host;
+*  Stopping and starting the container;
+*  Removing the container and starting it again from the same image and DB on the same host.
 
 Note: If your license has been invalidated, it can be reactivated up to 3 times by contacting 
 support. For more details see https://support.networkoptix.com/hc/en-us/articles/360036141153-HWID-changed-and-license-is-no-longer-recording
@@ -221,43 +223,44 @@ Both in-client and manual image updates will invalidate licenses.
 In-client update:
 Currently in-client update works but several limitations. 
 
-    1.  Go to "≡" menu. Select System Administration... -> Updates tab.
-    2.  Click the Update to Specific Build button. Input build number and password and click 
-    "Select Build".
-    3.  Click the Download button.
-    4.  Once finished click the Install update button.
-    5.  The install will stay at Installing... for some time and then the Finish Update button will 
-    appear.
-    6.  Click the Finish Update button.
-    7.  Then click Yes button.
-    8.  You will now be at the Reconnecting... dialog.  This will also sit in this state.  Click 
-    Cancel. This will close the connection to the server.
-    9.  Stop your container
-    10. Start it again
-    11. Connect to the container with the Nx Desktop client.
-    12. Go to Updates section (see p. 1). You should see an Update successful message.
-    13.You may be disconnected again but connecting once more should work and the updates tab should 
-    show the new version.
+1.  Go to "≡" menu. Select System Administration... -> Updates tab.
+2.  Click the Update to Specific Build button. Input build number and password and click 
+"Select Build".
+3.  Click the Download button.
+4.  Once finished click the Install update button.
+5.  The install will stay at Installing... for some time and then the Finish Update button will 
+appear.
+6.  Click the Finish Update button.
+7.  Then click Yes button.
+8.  You will now be at the Reconnecting... dialog.  This will also sit in this state.  Click 
+Cancel. This will close the connection to the server.
+9.  Stop your container
+10. Start it again
+11. Connect to the container with the Nx Desktop client.
+12. Go to Updates section (see p. 1). You should see an Update successful message.
+13. You may be disconnected again but connecting once more should work and the updates tab should 
+show the new version.
 
 Updating the image itself:
-    1. Stop your container.
-    2. Move the copy of the DB and recorded video to another folder.
-    3. Remove container.
-        * sudo docker container rm <container id>
-    4. Remove Docker image.
-        * sudo docker image rm <image id>
-    5. Build new Docker image with the new Server version.
-    6. Bring DB and video files back.
-    7. Run the new image referencing the DB and video files.
+
+1.  Stop your container.
+2.  Move the copy of the DB and recorded video to another folder.
+3.  Remove container.
+    * sudo docker container rm <container id>
+4.  Remove Docker image.
+    * sudo docker image rm <image id>
+5.  Build new Docker image with the new Server version.
+6.  Bring DB and video files back.
+7.  Run the new image referencing the DB and video files.
 
 ## MacOS support ##
 
 With this Docker container you can run a container on MacOS. It does come with some limitations.
 
-    * "Host" networking will not work as the MacOS puts the Docker container inside a VM, not 
-    directly on the main OS. See https://docs.docker.com/docker-for-mac/networking/ for details.
-    * "Bridge" is probably the best option but for the reasons above requires some manual 
-    addition of servers and cameras
+*  "Host" networking will not work as the MacOS puts the Docker container inside a VM, not 
+directly on the main OS. See https://docs.docker.com/docker-for-mac/networking/ for details.
+*  "Bridge" is probably the best option but for the reasons above requires some manual 
+addition of servers and cameras
 
 
 ## TODO ##
