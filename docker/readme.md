@@ -40,7 +40,7 @@ build.sh ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
 build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness-server-4.0.0.28608-linux64-beta-prod.deb
 ```
 | Parameter | Effect |
-
+| --------- | ------ |
 | -d --deb | <path to deb file> Uses deb file as a source. |
 | -b --build | <path to build folder> Uses build folder as a source. |
 | -u --url | <url to download>  Uses URL as a source for debian file. |
