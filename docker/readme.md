@@ -11,10 +11,10 @@ image allows such a behavior.
 
 ## Restrictions ##
 
-    Only Debian Linux container is supported.
-    Linux hosts are supported.
-    MacOS hosts can be used but with limitations.
-    Windows hosts not tested
+*  Only Debian Linux container is supported.
+*  Linux hosts are supported.
+*  MacOS hosts can be used but with limitations.
+*  Windows hosts not tested
 
 ## Nx Server Docker container support conditions ##
 
@@ -46,6 +46,7 @@ build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness
 -n|--name <name>    Sets the name for the container.  Default is 'mediaserver'
 -c|--cloud <new cloud host url> Changes the cloud host.  This is for testing purposes.
 -v|--verbose    Gives verbose output when run
+
 The script will use current directory as a docker workspace. It also copies necessary 
 files (deb package) to this folder. This allows to run `build.sh` out of `nx_vms` source 
 folder.
@@ -105,15 +106,15 @@ locations you will need to mount additional volumes to the container.  Note that
 separate volumes on the host as well. For example:
 
 /sys/fs/cgroup:/sys/fs/cgroup:ro
-    Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode.
+*  Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode.
 ./video:/recordings
-    Mounts video storage on the volume ./video as /recordings in the Docker container
+*  Mounts video storage on the volume ./video as /recordings in the Docker container
 ./data/:/opt/networkoptix/mediaserver/var
-    Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container.
+*  Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container.
 /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2:/dock2 
-    Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container
+*  Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container
 /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3:/dock3
-    Mounts /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3 as /dock3 in Docker container.
+*  Mounts /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3 as /dock3 in Docker container.
 
 Note that the video storage location, if modified, needs to be short. Changing the name 
 is fine but changing the path may result in no valid storage location.
