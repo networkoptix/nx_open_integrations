@@ -65,19 +65,19 @@ It will fetch all necessary layers and build docker image with name `mediaserver
 build.sh can override cloud host setting for mediaserver:
 
 ```bash
-build.sh --cloud cloud-dev2.hdw.mx ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
+build.sh --cloud https://meta.nxvms.com ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
 ```
 
 It sets `cloud_host` build argument for docker. You can invoke it directly:
 
 ```bash
-docker build -t mediaserver --build-arg cloud_host=cloud-dev2.hdw.mx --build-arg mediaserver_deb=path_to_mediaserver.deb .
+docker build -t mediaserver --build-arg cloud_host=https://meta.nxvms.com --build-arg mediaserver_deb=path_to_mediaserver.deb .
 ```
 
 It is possible to change cloud host for existing container instance as well: 
 
 ```bash
-sudo docker exec -i -t mediaserver1 /setup/manage.sh --cloud cloud-dev2.hdw.mx
+sudo docker exec -i -t mediaserver1 /setup/manage.sh --cloud https://meta.nxvms.com
 ```
 
 ## Running ##
