@@ -1,0 +1,112 @@
+From 2ae13cd9d306a81358b6997a535f8ee03fc2e590 Mon Sep 17 00:00:00 2001
+From: SSE4 <tomskside@gmail.com>
+Date: Wed, 15 May 2019 15:06:47 +0700
+Subject: [PATCH] - fix FindOpenEXR to respect OPENEXR_ROOT
+
+Signed-off-by: SSE4 <tomskside@gmail.com>
+---
+ cmake/OpenCVFindOpenEXR.cmake | 54 ++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 17 deletions(-)
+
+diff --git a/cmake/OpenCVFindOpenEXR.cmake b/cmake/OpenCVFindOpenEXR.cmake
+index c0a46806e..2dacc1958 100644
+--- a/cmake/OpenCVFindOpenEXR.cmake
++++ b/cmake/OpenCVFindOpenEXR.cmake
+@@ -13,57 +13,77 @@ SET(OPENEXR_LIBRARIES "")
+ SET(OPENEXR_LIBSEARCH_SUFFIXES "")
+ file(TO_CMAKE_PATH "$ENV{ProgramFiles}" ProgramFiles_ENV_PATH)
+ 
+-if(WIN32)
+-    SET(OPENEXR_ROOT "C:/Deploy" CACHE STRING "Path to the OpenEXR \"Deploy\" folder")
+-    if(CMAKE_CL_64)
+-        SET(OPENEXR_LIBSEARCH_SUFFIXES x64/Release x64 x64/Debug)
+-    elseif(MSVC)
+-        SET(OPENEXR_LIBSEARCH_SUFFIXES Win32/Release Win32 Win32/Debug)
++if(NOT OPENEXR_ROOT)
++    if(WIN32)
++        SET(OPENEXR_ROOT "C:/Deploy" CACHE STRING "Path to the OpenEXR \"Deploy\" folder")
++        if(CMAKE_CL_64)
++            SET(OPENEXR_LIBSEARCH_SUFFIXES x64/Release x64 x64/Debug)
++        elseif(MSVC)
++            SET(OPENEXR_LIBSEARCH_SUFFIXES Win32/Release Win32 Win32/Debug)
++        endif()
++    else()
++        set(OPENEXR_ROOT "")
+     endif()
+-else()
+-    set(OPENEXR_ROOT "")
+ endif()
+ 
+ SET(LIBRARY_PATHS
++    "${OPENEXR_ROOT}/lib"
+     /usr/lib
+     /usr/local/lib
+     /sw/lib
+     /opt/local/lib
+-    "${ProgramFiles_ENV_PATH}/OpenEXR/lib/static"
+-    "${OPENEXR_ROOT}/lib")
++    "${ProgramFiles_ENV_PATH}/OpenEXR/lib/static")
+ 
+ FIND_PATH(OPENEXR_INCLUDE_PATH ImfRgbaFile.h
+     PATH_SUFFIXES OpenEXR
+     PATHS
++    "${OPENEXR_ROOT}/include"
+     /usr/include
+     /usr/local/include
+     /sw/include
+     /opt/local/include
+-    "${ProgramFiles_ENV_PATH}/OpenEXR/include"
+-    "${OPENEXR_ROOT}/include")
++    "${ProgramFiles_ENV_PATH}/OpenEXR/include")
++
++IF (OPENEXR_INCLUDE_PATH)
++    SET(OPENEXR_VERSION_FILE "${OPENEXR_INCLUDE_PATH}/OpenEXRConfig.h")
++    IF (EXISTS ${OPENEXR_VERSION_FILE})
++        FILE (STRINGS ${OPENEXR_VERSION_FILE} contents REGEX "#define OPENEXR_VERSION_MAJOR ")
++	IF (${contents} MATCHES "#define OPENEXR_VERSION_MAJOR ([0-9]+)")
++	    SET(OPENEXR_VERSION_MAJOR "${CMAKE_MATCH_1}")
++	ENDIF ()
++	FILE (STRINGS ${OPENEXR_VERSION_FILE} contents REGEX "#define OPENEXR_VERSION_MINOR ")
++	IF (${contents} MATCHES "#define OPENEXR_VERSION_MINOR ([0-9]+)")
++	    SET(OPENEXR_VERSION_MINOR "${CMAKE_MATCH_1}")
++	ENDIF ()
++    ENDIF ()
++ENDIF ()
++
++IF (OPENEXR_VERSION_MAJOR AND OPENEXR_VERSION_MINOR)
++    set(OPENEXR_VERSION "${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR}")
++ENDIF ()
+ 
+ FIND_LIBRARY(OPENEXR_HALF_LIBRARY
+-    NAMES Half
++    NAMES Half-${OPENEXR_VERSION} Half-${OPENEXR_VERSION}_s Half-${OPENEXR_VERSION}_d Half-${OPENEXR_VERSION}_s_d Half Half_s Half_d Half_s_d
+     PATH_SUFFIXES ${OPENEXR_LIBSEARCH_SUFFIXES}
+     PATHS ${LIBRARY_PATHS})
+ 
+ FIND_LIBRARY(OPENEXR_IEX_LIBRARY
+-    NAMES Iex
++    NAMES Iex-${OPENEXR_VERSION} Iex-${OPENEXR_VERSION}_s Iex-${OPENEXR_VERSION}_d Iex-${OPENEXR_VERSION}_s_d Iex Iex_s Iex_d Iex_s_d
+     PATH_SUFFIXES ${OPENEXR_LIBSEARCH_SUFFIXES}
+     PATHS ${LIBRARY_PATHS})
+ 
+ FIND_LIBRARY(OPENEXR_IMATH_LIBRARY
+-    NAMES Imath
++    NAMES Imath-${OPENEXR_VERSION} Imath-${OPENEXR_VERSION}_s Imath-${OPENEXR_VERSION}_d Imath-${OPENEXR_VERSION}_s_d Imath Imath_s Imath_d Imath_s_d
+     PATH_SUFFIXES ${OPENEXR_LIBSEARCH_SUFFIXES}
+     PATHS ${LIBRARY_PATHS})
+ 
+ FIND_LIBRARY(OPENEXR_ILMIMF_LIBRARY
+-    NAMES IlmImf
++    NAMES IlmImf-${OPENEXR_VERSION} IlmImf-${OPENEXR_VERSION}_s IlmImf-${OPENEXR_VERSION}_d IlmImf-${OPENEXR_VERSION}_s_d IlmImf IlmImf_s IlmImf_d IlmImf_s_d
+     PATH_SUFFIXES ${OPENEXR_LIBSEARCH_SUFFIXES}
+     PATHS ${LIBRARY_PATHS})
+ 
+ FIND_LIBRARY(OPENEXR_ILMTHREAD_LIBRARY
+-    NAMES IlmThread
++    NAMES IlmThread-${OPENEXR_VERSION} IlmThread-${OPENEXR_VERSION}_s IlmThread-${OPENEXR_VERSION}_d IlmThread-${OPENEXR_VERSION}_s_d IlmThread IlmThread_s IlmThread_d IlmThread_s_d
+     PATH_SUFFIXES ${OPENEXR_LIBSEARCH_SUFFIXES}
+     PATHS ${LIBRARY_PATHS})
+ 
+-- 
+2.21.0
+

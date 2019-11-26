@@ -1,0 +1,40 @@
+From 7796de36ac211fa73a6b095870f5e73bac21d99e Mon Sep 17 00:00:00 2001
+From: SSE4 <tomskside@gmail.com>
+Date: Fri, 26 Jul 2019 11:32:47 +0200
+Subject: [PATCH] - fix find_package for glog & gflags
+
+Signed-off-by: SSE4 <tomskside@gmail.com>
+---
+ modules/sfm/cmake/FindGflags.cmake | 2 +-
+ modules/sfm/cmake/FindGlog.cmake   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/modules/sfm/cmake/FindGflags.cmake b/modules/sfm/cmake/FindGflags.cmake
+index d3b45dae..2b15fc36 100644
+--- a/modules/sfm/cmake/FindGflags.cmake
++++ b/modules/sfm/cmake/FindGflags.cmake
+@@ -482,7 +482,7 @@ if (NOT GFLAGS_FOUND)
+   endif (NOT GFLAGS_INCLUDE_DIR OR
+     NOT EXISTS ${GFLAGS_INCLUDE_DIR})
+ 
+-  find_library(GFLAGS_LIBRARY NAMES gflags
++  find_library(GFLAGS_LIBRARY NAMES gflags gflags_debug gflags_nothreads gflags_nothreads_debug
+     PATHS ${GFLAGS_LIBRARY_DIR_HINTS}
+     ${GFLAGS_CHECK_LIBRARY_DIRS}
+     PATH_SUFFIXES ${GFLAGS_CHECK_LIBRARY_SUFFIXES})
+diff --git a/modules/sfm/cmake/FindGlog.cmake b/modules/sfm/cmake/FindGlog.cmake
+index 3057b312..ad447c27 100644
+--- a/modules/sfm/cmake/FindGlog.cmake
++++ b/modules/sfm/cmake/FindGlog.cmake
+@@ -148,7 +148,7 @@ if (NOT GLOG_INCLUDE_DIR OR
+ endif (NOT GLOG_INCLUDE_DIR OR
+        NOT EXISTS ${GLOG_INCLUDE_DIR})
+ 
+-find_library(GLOG_LIBRARY NAMES glog
++find_library(GLOG_LIBRARY NAMES glog glogd
+   PATHS ${GLOG_LIBRARY_DIR_HINTS}
+   ${GLOG_CHECK_LIBRARY_DIRS}
+   PATH_SUFFIXES ${GLOG_CHECK_LIBRARY_SUFFIXES})
+-- 
+2.21.0
+
