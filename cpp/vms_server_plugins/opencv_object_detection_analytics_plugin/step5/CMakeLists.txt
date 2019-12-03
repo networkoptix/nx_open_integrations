@@ -24,6 +24,13 @@ conan_add_remote(NAME nx_open_intergrations
 conan_cmake_run(REQUIRES opencv/4.1.1@networkoptix/stable
     BASIC_SETUP)
 
+# Download model files
+message("Downloading model files:")
+message("MobileNetSSD.caffemodel")
+file(DOWNLOAD https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/opencv_object_detection_analytics_plugin/MobileNetSSD.caffemodel ${CMAKE_BINARY_DIR}/MobileNetSSD.caffemodel SHOW_PROGRESS EXPECTED_HASH MD5=8bed6fa43361685f4c78f1c084be7775)
+message("MobileNetSSD.prototxt")
+file(DOWNLOAD https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/opencv_object_detection_analytics_plugin/MobileNetSSD.prototxt ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt SHOW_PROGRESS EXPECTED_HASH MD5=aa2a13fe1fba2c3b7e067067a6749e7e)
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
