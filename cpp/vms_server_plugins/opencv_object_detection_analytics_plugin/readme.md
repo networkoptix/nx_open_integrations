@@ -19,6 +19,12 @@ They will be downloaded automatically by CMake.
 ## Build
 The plugin requires CMake >= 3.3.2 and Conan >= 1.19.1 to be built.
 
+Conan default profile should be updated to use new CXX11 ABI:
+```
+$ conan profile new default --detect  # Ignore the line "ERROR: Profile already exists" if it was printed.
+$ conan profile update settings.compiler.libcxx=libstdc++11 default
+```
+
 To build the plugin cd to the root directory of the plugin (the directory of this readme.md file).
 
 Then build it as an ordinary CMake-based project, supplying the path to the metadata SDK dir.
