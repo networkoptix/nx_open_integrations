@@ -68,12 +68,12 @@ DetectionList convertTrackedObjectsToDetections(
 DetectionList extractDetectionList(const DetectionInternalList& detectionsInternal);
 
 } // namespace opencv_object_detection
-} // namespace analytics
-} // namespace sample
+} // namespace vms_server_plugins
+} // namespace sample_company
 
 namespace std
 {
-using namespace sample::analytics::opencv_object_detection;
+using namespace sample_company::vms_server_plugins::opencv_object_detection;
 
 template<> struct less<const CompositeDetectionId>
 {
@@ -89,5 +89,5 @@ template<> struct less<const CompositeDetectionId>
             return lhs.rect.width < rhs.rect.width;
         return rhs.rect.width < rhs.rect.width;
     }
-}vms_server_plugins
-}_company
+};
+}
