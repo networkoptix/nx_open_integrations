@@ -6,7 +6,7 @@
 
 #include <nx/sdk/analytics/helpers/event_metadata_packet.h>
 #include <nx/sdk/analytics/helpers/object_metadata_packet.h>
-#include <nx/sdk/analytics/helpers/video_frame_processing_device_agent.h>
+#include <nx/sdk/analytics/helpers/consuming_device_agent.h>
 #include <nx/sdk/helpers/uuid_helper.h>
 #include <nx/sdk/ptr.h>
 
@@ -18,7 +18,7 @@ namespace sample_company {
 namespace vms_server_plugins {
 namespace opencv_object_detection {
 
-class DeviceAgent: public nx::sdk::analytics::VideoFrameProcessingDeviceAgent
+class DeviceAgent: public nx::sdk::analytics::ConsumingDeviceAgent
 {
 public:
     using MetadataPacketList = std::vector<nx::sdk::Ptr<nx::sdk::analytics::IMetadataPacket>>;
