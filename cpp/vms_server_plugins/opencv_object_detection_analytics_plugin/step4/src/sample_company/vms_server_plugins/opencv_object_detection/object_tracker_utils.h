@@ -87,7 +87,7 @@ template<> struct less<const CompositeDetectionId>
             return lhs.rect.y < rhs.rect.y;
         if (lhs.rect.width != rhs.rect.width)
             return lhs.rect.width < rhs.rect.width;
-        return rhs.rect.width < rhs.rect.width;
+        return lhs.rect.width < rhs.rect.width;
     }
 };
 }
