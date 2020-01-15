@@ -9,7 +9,7 @@
 ## Supported platforms
 Ubuntu 18.04, g++-7 compiler.
 
-At the present moment, this plugin is only compatible with Meta 4.1.0.30087 R1 SDK. The compiled
+At the present moment, this plugin is only compatible with Meta 4.1.0.30142 R2 SDK. The compiled
 plugin is backward compatible with VMS 4.0.
 
 ## Model files

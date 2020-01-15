@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <nx/sdk/analytics/helpers/video_frame_processing_device_agent.h>
+#include <nx/sdk/analytics/helpers/consuming_device_agent.h>
 #include <nx/sdk/helpers/uuid_helper.h>
 
 #include "engine.h"
@@ -11,7 +11,7 @@ namespace sample_company {
 namespace vms_server_plugins {
 namespace opencv_object_detection {
 
-class DeviceAgent: public nx::sdk::analytics::VideoFrameProcessingDeviceAgent
+class DeviceAgent: public nx::sdk::analytics::ConsumingDeviceAgent
 {
 public:
     DeviceAgent(const nx::sdk::IDeviceInfo* deviceInfo);
