@@ -15,11 +15,11 @@ display_usage() {
 }
 
 # Path to a folder with Dockerfile and necessary scripts.
-DOCKER_SOURCE=$(dirname $0)
-
-DOCKERFILE=$DOCKER_SOURCE/Dockerfile
+DOCKER_SOURCE=`pwd`
+DOCKERFILE="${DOCKER_SOURCE}/Dockerfile"
 
 # Path to current docker build folder.
+
 DOCKER_BUILD_DIRECTORY=$(pwd)
 
 # Name of docker container to be built.
@@ -136,7 +136,7 @@ if [[ ! -z $DEB_FILE ]]
 	then
 		echo -e "I will try to use deb file ${SS}${DEB_FILE}${EE}"
 		check_dpkg "$DEB_FILE"
-		cp "$DEB_FILE" "$DOCKER_BUILD_DIRECTORY/"
+		cp "$DEB_FILE" "$DOCKER_SOURCE/"
 		DEB_NAME=$(basename $DEB_FILE)
 else
 	if [[ ! -z $DEB_URL ]]
@@ -158,7 +158,5 @@ else
 	fi
 fi
 
-echo -e "Building container at ${SS}${DOCKER_BUILD_DIRECTORY}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME"
-cp "$DOCKER_SOURCE/manage.sh" "$DOCKER_BUILD_DIRECTORY"
-cp "$DOCKER_SOURCE/Dockerfile" "$DOCKER_BUILD_DIRECTORY"
+echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME"
 docker build -t $CONTAINER_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cloud_host="$CLOUD_HOST_OVERRIDE" .

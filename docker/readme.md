@@ -49,8 +49,7 @@ build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness
 | -v --verbose | Gives verbose output when run. |
 
 The script will use current directory as a docker workspace. It also copies necessary 
-files (deb package) to this folder. This allows to run `build.sh` out of `nx_vms` source 
-folder.
+files (deb package) to this folder.
 
 You can use docker directly:
 
@@ -60,35 +59,12 @@ docker build -t mediaserver --build-arg mediaserver_deb=path_to_mediaserver.deb 
 
 It will fetch all necessary layers and build docker image with name `mediaserver`.
 
-## Altering cloud_host ##
-
-build.sh can override cloud host setting for mediaserver:
-
-```bash
-build.sh --cloud https://meta.nxvms.com ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
-```
-
-It sets `cloud_host` build argument for docker. You can invoke it directly:
-
-```bash
-docker build -t mediaserver --build-arg cloud_host=https://meta.nxvms.com --build-arg mediaserver_deb=path_to_mediaserver.deb .
-```
-
-It is possible to change cloud host for existing container instance as well: 
-
-```bash
-sudo docker exec -i -t mediaserver1 /setup/manage.sh --cloud https://meta.nxvms.com
-```
-
 ## Running ##
-
-systemd needs `/run`, `/run/lock` to be present, so we need to map them.
-Also container needs `/sys/fs/cgroup:/sys/fs/cgroup` to be mapped.
 
 Running it:
 
 ```bash
-sudo docker run -d --name mediaserver1 --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro -t mediaserver
+sudo docker run -d --name mediaserver1 -t mediaserver
 ```
 
 OR
@@ -100,7 +76,7 @@ If you are already running a Nx Server on host in the traditional way, you will 
 change the port setting of your server or update the port setting in the docker-compose.yaml file.
 Make sure you don't have too many Docker images filing up space either. Even if the Nx Desktop 
 client sees that the mounted directory has space but is filled with other things, it may claim the 
-storage location is inaccessible and  Invalid storage on the Storage Management tab in Server Settings.
+storage location is inaccessible and show Invalid storage on the Storage Management tab in Server Settings.
 
 The docker-compose.yaml file will give you one storage location for video. If you want more storage 
 locations you will need to mount additional volumes to the container.  Note that these need to be 
@@ -110,7 +86,6 @@ separate volumes on the host as well.
 
 | Mount location | Effect |
 | -------------- | ------- |
-| /sys/fs/cgroup:/sys/fs/cgroup:ro | Mounts /sys/fs/cgroup as /sys/fs/cgroup in the Docker container in read-only mode. |
 | ./video:/recordings | Mounts video storage on the volume ./video as /recordings in the Docker container. |
 | ./data/:/opt/networkoptix/mediaserver/var | Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container. |
 | /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2:/dock2 | Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container. |
