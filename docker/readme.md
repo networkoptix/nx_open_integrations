@@ -4,10 +4,9 @@
 ## Abstract ##
 
 Starting from the build 28389 (~ 4.0 beta-2), the Nx Server allows its debian package to be 
-installed directly from a Dockerfile (lower versions are incompatible). A proper systemd environment
-should be started inside the Docker. There are some cases when Nx Server should restart itself 
-(system updates feature does it quite often), and it relies on systemd for it. The current Docker 
-image allows such a behavior.
+installed directly from a Dockerfile (lower versions are incompatible).  Without systemd
+in the container the server may not handle crashes or restarts properly.  It is recommended
+to run containers with --restart options.
 
 ## Restrictions ##
 
@@ -93,6 +92,37 @@ separate volumes on the host as well.
 
 Note that the video storage location, if modified, needs to be short. Changing the name 
 is fine but changing the path may result in no valid storage location.
+
+### Notes about storage ###
+Note that the media server still retains it's limitations regarding valid storage locations.
+Here is the current (as of May 28, 2020) list of valid filesystem types supported:
+* vfat
+* ecryptfs
+* fuseblk //NTFS
+* fuse
+* fusectl
+* xfs
+* ext3
+* ext2
+* ext4
+* exfat
+* rootfs
+* nfs
+* nfs4
+* nfsd
+* cifs
+* fuse.osxfs
+
+If you want to use a file system type from outside this list, know that it is use at your own risk
+and is not supported.  We do however, have an option in advanced settings that can bypass our 
+requirements.
+
+1. Sign into the web client (usuall localhost:7001).
+2. Go to /static/index.html#/advanced
+3. There should be a field with this label:
+    "Additional file system types to consider while deciding if a given partition is suitable to be a server storage"
+4. Input the file system name and click save at the bottom.
+
 
 ## Useful commands ##
 
@@ -202,29 +232,14 @@ Both in-client and manual image updates will invalidate licenses.
 In-client update:
 Currently in-client update works but several limitations. 
 
-1.  Go to "≡" menu. Select System Administration... -> Updates tab.
-2.  Click the Update to Specific Build button. Input build number and password and click 
-"Select Build".
-3.  Click the Download button.
-4.  Once finished click the Install update button.
-5.  The install will stay at Installing... for some time and then the Finish Update button will 
-appear.
-6.  Click the Finish Update button.
-7.  Then click Yes button.
-8.  You will now be at the Reconnecting... dialog.  This will also sit in this state.  Click 
-Cancel. This will close the connection to the server.
-9.  Stop your container
-10. Start it again
-11. Connect to the container with the Nx Desktop client.
-12. Go to Updates section (see p. 1). You should see an Update successful message.
-13. You may be disconnected again but connecting once more should work and the updates tab should 
-show the new version.
+Since we removed the use of systemd from the image, in-client updates will no longer work.  Please refer to the below method.
 
 Updating the image itself:
 
 1.  Stop your container.
 2.  Move the copy of the DB and recorded video to another folder.
-3.  Remove container.
+3.  Stop and Remove container.
+    * sudo docker container stop <container id>
     * sudo docker container rm <container id>
 4.  Remove Docker image.
     * sudo docker image rm <image id>
