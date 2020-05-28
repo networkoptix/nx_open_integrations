@@ -12,11 +12,9 @@ RUN mkdir /debs
 # Copy the deb file into the container
 COPY "${mediaserver_deb}" /debs/
 
-RUN apt update -qq
-# Helps with dependencies
-RUN apt install -y gdebi
+RUN apt-get update -qq
 # Install the mediaserver
-RUN apt install -y /debs/${mediaserver_deb}
+RUN apt-get install -y /debs/${mediaserver_deb}
 
 # Remove root tool as we aren't running server as a service
 RUN rm /opt/networkoptix/mediaserver/bin/root-tool-bin
