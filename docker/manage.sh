@@ -21,7 +21,7 @@ MEDIASERVER_CONF=/opt/networkoptix/mediaserver/etc/mediaserver.conf
 MEDIASERVER_NETWORK_SO=/opt/networkoptix/mediaserver/lib/libnx_network.so
 
 CLOUD_HOST_NAME_WITH_KEY=$(eval echo \
-"this_is_cloud_host_name cloud-test.hdw.mx\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0")
+"this_is_cloud_host_name cloud-test.hdw.mx")
 
 # Should we stop/start systemd networkoptix-mediaserver service while changing cloud host
 NORESTART=0
