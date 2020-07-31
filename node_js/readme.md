@@ -171,10 +171,11 @@ To get latest beta version - apply for Developer Early Access Program here:
     http://www.networkoptix.com/develop-with-meta/
 
 ### Quick Start
-1) Run 'npm install'.
-2) Go to the examples directory
-3) Run 'tsc *.ts'
-4) Edit the nodeConfig.json file with the following. **Note: Leave the rules section
+1) Make sure that you are in the project directory. **Ex: 'cd ~/develop/node_js'.**
+2) Run 'npm install'.
+3) Go to the examples directory
+4) Run 'tsc *.ts'
+5) Edit the nodeConfig.json file with the following. **Note: Leave the rules section
     empty, the scripts will fill it in automatically.**
   ```json
    {
@@ -199,16 +200,16 @@ To get latest beta version - apply for Developer Early Access Program here:
        "rules": {}
    }
    ```
-5) Pick an example js file to run from the examples directory. Then, run the example using
+6) Pick an example js file to run from the examples directory. Then, run the example using
     'node {{file}}.js'.
 
   ```
    node softTriggerHttpAction.js
    ```
-6) Open the NxWitness desktop client.
-7) Open a camera on the grid. There should be a soft trigger called "Node callback -
+7) Open the NxWitness desktop client.
+8) Open a camera on the grid. There should be a soft trigger called "Node callback -
     simple".
-8) Press the soft trigger and you will see a log message in the terminal that says
+9) Press the soft trigger and you will see a log message in the terminal that says
     "Callback works".
     
 ## Troubleshooting
