@@ -37,9 +37,9 @@ To get latest beta version - apply for Developer Early Access Program here:
     empty, the scripts will fill it in automatically.**
   ```json
    {
-       "systemUrl": "{{Ip address and port of your System running the VMS Server}}",
+       "systemUrl": "{{Ip address, protocol, and port of your System running the VMS Server}}",
        "serverVersion": "{{Version of the server. Ex 4.0}}",
-       "myIp": "{{The Ip address of the machine running this script}}",
+       "myIp": "{{The Ip address and protocol of the machine running this script}}",
        "myPort": "{{The port you want the node.js express server to listen to}}",
        "username": "{{The user name of an account with at least administrator level permissions}}",
        "password": "{{The password for this account from the previous line}}",
@@ -49,9 +49,9 @@ To get latest beta version - apply for Developer Early Access Program here:
    Example nodeConfig.json
   ```json
    {
-       "systemUrl": "0.0.0.0:7001",
+       "systemUrl": "https://0.0.0.0:7001",
        "serverVersion": "",
-       "myIp": "0.0.0.0",
+       "myIp": "http://0.0.0.0",
        "myPort": "3000",
        "username": "admin",
        "password": "password1234",
@@ -65,7 +65,7 @@ To get latest beta version - apply for Developer Early Access Program here:
    node softTriggerHttpAction.js
    ```
 7) Open the NxWitness desktop client.
-8) Open a camera on the grid. There should be a soft trigger called "Node callback -
+8) Open any camera onto the grid. There should be a soft trigger called "Node callback -
     simple".
 9) Press the soft trigger and you will see a log message in the terminal that says
     "Callback works".
