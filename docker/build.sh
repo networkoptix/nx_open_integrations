@@ -49,6 +49,12 @@ while [[ $# -gt 0 ]]
 				shift
 				shift
 				;;
+			-c|--cust)
+				# Will override the default customization.
+				CUSTOMIZATION="$2"
+				shift
+				shift
+				;;
 			-u|--url)
 				# Will use url to deb file as source.
 				DEB_URL="$2"
@@ -61,7 +67,7 @@ while [[ $# -gt 0 ]]
 				shift
 				shift
 				;;
-			-c|--cloud)
+			-h|--host)
 				CLOUD_HOST_OVERRIDE="$2"
 				shift
 				shift
@@ -158,5 +164,5 @@ else
 	fi
 fi
 
-echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME"
-docker build -t $CONTAINER_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cloud_host="$CLOUD_HOST_OVERRIDE" .
+echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME cust=$CUSTOMIZATION"
+docker build -t $CONTAINER_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="$CUSTOMIZATION" .

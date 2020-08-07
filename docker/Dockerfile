@@ -1,5 +1,8 @@
 FROM ubuntu:18.04
 
+# Takes the customization override and applies it
+ARG cust
+ENV customization=${cust:-networkoptix} 
 # This will override our EULA check.
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -17,13 +20,13 @@ RUN apt-get update \
     && apt-get install -y \/debs/${mediaserver_deb} sudo \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/ \
-    && echo "networkoptix ALL = NOPASSWD: /opt/networkoptix/mediaserver/bin/entrypoint.sh, /opt/networkoptix/mediaserver/bin/root-tool-bin" > /etc/sudoers.d/networkoptix 
+    && echo "${customization} ALL = NOPASSWD: /opt/${customization}/mediaserver/bin/entrypoint.sh, /opt/${customization}/mediaserver/bin/root-tool-bin" > /etc/sudoers.d/${customization} 
 
 # Move the entrypoint script into the container
-COPY entrypoint.sh /opt/networkoptix/mediaserver/bin/
+COPY entrypoint.sh /opt/${customization}/mediaserver/bin/
 
 # Set the user to run the commands to the networkoptix user created on installation
-USER networkoptix
+USER ${customization}
 
 # Runs the media server and root-tool on container start
-ENTRYPOINT ["/bin/sh", "-c", "/opt/networkoptix/mediaserver/bin/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "/opt/${customization}/mediaserver/bin/entrypoint.sh ${customization}"]

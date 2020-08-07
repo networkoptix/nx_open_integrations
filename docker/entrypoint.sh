@@ -1,5 +1,5 @@
 #!/bin/bash
 
-BASEDIR=/opt/networkoptix/mediaserver
-sudo /opt/networkoptix/mediaserver/bin/root-tool-bin&
+BASEDIR=/opt/$1/mediaserver
+sudo /opt/$1/mediaserver/bin/root-tool-bin&
 $BASEDIR/bin/mediaserver-bin  -e
