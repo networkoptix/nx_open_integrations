@@ -1,6 +1,6 @@
 {
     "systemUrl": "System IP with protocol and port",
-    "myIp": "Protocol and Ip of machine running scripts",
+    "myIp": "Ip of machine running scripts (Protocol is optional)",
     "myPort": 3000,
     "serverVersion": "4",
     "username": "",

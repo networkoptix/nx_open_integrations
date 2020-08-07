@@ -11,7 +11,7 @@ const logging = factory.getLogger('Mediaserver Api');
  * @class
  */
 export class MediaserverApi {
-    /** The IP address and port of the target Server. */
+    /** The IP address, protocol and port of the target Server. */
     public systemUrl: string;
     private serverVersion: string;
     private cookieJar: any;
@@ -20,7 +20,7 @@ export class MediaserverApi {
     protected password: string;
 
     /**
-     * @param {string} systemUrl Ip address and port of the target system.
+     * @param {string} systemUrl Ip address, protocol and port of the target system.
      * @param {string} username Valid username on the system.
      * @param {string} password Password belonging to that user.
      * @param {string} serverVersion
@@ -28,12 +28,17 @@ export class MediaserverApi {
      */
     constructor(systemUrl: string, username: string, password: string, serverVersion?: string) {
         logging.info('Building api system');
+        if (!systemUrl.match(/http/)) {
+            const errorMessage = `The systemUrl ${systemUrl} is missing the url protocol.`;
+            logging.error(errorMessage);
+            throw new Error(errorMessage);
+        }
         this.cookieJar = request.jar();
         this.user = username;
         this.password = password;
         this.systemUrl = systemUrl;
-        this.auth = "";
-        this.serverVersion = serverVersion || "4";
+        this.auth = '';
+        this.serverVersion = serverVersion || '4';
     }
 
     /**
@@ -56,7 +61,7 @@ export class MediaserverApi {
         }).then((res: any) => {
             logging.info('Login complete');
             return;
-        })
+        });
     }
 
     /**

@@ -39,7 +39,7 @@ To get latest beta version - apply for Developer Early Access Program here:
    {
        "systemUrl": "{{Ip address, protocol, and port of your System running the VMS Server}}",
        "serverVersion": "{{Version of the server. Ex 4.0}}",
-       "myIp": "{{The Ip address and protocol of the machine running this script}}",
+       "myIp": "{{The Ip address of the machine running this script (protocol is optional)}}",
        "myPort": "{{The port you want the node.js express server to listen to}}",
        "username": "{{The user name of an account with at least administrator level permissions}}",
        "password": "{{The password for this account from the previous line}}",

@@ -34,9 +34,9 @@ export class RuntimeConfigManager {
             throw Error('RuntimeConfigManager requires configPath');
         } else if (!fs.existsSync(configPath)) {
             fs.writeFileSync(configPath, JSON.stringify({
-                systemUrl: 'Ip of your system',
+                systemUrl: 'System IP with protocol and port',
                 serverVersion: 'Version of the server. Ex 4.0',
-                myIp: 'Ip of this machine',
+                myIp: 'Ip of machine running scripts (Protocol is optional)',
                 myPort: 'Port on this machine you want to expose for nodeServer and nodeHttpActions',
                 username: 'Preferably an account with admin access',
                 password: 'That account\'s password',
