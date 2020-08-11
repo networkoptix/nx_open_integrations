@@ -42,9 +42,10 @@ build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness
 | --------- | ------ |
 | -d --deb <path to deb file> | Uses deb file as a source. |
 | -b --build <path to build folder> | Uses build folder as a source. |
+| -c --cust <customization name> | Changes the customization to the desired one. |
 | -u --url <url to download> | Uses URL as a source for debian file. |
 | -n --name <name> |   Sets the name for the container.  Default is 'mediaserver'. |
-| -c --cloud <new cloud host url> | Changes the cloud host.  This is for testing purposes. |
+| -h --host <new cloud host url> | Changes the cloud host.  This is for testing purposes. |
 | -v --verbose | Gives verbose output when run. |
 
 The script will use current directory as a docker workspace. It also copies necessary 
