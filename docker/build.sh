@@ -147,6 +147,9 @@ if [[ ! -z $DEB_FILE ]]
 else
 	if [[ ! -z $DEB_URL ]]
 		then
+			re="(http.?:\/{2}updates\..*\.com\/)([^\/]*)"
+			[[ $DEB_URL =~ $re ]] && CUSTOMIZATION=${BASH_REMATCH[2]} || echo "no match"
+
 			echo -e "I will try to download mediaserver deb from ${SS}${DEB_URL}${EE}"
 			curl -o mediaserver.deb $DEB_URL 1>/dev/null || raise_error "Failed to download from ${SS}$DEB_URL${EE}"
 			DEB_NAME=mediaserver.deb
@@ -163,6 +166,8 @@ else
 		#ninja -C "${BUILD_PATH}" distribution_deb_mediaserver.
 	fi
 fi
+# Set the CUSTOMIZATION variable to default if it was not set by -c or by the url
+CUSTOMIZATION=${CUSTOMIZATION:-"networkoptix"}
 
 echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME cust=$CUSTOMIZATION"
 docker build -t $CONTAINER_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="$CUSTOMIZATION" .

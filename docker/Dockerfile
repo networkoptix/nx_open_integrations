@@ -1,8 +1,8 @@
 FROM ubuntu:18.04
 
-# Takes the customization override and applies it
+# Takes the customization and applies it as a build ARG and an ENV so it can be passed to the entrypoint
 ARG cust
-ENV customization=${cust:-networkoptix} 
+ENV customization=${cust} 
 # This will override our EULA check.
 ENV DEBIAN_FRONTEND noninteractive
 
