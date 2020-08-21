@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]
 				;;
 			-n|--name)
 				# Name for container. By default it is 'mediaserver'.
-				CONTAINER_NAME="$2"
+				IMAGE_NAME="$2"
 				shift
 				shift
 				;;
@@ -147,8 +147,13 @@ if [[ ! -z $DEB_FILE ]]
 else
 	if [[ ! -z $DEB_URL ]]
 		then
+			# Grab the customization from production urls
 			re="(http.?:\/{2}updates\..*\.com\/)([^\/]*)"
-			[[ $DEB_URL =~ $re ]] && CUSTOMIZATION=${BASH_REMATCH[2]} || echo "no match"
+			[[ $DEB_URL =~ $re ]] && CUSTOMIZATION=${BASH_REMATCH[2]}
+
+			# Grab the customization from beta urls
+			re="(http.?:\/{2}beta\..*\.com\/)(beta-builds\/)([^\/]*)"
+			[[ $DEB_URL =~ $re ]] && CUSTOMIZATION=${BASH_REMATCH[3]}
 
 			echo -e "I will try to download mediaserver deb from ${SS}${DEB_URL}${EE}"
 			curl -o mediaserver.deb $DEB_URL 1>/dev/null || raise_error "Failed to download from ${SS}$DEB_URL${EE}"
@@ -169,5 +174,5 @@ fi
 # Set the CUSTOMIZATION variable to default if it was not set by -c or by the url
 CUSTOMIZATION=${CUSTOMIZATION:-"networkoptix"}
 
-echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$CONTAINER_NAME cust=$CUSTOMIZATION"
-docker build -t $CONTAINER_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="$CUSTOMIZATION" .
+echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$IMAGE_NAME cust=$CUSTOMIZATION"
+docker build -t $IMAGE_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="$CUSTOMIZATION" .
