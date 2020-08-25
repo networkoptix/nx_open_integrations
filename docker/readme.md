@@ -43,7 +43,7 @@ build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness
 | -d --deb <path to deb file> | Uses deb file as a source. |
 | -b --build <path to build folder> | Uses build folder as a source. |
 | -c --cust <customization name> | Changes the customization to the desired one. |
-| -u --url <url to download> | Uses URL as a source for debian file. |
+| -u --url <url to download> | Uses URL as a source for debian file. Will automatically set customization based on url.|
 | -n --name <name> |   Sets the name for the container.  Default is 'mediaserver'. |
 | -h --host <new cloud host url> | Changes the cloud host.  This is for testing purposes. |
 | -v --verbose | Gives verbose output when run. |
