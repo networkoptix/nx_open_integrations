@@ -1,4 +1,11 @@
 #!/bin/bash
+CUSTOMIZATION=$1
+BASEDIR=/opt/$CUSTOMIZATION/mediaserver
+sudo /opt/$CUSTOMIZATION/mediaserver/bin/root-tool-bin&
+$BASEDIR/bin/mediaserver-bin  -e
+docker-server-factory@dockerserverfactory-VirtualBox:~/DockerQA$ #!/bin/bash CUSTOMIZATION=$1 BASEDIR=/opt/$CUSTOMIZATION/mediaserver sudo /opt/$CUSTOMIZATION/mediaserver/bin/root-tool-bin& $BASEDIR/bin/mediaserver-bin  -e^C docker-server-factory@dockerserverfactory-VirtualBox:~/DockerQA$ ^C
+docker-server-factory@dockerserverfactory-VirtualBox:~/DockerQA$ cat build.sh
+#!/bin/bash
 # Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
 # This is helper script for building docker image from debian package for mediaserver
@@ -49,12 +56,12 @@ while [[ $# -gt 0 ]]
                                 shift
                                 shift
                                 ;;
-                        -c|--cust)
-                                # Will override the default customization.
-                                CUSTOMIZATION="$2"
-                                shift
-                                shift
-                                ;;
+                       # -c|--cust)
+                       #         # Will override the default customization.
+                       #         CUSTOMIZATION="$2"
+                       #         shift
+                       #         shift
+                       #         ;;
                         -u|--url)
                                 # Will use url to deb file as source.
                                 DEB_URL="$2"
@@ -172,8 +179,16 @@ else
     fi
 fi
 # Set the CUSTOMIZATION variable to default if it was not set by -c or by the url
-CUSTOMIZATION=${CUSTOMIZATION:-"networkoptix"}
-if [ "${CUSTOMIZATION}" == "default" ]; then CUSTOMIZATION="networkoptix"; fi
+re="\/opt\/([a-z]*)\/mediaserver"
+conts=$(dpkg --contents $DEB_NAME)
+if [[ $conts =~ $re ]]; then
+        echo ${BASH_REMATCH[1]};
+else
+        echo "no match"
+fi
+
+#CUSTOMIZATION=${CUSTOMIZATION:-"networkoptix"}
+#if [ "${CUSTOMIZATION}" == "default" ]; then CUSTOMIZATION="networkoptix"; fi
 IMAGE_NAME="test"
-echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$IMAGE_NAME cust=$CUSTOMIZATION"
-docker build -t $IMAGE_NAME --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="$CUSTOMIZATION" .
+echo -e "Building container at ${SS}${DOCKER_SOURCE}${EE} using mediaserver_deb=$DEB_NAME name=$IMAGE_NAME cust=${BASH_REMATCH[1]}"
+docker build -t 4.1_test --build-arg mediaserver_deb="$DEB_NAME" --build-arg cust="${BASH_REMATCH[1]}" .
