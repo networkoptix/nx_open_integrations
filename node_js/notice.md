@@ -1,11 +1,16 @@
+# Legal Notice
+
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-# Built With
+
+## Built With
+
 * [node.js](https://nodejs.org/) - Runtime environment for javascript.
 * [Express](https://expressjs.com/) - The web framework used.
 * [npm](https://www.npmjs.com/) - Dependency Management.
 * [type script](https://www.typescriptlang.org/) - Compiles into javascript.
 
-#Npm Packages
+## Npm Packages
+
 | name                   | version        | usage    | author           | website                                            | license    |
 |------------------------|:---------------|:---------|:-----------------|:---------------------------------------------------|:-----------|
 | @types/bluebird        | 3.5.5 (fixed)  | uses     |                  | https://github.com/DefinitelyTyped/DefinitelyTyped | MIT        |
