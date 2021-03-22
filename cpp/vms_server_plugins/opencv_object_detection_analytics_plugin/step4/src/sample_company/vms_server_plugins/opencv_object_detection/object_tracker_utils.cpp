@@ -27,10 +27,12 @@ Uuid IdMapper::get(int64_t id)
 
 void IdMapper::removeAllExcept(const std::set<int64_t>& idsToKeep)
 {
-    for (auto it = m_map.begin(); it != m_map.end(); ++it)
+    for (auto it = m_map.begin(); it != m_map.end(); )
     {
         if (idsToKeep.find(it->first) == idsToKeep.end())
-            m_map.erase(it);
+            it = m_map.erase(it);
+        else
+            ++it;
     }
 }
 
