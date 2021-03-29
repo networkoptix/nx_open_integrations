@@ -166,6 +166,7 @@ in "host" mode.
 
 #### Cons: ####
 *  Does not work on MacOS
+*  Multiple servers on the same host will have the same MAC address and will appear as "duplicates" if you try to merge them
     
 ### Bridge ###
 #### Pros: ####
