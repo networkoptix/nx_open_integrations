@@ -11,7 +11,7 @@ namespace opencv_object_detection {
 using namespace nx::sdk;
 using namespace nx::sdk::analytics;
 
-Engine::Engine(std::experimental::filesystem::path pluginHomeDir):
+Engine::Engine(std::filesystem::path pluginHomeDir):
     // Call the DeviceAgent helper class constructor telling it to verbosely report to stderr.
     nx::sdk::analytics::Engine(/*enableOutput*/ true),
     m_pluginHomeDir(pluginHomeDir)

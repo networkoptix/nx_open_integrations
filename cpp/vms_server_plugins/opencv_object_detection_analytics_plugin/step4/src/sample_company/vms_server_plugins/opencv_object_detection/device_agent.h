@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 #include <nx/sdk/analytics/helpers/object_metadata_packet.h>
 #include <nx/sdk/analytics/helpers/consuming_device_agent.h>
@@ -25,7 +25,7 @@ public:
 public:
     DeviceAgent(
         const nx::sdk::IDeviceInfo* deviceInfo,
-        std::experimental::filesystem::path pluginHomeDir);
+        std::filesystem::path pluginHomeDir);
 
     virtual ~DeviceAgent() override;
 

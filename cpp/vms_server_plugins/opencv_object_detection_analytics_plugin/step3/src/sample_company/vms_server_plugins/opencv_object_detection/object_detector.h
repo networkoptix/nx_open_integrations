@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,7 +22,7 @@ namespace opencv_object_detection {
 class ObjectDetector
 {
 public:
-    explicit ObjectDetector(std::experimental::filesystem::path modelPath);
+    explicit ObjectDetector(std::filesystem::path modelPath);
 
     void ensureInitialized();
     bool isTerminated() const;
@@ -36,7 +36,7 @@ private:
 private:
     bool m_netLoaded = false;
     bool m_terminated = false;
-    const std::experimental::filesystem::path m_modelPath;
+    const std::filesystem::path m_modelPath;
     std::unique_ptr<cv::dnn::Net> m_net;
     nx::sdk::Uuid m_trackId = nx::sdk::UuidHelper::randomUuid();
 };
