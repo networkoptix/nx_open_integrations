@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <experimental/filesystem>
+#include <filesystem>
 
 #include <nx/sdk/analytics/helpers/plugin.h>
 #include <nx/sdk/analytics/helpers/engine.h>
@@ -15,7 +15,7 @@ namespace opencv_object_detection {
 class Engine: public nx::sdk::analytics::Engine
 {
 public:
-    explicit Engine(std::experimental::filesystem::path pluginHomeDir);
+    explicit Engine(std::filesystem::path pluginHomeDir);
 
     virtual ~Engine() override;
 
@@ -28,7 +28,7 @@ protected:
         const nx::sdk::IDeviceInfo* deviceInfo) override;
 
 private:
-    std::experimental::filesystem::path m_pluginHomeDir;
+    std::filesystem::path m_pluginHomeDir;
 };
 
 } // namespace opencv_object_detection

@@ -33,7 +33,7 @@ using namespace std::string_literals;
  */
 DeviceAgent::DeviceAgent(
     const nx::sdk::IDeviceInfo* deviceInfo,
-    std::experimental::filesystem::path pluginHomeDir):
+    std::filesystem::path pluginHomeDir):
     // Call the DeviceAgent helper class constructor telling it to verbosely report to stderr.
     ConsumingDeviceAgent(deviceInfo, /*enableOutput*/ true),
     m_objectDetector(std::make_unique<ObjectDetector>(pluginHomeDir))

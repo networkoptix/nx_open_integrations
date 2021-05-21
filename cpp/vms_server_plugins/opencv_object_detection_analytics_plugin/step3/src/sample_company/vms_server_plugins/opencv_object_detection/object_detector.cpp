@@ -15,7 +15,7 @@ using namespace std::string_literals;
 using namespace cv;
 using namespace cv::dnn;
 
-ObjectDetector::ObjectDetector(std::experimental::filesystem::path modelPath):
+ObjectDetector::ObjectDetector(std::filesystem::path modelPath):
     m_modelPath(std::move(modelPath))
 {
 }
@@ -88,9 +88,9 @@ void ObjectDetector::loadModel()
 {
     // Prepare paths of model weights and definition.
     static const auto modelBin = m_modelPath /
-        std::experimental::filesystem::path("MobileNetSSD.caffemodel");
+        std::filesystem::path("MobileNetSSD.caffemodel");
     static const auto modelTxt = m_modelPath /
-        std::experimental::filesystem::path("MobileNetSSD.prototxt");
+        std::filesystem::path("MobileNetSSD.prototxt");
 
     // Load the model for future processing using OpenCV.
     m_net = std::make_unique<Net>(

@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.3.2)
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "4.1.0 R2")
+set(metadataSdkVersion "4.3.0 R3")
 set(metadataSdkDir "" CACHE PATH
     "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
 
@@ -11,7 +11,7 @@ if(metadataSdkDir STREQUAL "")
     message(FATAL_ERROR "metadataSdkDir cache variable is undefined.")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)

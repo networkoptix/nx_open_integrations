@@ -34,7 +34,7 @@ file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/Mob
 message("MobileNetSSD.prototxt")
 file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/MobileNetSSD.prototxt ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt SHOW_PROGRESS)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -92,7 +92,6 @@ target_link_libraries(opencv_object_detection_analytics_plugin
     nx_kit
     nx_sdk
     ${CONAN_LIBS}
-    stdc++fs
    -static-libgcc
    -static-libstdc++)
 

@@ -14,7 +14,7 @@ using namespace nx::sdk::analytics;
 Result<IEngine*> Plugin::doObtainEngine()
 {
     const auto utilityProvider = this->utilityProvider();
-    const std::experimental::filesystem::path pluginHomeDir = utilityProvider->homeDir();
+    const std::filesystem::path pluginHomeDir = utilityProvider->homeDir();
     return new Engine(pluginHomeDir);
 }
 
