@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.3.2)
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "4.1.0 R2")
+set(metadataSdkVersion "4.2.0 R3")
 set(metadataSdkDir "" CACHE PATH
     "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
 
@@ -19,17 +19,20 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_run(BUILD_TYPE "Release")
-conan_add_remote(NAME nx_open_intergrations
-    URL https://api.bintray.com/conan/networkoptix/nx_open_intergrations)
-conan_cmake_run(REQUIRES opencv/4.1.1@networkoptix/stable
+conan_add_remote(NAME nx_open_integrations INDEX 0
+     URL https://networkoptix.jfrog.io/artifactory/api/conan/nx_open_integrations)
+conan_cmake_run(BASIC_SETUP 
+    PATH_OR_REFERENCE protobuf/3.5.2@bincrafters/stable 
+    REMOTE nx_open_integrations)
+conan_cmake_run(REQUIRES opencv/4.1.1@networkoptix/stable 
     BASIC_SETUP)
 
-# Download model files
+#Download model files
 message("Downloading model files:")
 message("MobileNetSSD.caffemodel")
-file(DOWNLOAD https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/opencv_object_detection_analytics_plugin/MobileNetSSD.caffemodel ${CMAKE_BINARY_DIR}/MobileNetSSD.caffemodel SHOW_PROGRESS EXPECTED_HASH MD5=8bed6fa43361685f4c78f1c084be7775)
+file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/MobileNetSSD.caffemodel ${CMAKE_BINARY_DIR}/MobileNetSSD.caffemodel SHOW_PROGRESS)
 message("MobileNetSSD.prototxt")
-file(DOWNLOAD https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/opencv_object_detection_analytics_plugin/MobileNetSSD.prototxt ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt SHOW_PROGRESS EXPECTED_HASH MD5=aa2a13fe1fba2c3b7e067067a6749e7e)
+file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/MobileNetSSD.prototxt ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt SHOW_PROGRESS)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -75,19 +78,23 @@ target_compile_definitions(nx_sdk PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO})
 #--------------------------------------------------------------------------------------------------
 # Define opencv_object_detection_analytics_plugin lib, dynamic, depends on nx_kit and nx_sdk.
 
+
 set(OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR}/*)
 
-add_library(opencv_object_detection_analytics_plugin SHARED 
+add_library(opencv_object_detection_analytics_plugin SHARED
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC})
 target_include_directories(opencv_object_detection_analytics_plugin PRIVATE 
-    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR})
+    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR} ${CONAN_INCLUDE_DIRS})
+set(CMAKE_EXE_LINKER_FLAGS " -static")
 target_link_libraries(opencv_object_detection_analytics_plugin
     nx_kit
     nx_sdk
     ${CONAN_LIBS}
-    stdc++fs)
+    stdc++fs
+   -static-libgcc
+   -static-libstdc++)
 
 target_compile_definitions(opencv_object_detection_analytics_plugin
     PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO}
