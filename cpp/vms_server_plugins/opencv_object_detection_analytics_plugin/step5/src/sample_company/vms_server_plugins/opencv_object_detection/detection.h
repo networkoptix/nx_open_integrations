@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 
 #include <nx/sdk/analytics/rect.h>
 #include <nx/sdk/uuid.h>
