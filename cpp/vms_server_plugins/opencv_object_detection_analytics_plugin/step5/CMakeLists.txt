@@ -10,8 +10,6 @@ set(metadataSdkDir "" CACHE PATH
 if(metadataSdkDir STREQUAL "")
     message(FATAL_ERROR "metadataSdkDir cache variable is undefined.")
 endif()
-#message(FATAL_ERROR "Build type "  ${CMAKE_BUILD_TYPE})
-#message(FATAL_ERROR "flags"  ${CMAKE_CXX_FLAGS_RELEASE} " build type "  ${CMAKE_BUILD_TYPE})
 
 # Download OpenCV automatically using Conan
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
