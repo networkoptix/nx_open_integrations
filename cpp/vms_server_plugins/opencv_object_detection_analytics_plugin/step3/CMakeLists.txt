@@ -1,6 +1,7 @@
 ## Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-cmake_minimum_required(VERSION 3.3.2)
+cmake_minimum_required(VERSION 3.15)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 project(opencv_object_detection_analytics_plugin)
 
 set(metadataSdkVersion "4.2.0 R3")
@@ -11,6 +12,9 @@ if(metadataSdkDir STREQUAL "")
     message(FATAL_ERROR "metadataSdkDir cache variable is undefined.")
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
 # Download OpenCV automatically using Conan
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
@@ -18,25 +22,48 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
        "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-conan_cmake_run(BUILD_TYPE "Release")
-conan_add_remote(NAME nx_open_integrations INDEX 0
-     URL https://networkoptix.jfrog.io/artifactory/api/conan/nx_open_integrations)
-if(UNIX)
-	conan_cmake_run(BASIC_SETUP 
-		PATH_OR_REFERENCE protobuf/3.5.2@bincrafters/stable 
-		REMOTE nx_open_integrations)
-	conan_cmake_run(REQUIRES opencv/4.1.1@networkoptix/stable 
-		BASIC_SETUP)
-elseif(WIN32)
-	if(NOT DEFINED ENV{OPENCV_DIR})
-		message(FATAL_ERROR 
-		"OPENCV_DIR environment variable is undefined.\n"
-		"Download OpenCV pre-built library for Windows from https://sourceforge.net/projects/opencvlibrary/files/4.1.1/opencv-4.1.1-vc14_vc15.exe/download\n"
-		"Follow instruction at https://docs.opencv.org/master/d3/d52/tutorial_windows_install.html")
-	endif()
-	set(OPENCV_DIR $ENV{OPENCV_DIR})
-	find_package(OpenCV REQUIRED PATHS "${OPENCV_DIR}/lib")
+
+if(WIN32)
+    set(CONAN_VS_RUNTIME_MT_SETTING "compiler.runtime=MT")
 endif()
+set(OPENCV_OPTIONS
+	opencv:parallel=False
+	opencv:contrib=False
+	opencv:contrib_freetype=False
+	opencv:contrib_sfm=False
+	opencv:with_jpeg=False 
+	opencv:with_png=False
+	opencv:with_tiff=False
+	opencv:with_jpeg2000=False
+	opencv:with_openexr=False
+	opencv:with_eigen=False
+	opencv:with_webp=False
+	opencv:with_quirc=False
+	opencv:with_cuda=False
+	opencv:with_cublas=False
+	opencv:dnn=True)
+
+if(UNIX)
+	set(OPENCV_OPTIONS 
+		${OPENCV_OPTIONS}
+		opencv:fPIC=True
+		opencv:with_gtk=False
+		opencv:with_cufft=False
+		opencv:with_v4l=False)
+endif()
+
+conan_cmake_run(BUILD_TYPE "Release")
+conan_cmake_configure(REQUIRES opencv/4.1.2
+    GENERATORS cmake_find_package
+    OPTIONS ${OPENCV_OPTIONS}
+    SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING})
+
+conan_cmake_install(PATH_OR_REFERENCE .
+    OPTIONS ${OPENCV_OPTIONS}
+    SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING}
+    BUILD missing)
+
+find_package(OpenCV REQUIRED)
 
 # Download model files
 message("Downloading model files:")
@@ -97,7 +124,6 @@ target_compile_definitions(nx_sdk PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO})
 #--------------------------------------------------------------------------------------------------
 # Define opencv_object_detection_analytics_plugin lib, dynamic, depends on nx_kit and nx_sdk.
 
-
 set(OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR}/*)
@@ -105,15 +131,14 @@ file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
 add_library(opencv_object_detection_analytics_plugin SHARED
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC})
 target_include_directories(opencv_object_detection_analytics_plugin PRIVATE 
-    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR} ${CONAN_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR} ${CONAN_INCLUDE_DIRS})
 set(CMAKE_EXE_LINKER_FLAGS " -static")
 target_link_libraries(opencv_object_detection_analytics_plugin
     nx_kit
     nx_sdk
-    ${CONAN_LIBS}
+    opencv::opencv
    -static-libgcc
-   -static-libstdc++
-   ${OpenCV_LIBS})
+   -static-libstdc++)
 
 target_compile_definitions(opencv_object_detection_analytics_plugin
     PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO}
