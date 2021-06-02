@@ -10,46 +10,85 @@
 
 ## Supported platforms
 
-Ubuntu 18.04, g++-7 compiler.
+Prerequisites:
+    CMake >= 3.15 
+    Conan >= 1.19.1
+    MetaVMS >= 4.2.0.32836 R4
+    Metadata SDK = 4.2.0.32836 R4
 
-At the present moment, this plugin is only compatible with Meta 4.1.0.30142 R2 SDK. The compiled
-plugin is backward compatible with VMS 4.0.
+The plugin has been tested in the following environments.
+
+Ubuntu 18.04, g++-7 compiler.
+Ubuntu 20.04, g++-9 compiler.
+Windows 10, Visual Studio 19.
+
+The compiled plugin is backward compatible with VMS 4.0.
 
 ## Model files
 
 The plugin uses MIT licensed MobileNet SSD model files from https://github.com/chuanqi305/MobileNet-SSD.
 They will be downloaded automatically by CMake.
 
-## Build
+## Building plugins
 
-The plugin requires CMake >= 3.3.2 and Conan >= 1.19.1 to be built.
-
-Conan default profile should be updated to use new CXX11 ABI:
+### Environment vairables
+On Linux
 ```
-conan profile new default --detect #< Ignore the line "ERROR: Profile already exists" if it appears.
-conan profile update settings.compiler.libcxx=libstdc++11 default
+export SERVER_DIR=/opt/networkoptix-metavms/mediaserver
 ```
 
-To build the plugin, cd to the root directory of the plugin (the directory of this readme.md file).
+On Windows
+```
+set SERVER_DIR="c:\Program Files\Network Optix\Nx MetaVMS\mediaserver\
+```
 
-Then build it as an ordinary CMake-based project, supplying the path to the Metadata SDK dir.
+### Building
+Change to the root directory of the plugin (the directory of this readme.md file).
 
-Here is how to build the step 1:
+Build the plugin as an ordinary CMake-based project, supplying the path to the Metadata SDK.
+
+For example, here is how to build the step 1:
 ```
 mkdir build
-cd build/
+cd build
 cmake -DmetadataSdkDir=/PATH_TO_METADATA_SDK/ -DCMAKE_BUILD_TYPE=Release ../step1
-cmake --build .
+cmake --build . --config Release
 ```
 
-For steps 1 and 2 simply copy the resulting library file to the "plugins" directory:
+### Activating plugins
+For steps 1 and 2 simply copy the resulting library binary to the VMS "plugins" directory:
+On Linux
 ```
-sudo cp libopencv_object_detection_analytics_plugin.so /PATH_TO_VMS/bin/plugins/
+sudo systemctl stop networkoptix-metavms-mediaserver
+sudo cp libopencv_object_detection_analytics_plugin.so $SERVER_DIR/bin/plugins/
+sudo systemctl start networkoptix-metavms-mediaserver
 ```
 
-For further steps, remove the library copied on a previous step, and then create the plugin dir and
-copy the resulting library file and model files to it:
+On Windows with Administrator rights
 ```
-sudo mkdir /PATH_TO_VMS/bin/plugins/opencv_object_detection_analytics_plugin
-sudo cp lib/libopencv_object_detection_analytics_plugin.so MobileNetSSD.caffemodel MobileNetSSD.prototxt /PATH_TO_VMS/bin/plugins/opencv_object_detection_analytics_plugin/
+sc stop metavmsMediaServer
+copy Release\opencv_object_detection_analytics_plugin.dll %SERVER_DIR%\plugins\
+sc start metavmsMediaServer
 ```
+
+For further steps, remove the library copied on a previous step, and then create the plugin directory and
+copy there the resulting library file along with model files:
+
+On Linux
+```
+sudo systemctl stop networkoptix-metavms-mediaserver
+sudo rm $SERVER_DIR/bin/plugins/opencv_object_detection_analytics_plugin.so
+sudo mkdir $SERVER_DIR/bin/plugins/opencv_object_detection_analytics_plugin
+sudo cp lib/libopencv_object_detection_analytics_plugin.so MobileNetSSD.caffemodel MobileNetSSD.prototxt $SERVER_DIR/bin/plugins/opencv_object_detection_analytics_plugin/
+sudo systemctl start networkoptix-metavms-mediaserver
+```
+
+On Windows with Administrator rights
+```
+sc stop metavmsMediaServer
+del %SERVER_DIR%\plugins\opencv_object_detection_analytics_plugin.dll
+mkdir %SERVER_DIR%\plugins\opencv_object_detection_analytics_plugin
+copy Release\opencv_object_detection_analytics_plugin.dll MobileNetSSD.caffemodel MobileNetSSD.prototxt %SERVER_DIR%\plugins\opencv_object_detection_analytics_plugin\
+sc start metavmsMediaServer
+```
+
