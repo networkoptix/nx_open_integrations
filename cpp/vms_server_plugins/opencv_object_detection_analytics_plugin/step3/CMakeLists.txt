@@ -4,12 +4,16 @@ cmake_minimum_required(VERSION 3.15)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "4.2.0 R3")
+set(metadataSdkVersion "4.2.0.32836 R4")
 set(metadataSdkDir "" CACHE PATH
     "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
 
 if(metadataSdkDir STREQUAL "")
     message(FATAL_ERROR "metadataSdkDir cache variable is undefined.")
+endif()
+
+if(NOT DEFINED ARTIFACTORY_URL)
+    set(ARTIFACTORY_URL "https://resources.vmsproxy.com/nx_open_integrations")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
@@ -66,19 +70,30 @@ conan_cmake_install(PATH_OR_REFERENCE .
 find_package(OpenCV REQUIRED)
 
 # Download model files
-message("Downloading model files:")
-if (NOT EXISTS ${CMAKE_BINARY_DIR}/MobileNetSSD.caffemodel)
-    message("MobileNetSSD.caffemodel")
-    file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/MobileNetSSD.caffemodel ${CMAKE_BINARY_DIR}/MobileNetSSD.caffemodel SHOW_PROGRESS)
-else()
-    message("MobileNetSSD.caffemodel already exists.")
-endif()
-if (NOT EXISTS ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt)
-    message("MobileNetSSD.prototxt")
-    file(DOWNLOAD https://networkoptix.jfrog.io/artifactory/nx_open_integrations/MobileNetSSD.prototxt ${CMAKE_BINARY_DIR}/MobileNetSSD.prototxt SHOW_PROGRESS)
-else()
-    message("MobileNetSSD.prototxt already exists.")
-endif()
+set(model_file_names
+    MobileNetSSD.caffemodel
+    MobileNetSSD.prototxt
+)
+foreach(model_file_name IN LISTS model_file_names)
+    set(model_file "${CMAKE_BINARY_DIR}/${model_file_name}")
+    list(APPEND model_files "${model_file}")
+    if(NOT EXISTS "${model_file}")
+        message("Downloading ${model_file_name}")
+        file(DOWNLOAD
+            "${ARTIFACTORY_URL}/opencv/${model_file_name}"
+            "${model_file}"
+            SHOW_PROGRESS
+            STATUS DOWNLOAD_STATUS
+        )
+        list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+        if(NOT STATUS_CODE EQUAL 0)
+            file(REMOVE "${model_file}")
+            message(FATAL_ERROR "Error downloading ${ARTIFACTORY_URL}/opencv/${model_file_name}")
+        endif()
+    elseif()
+        message("${model_file_name} already exits")
+    endif()
+endforeach()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -131,7 +146,7 @@ file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
 add_library(opencv_object_detection_analytics_plugin SHARED
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC})
 target_include_directories(opencv_object_detection_analytics_plugin PRIVATE 
-    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR} ${CONAN_INCLUDE_DIRS})
+    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR})
 set(CMAKE_EXE_LINKER_FLAGS " -static")
 target_link_libraries(opencv_object_detection_analytics_plugin
     nx_kit
