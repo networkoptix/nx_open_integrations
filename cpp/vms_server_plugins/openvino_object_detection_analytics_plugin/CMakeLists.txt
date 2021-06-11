@@ -219,11 +219,14 @@ foreach(model_file_name IN LISTS model_file_names)
     set(model_file "${CMAKE_BINARY_DIR}/${model_file_name}")
     list(APPEND model_files "${model_file}")
     if(NOT EXISTS "${model_file}")
+        message("Downloading ${model_file_name}")
         file(DOWNLOAD
-            "https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/openvino_object_detection_analytics_plugin/${model_file_name}"
+            "https://networkoptix.jfrog.io/artifactory/nx_open_integrations/openvino/${model_file_name}"
             "${model_file}"
             SHOW_PROGRESS
         )
+    elseif()
+        message("${model_file_name} already exits")
     endif()
 endforeach()
 
