@@ -23,8 +23,6 @@ Ubuntu 18.04, g++-7 compiler.
 Ubuntu 20.04, g++-9 compiler.
 Windows 10, Visual Studio 19.
 
-The compiled plugin is backward compatible with VMS 4.0.
-
 ## Model files
 
 The plugin uses MIT licensed MobileNet SSD model files from https://github.com/chuanqi305/MobileNet-SSD.
@@ -40,7 +38,7 @@ export SERVER_DIR=/opt/networkoptix-metavms/mediaserver
 
 On Windows
 ```
-set SERVER_DIR="c:\Program Files\Network Optix\Nx MetaVMS\mediaserver\
+set SERVER_DIR="c:\Program Files\Network Optix\Nx MetaVMS\mediaserver"
 ```
 ### Updating conan profile
 Conan default profile should be updated to use CXX11 ABI:
