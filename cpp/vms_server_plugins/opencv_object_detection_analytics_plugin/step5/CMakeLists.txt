@@ -31,41 +31,45 @@ if(WIN32)
     set(CONAN_VS_RUNTIME_MT_SETTING "compiler.runtime=MT")
 endif()
 set(OPENCV_OPTIONS
-	opencv:parallel=False
-	opencv:contrib=False
-	opencv:contrib_freetype=False
-	opencv:contrib_sfm=False
-	opencv:with_jpeg=False 
-	opencv:with_png=False
-	opencv:with_tiff=False
-	opencv:with_jpeg2000=False
-	opencv:with_openexr=False
-	opencv:with_eigen=False
-	opencv:with_webp=False
-	opencv:with_quirc=False
-	opencv:with_cuda=False
-	opencv:with_cublas=False
-	opencv:dnn=True)
+    opencv:parallel=False
+    opencv:contrib=True
+    opencv:contrib_freetype=False
+    opencv:contrib_sfm=False
+    opencv:with_jpeg=False 
+    opencv:with_png=False
+    opencv:with_tiff=False
+    opencv:with_jpeg2000=False
+    opencv:with_openexr=False
+    opencv:with_eigen=False
+    opencv:with_webp=False
+    opencv:with_quirc=False
+    opencv:with_cuda=False
+    opencv:with_cublas=False
+    opencv:dnn=True
+)
 
 if(UNIX)
-	set(OPENCV_OPTIONS 
-		${OPENCV_OPTIONS}
-		opencv:fPIC=True
-		opencv:with_gtk=False
-		opencv:with_cufft=False
-		opencv:with_v4l=False)
+    set(OPENCV_OPTIONS 
+        ${OPENCV_OPTIONS}
+        opencv:fPIC=True
+        opencv:with_gtk=False
+        opencv:with_cufft=False
+        opencv:with_v4l=False
+    )
 endif()
 
 conan_cmake_run(BUILD_TYPE "Release")
 conan_cmake_configure(REQUIRES opencv/4.1.2
     GENERATORS cmake_find_package
     OPTIONS ${OPENCV_OPTIONS}
-    SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING})
+    SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING}
+)
 
 conan_cmake_install(PATH_OR_REFERENCE .
     OPTIONS ${OPENCV_OPTIONS}
     SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING}
-    BUILD missing)
+    BUILD missing
+)
 
 find_package(OpenCV REQUIRED)
 
@@ -146,14 +150,16 @@ file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
 add_library(opencv_object_detection_analytics_plugin SHARED
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC})
 target_include_directories(opencv_object_detection_analytics_plugin PRIVATE 
-    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR} ${CONAN_INCLUDE_DIRS})
+    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR})
 set(CMAKE_EXE_LINKER_FLAGS " -static")
 target_link_libraries(opencv_object_detection_analytics_plugin
     nx_kit
     nx_sdk
-    opencv::opencv
+    opencv::core opencv::flann opencv::imgproc opencv::imgcodecs opencv::dnn opencv::opencv_dnn opencv::ml 
+    opencv::plot opencv::opencv_features2d opencv::opencv_calib3d opencv::datasets opencv::video opencv::tracking
    -static-libgcc
-   -static-libstdc++)
+   -static-libstdc++
+)
 
 target_compile_definitions(opencv_object_detection_analytics_plugin
     PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO}
