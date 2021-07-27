@@ -220,7 +220,7 @@ foreach(model_file_name IN LISTS model_file_names)
     list(APPEND model_files "${model_file}")
     if(NOT EXISTS "${model_file}")
         file(DOWNLOAD
-            "https://dl.bintray.com/networkoptix/nx_analytics_plugins_models/openvino_object_detection_analytics_plugin/${model_file_name}"
+            "https://resources.vmsproxy.com/nx_open_integrations/openvino/${model_file_name}"
             "${model_file}"
             SHOW_PROGRESS
         )
