@@ -15,10 +15,11 @@ Prerequisites:
     Conan >= 1.19.1
     MetaVMS >= 4.2.0.32836 R4
     Metadata SDK = 4.2.0.32836 R4
-
+    g++ compiler >= 8
+    
 The plugin has been tested in the following environments.
 
-Ubuntu 18.04, g++-7 compiler.
+Ubuntu 18.04, g++-8 compiler.
 Ubuntu 20.04, g++-9 compiler.
 Windows 10, Visual Studio 19.
 
