@@ -1,7 +1,6 @@
 import requests
 from datetime import datetime
 import json
-from pprint import pprint
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -85,19 +84,17 @@ def main():
         print('Expired token')
         exit(1)
 
+    filename = 'FILENAME'  # replace FILENAME with your backup file
+    with open(f'{filename}', 'r') as recovery:
+        recovery_file = recovery.read()
+
     get_method_header = create_header(primary_token)
-    system_backup = request_api(LOCAL_URL, f'/rest/v1/system/database', 'GET', verify=False,
-                              headers=get_method_header)
+    request_api(LOCAL_URL, f'/rest/v1/system/database', 'POST', verify=False,
+                                headers={**get_method_header, 'Content-type':'application/json'}, data=recovery_file)
     delete_method_header = create_header(secondary_token)
 
     request_api(LOCAL_URL, f'/rest/v1/login/sessions/{secondary_token}', 'DELETE', verify=False,
                 headers=delete_method_header)
-
-    backup_time = datetime.now().strftime('%m-%d-%Y-%H-%M-%S')
-
-    with open(f'systembackup_{backup_time}.json', 'w+') as backup:
-        json.dump(system_backup, backup)
-        backup.seek(0)
 
 if __name__ == '__main__':
     main()

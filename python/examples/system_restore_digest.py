@@ -1,12 +1,13 @@
 import requests
 import urllib3
+import json
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USERNAME = 'admin'  # local account username
 PASSWORD = 'pass123'  # local account password
-URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
-URI = '/ec2/restoreDatabase'  # API request URI
-METHOD = 'POST'  # API request method
+SERVER_URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
+API_URI = '/ec2/restoreDatabase'  # API request URI
+API_METHOD = 'POST'  # API request method
 
 
 def check_status(request, verbose):
@@ -30,9 +31,10 @@ def request_api(url, uri, method, **kwargs):
 
 
 def main():
-    with open(f'FILENAME.json', 'r') as recovery: #replace FILENAME with your backup file
+    filename = 'FILENAME'  # replace FILENAME with your backup file
+    with open(f'{filename}', 'r') as recovery:
         recovery_file = recovery.read()
-    request_api(URL, URI, METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False,
+    request_api(SERVER_URL, API_URI, API_METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False,
                                 headers={'Content-type':'application/json'}, data=recovery_file)
 
 if __name__ == '__main__':

@@ -6,9 +6,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USERNAME = 'admin'  # local account username
 PASSWORD = 'pass123'  # local account password
-URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
-URI = '/ec2/dumpDatabase'  # API request URI
-METHOD = 'GET'  # API request method
+SERVER_URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
+API_URI = '/ec2/dumpDatabase'  # API request URI
+API_METHOD = 'GET'  # API request method
 
 
 def check_status(request, verbose):
@@ -32,11 +32,9 @@ def request_api(url, uri, method, **kwargs):
 
 
 def main():
-   system_backup = request_api(URL, URI, METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False)
-
+   system_backup = request_api(SERVER_URL, API_URI, API_METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False)
    backup_time = datetime.now().strftime('%m-%d-%Y-%H-%M-%S')
-
-   with open(f'systembackup_{backup_time}.json', 'w+') as backup:
+   with open(f'systembackup_{backup_time}.bin', 'w+') as backup:
         json.dump(system_backup, backup)
         backup.seek(0)
 
