@@ -1,6 +1,7 @@
 import requests
 import urllib3
 import json
+import base64
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USERNAME = 'admin'  # local account username
@@ -32,8 +33,9 @@ def request_api(url, uri, method, **kwargs):
 
 def main():
     filename = 'FILENAME'  # replace FILENAME with your backup file
-    with open(f'{filename}', 'r') as recovery:
+    with open(f'{filename}', 'br') as recovery:
         recovery_file = recovery.read()
+        recovery_file = json.dumps({"data": base64.b64encode(recovery_file).decode()})
     request_api(SERVER_URL, API_URI, API_METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False,
                                 headers={'Content-type':'application/json'}, data=recovery_file)
 

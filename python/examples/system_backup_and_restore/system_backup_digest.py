@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 import json
+import base64
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -34,9 +35,8 @@ def request_api(url, uri, method, **kwargs):
 def main():
    system_backup = request_api(SERVER_URL, API_URI, API_METHOD, auth=requests.auth.HTTPDigestAuth(USERNAME, PASSWORD), verify=False)
    backup_time = datetime.now().strftime('%m-%d-%Y-%H-%M-%S')
-   with open(f'systembackup_{backup_time}.bin', 'w+') as backup:
-        json.dump(system_backup, backup)
-        backup.seek(0)
+   with open(f'systembackup_{backup_time}.db', 'bw') as backup:
+       backup.write(base64.b64decode(system_backup["data"]))
 
 if __name__ == '__main__':
    main()

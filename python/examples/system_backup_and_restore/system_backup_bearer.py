@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import json
 import urllib3
+import base64
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USERNAME = 'admin'  # local account username
@@ -94,9 +95,8 @@ def main():
 
     backup_time = datetime.now().strftime('%m-%d-%Y-%H-%M-%S')
 
-    with open(f'systembackup_{backup_time}.bin', 'w+') as backup:
-        json.dump(system_backup, backup)
-        backup.seek(0)
+    with open(f'systembackup_{backup_time}.db', 'bw') as backup:
+        backup.write(base64.b64decode(system_backup["data"]))
 
 if __name__ == '__main__':
     main()

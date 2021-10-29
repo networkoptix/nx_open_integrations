@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import json
 import urllib3
+import base64
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 USERNAME = 'admin'  # local account username
@@ -85,8 +86,9 @@ def main():
         exit(1)
 
     filename = 'FILENAME'  # replace FILENAME with your backup file
-    with open(f'{filename}', 'r') as recovery:
+    with open(f'{filename}', 'br') as recovery:
         recovery_file = recovery.read()
+        recovery_file = json.dumps({"data": base64.b64encode(recovery_file).decode()})
 
     get_method_header = create_header(primary_token)
     request_api(LOCAL_URL, f'/rest/v1/system/database', 'POST', verify=False,
