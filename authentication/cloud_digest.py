@@ -10,11 +10,11 @@ API_METHOD = 'GET'  # API request method
 
 
 def check_status(response, verbose):
-    if request.status_code == requests.codes.ok:
+    if response.status_code == response.codes.ok:
         if verbose:
-            print("Request successful\n{0}".format(request.text))
+            print("Request successful\n{0}".format(response.text))
         return True
-    print(request.url + " Request error {0}\n{1}".format(request.status_code, request.text))
+    print(response.url + " Request error {0}\n{1}".format(response.status_code, response.text))
     return False
 
 
