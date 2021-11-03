@@ -63,12 +63,10 @@ def create_header(bearer_token):
 def print_system_info(response):
     if 'reply' in response:
         system_info = response['reply']
-        number_of_servers = len(system_info)
-        system_name = system_info[0]['systemName']
     else:
         system_info = response
-        number_of_servers = len(system_info)
-        system_name = system_info[0]['systemName']
+    number_of_servers = len(system_info)
+    system_name = system_info[0]['systemName']
     print(f'System {system_name} contains {number_of_servers} server(s):')
     pprint(system_info)
 
