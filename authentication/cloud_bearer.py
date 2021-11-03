@@ -49,18 +49,14 @@ def is_cloud_user(api_response):
 
 def create_payload(cloud_system_id=None):
     if cloud_system_id is not None:
-        return {
-            'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
-            'scope': f'cloudSystemId={cloud_system_id}',
-            'username': CLOUD_USER, 'password': CLOUD_PASSWORD
-        }
-
+        scope = f'cloudSystemId={cloud_system_id}'
     else:
-        return {
-            'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
-            'scope': f'https://nxvms.com/cdb/oauth2/',
-            'username': CLOUD_USER, 'password': CLOUD_PASSWORD
-        }
+        scope = f'https://nxvms.com/cdb/oauth2/'
+    return {
+        'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
+        'scope': scope,
+        'username': CLOUD_USER, 'password': CLOUD_PASSWORD
+    }
 
 
 def get_token(api_response):
