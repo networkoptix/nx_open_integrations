@@ -48,7 +48,7 @@ def main():
                             auth=HTTPDigestAuth(USERNAME, PASSWORD),
                             verify=False)
     # poll the search process status untill camera(s) found or timeout exeeded
-    time_spent = 0
+    start_time = time.time()
     while True:
         search_status = request_api(SERVER_URL,
                                 f'/api/manualCamera/status?uuid={search_data["reply"]["processUuid"]}', 
@@ -58,8 +58,7 @@ def main():
         if search_status["reply"]["cameras"] != []:
             break
         time.sleep(1)
-        time_spent += 1
-        if time_spent > search_timeout:
+        if time.time() - start_time > search_timeout:
             print("Timeout exeeded. No camera found.")
             exit(1)
             
