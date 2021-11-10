@@ -38,22 +38,22 @@ def main():
     camera_user, camera_password = camera_creds.split(":")
 
     server_creds, server_address = args.server_data.split("@")
-    SERVER_URL = f'https://{server_address}'
-    USERNAME, PASSWORD = server_creds.split(":")
+    server_url = f'https://{server_address}'
+    username, password = server_creds.split(":")
     
-    API_URI = f'/api/manualCamera/search?start_ip={camera_ip}&user={camera_user}&password={camera_password}'
-    search_data = request_api(SERVER_URL,
-                            API_URI, 
+    api_url = f'/api/manualCamera/search?start_ip={camera_ip}&user={camera_user}&password={camera_password}'
+    search_data = request_api(server_url,
+                            api_url, 
                             'GET', 
-                            auth=HTTPDigestAuth(USERNAME, PASSWORD),
+                            auth=HTTPDigestAuth(username, password),
                             verify=False)
     # poll the search process status untill camera(s) found or timeout exeeded
     start_time = time.time()
     while True:
-        search_status = request_api(SERVER_URL,
+        search_status = request_api(server_url,
                                 f'/api/manualCamera/status?uuid={search_data["reply"]["processUuid"]}', 
                                 'GET', 
-                                auth=HTTPDigestAuth(USERNAME, PASSWORD),
+                                auth=HTTPDigestAuth(username, password),
                                 verify=False)
         if search_status["reply"]["cameras"] != []:
             break
@@ -73,17 +73,17 @@ def main():
             )
          ]
     )
-    add_status = request_api(SERVER_URL,
+    add_status = request_api(server_url,
                             f'/api/manualCamera/add', 
                             'POST', 
-                            auth=HTTPDigestAuth(USERNAME, PASSWORD),
+                            auth=HTTPDigestAuth(username, password),
                             data = json.dumps(camera_data),
                             verify=False)                          
     
-    stop_status = request_api(SERVER_URL,
+    stop_status = request_api(server_url,
                             f'/api/manualCamera/stop?uuid={search_data["reply"]["processUuid"]}', 
                             'GET', 
-                            auth=HTTPDigestAuth(USERNAME, PASSWORD),
+                            auth=HTTPDigestAuth(username, password),
                             verify=False)                          
 
 if __name__ == '__main__':
