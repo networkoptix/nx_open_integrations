@@ -9,7 +9,7 @@ LOCAL_URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
 
 
 def check_status(response, verbose):
-    if response.status_code == response.codes.ok:
+    if response.status_code == requests.codes.ok:
         if verbose:
             print("Request successful\n{0}".format(response.text))
         return True

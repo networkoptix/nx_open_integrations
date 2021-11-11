@@ -9,7 +9,7 @@ CLOUD_URL = 'https://' + CLOUD_DOMAIN_NAME
 
 
 def check_status(response, verbose):
-    if response.status_code == response.codes.ok:
+    if response.status_code == requests.codes.ok:
         if verbose:
             print("Request successful\n{0}".format(response.text))
         return True
@@ -48,15 +48,15 @@ def is_cloud_user(api_response):
 
 
 def create_payload(cloud_system_id=None):
-    if cloud_system_id is not None:
-        scope = f'cloudSystemId={cloud_system_id}'
-    else:
-        scope = f'https://nxvms.com/cdb/oauth2/'
-    return {
+    scope = f'https://nxvms.com/cdb/oauth2/'
+    payload = {
         'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
         'scope': scope,
         'username': CLOUD_USER, 'password': CLOUD_PASSWORD
     }
+    if cloud_system_id is not None:
+        payload['scope'] = f'cloudSystemId={cloud_system_id}'
+    return payload
 
 
 def get_token(api_response):
