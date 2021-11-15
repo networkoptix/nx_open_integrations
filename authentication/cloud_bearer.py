@@ -48,7 +48,7 @@ def is_cloud_user(api_response):
 
 
 def create_payload(cloud_system_id=None):
-    scope = f'https://nxvms.com/cdb/oauth2/'
+    scope = ''
     payload = {
         'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
         'scope': scope,
