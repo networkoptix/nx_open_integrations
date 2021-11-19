@@ -1,7 +1,7 @@
 import requests
 import time
 from pprint import pprint
-from requests.auth import HTTPBasicAuth, HTTPDigestAuth
+from requests.auth import HTTPDigestAuth
 from argparse import ArgumentParser
 import json
 
@@ -53,7 +53,7 @@ def main():
                             'GET', 
                             auth=HTTPDigestAuth(username, password),
                             verify=False)
-    # poll the search process status untill camera(s) found or timeout exeeded
+    # poll the search process status until camera(s) found or timeout exceeded
     start_time = time.time()
     while True:
         search_status = request_api(server_url,
@@ -65,11 +65,11 @@ def main():
             break
         time.sleep(1)
         if time.time() - start_time > search_timeout:
-            print("Timeout exeeded. No camera found.")
+            print("Timeout exceeded. No camera found.")
             exit(1)
  
-    # adding a RTSP stream
-    # for RTSP stream parameter names and HTTP method differ
+    # adding an RTSP stream
+    # for RTSP stream parameters names and HTTP method differ
     if is_stream:
         stream_data = dict(
             user = camera_user,
@@ -79,11 +79,11 @@ def main():
             manufacturer0=search_status["reply"]["cameras"][0]["manufacturer"]
         )
         add_status = request_api(server_url,
-                                f'/api/manualCamera/add', 
-                                'GET', 
+                                f'/api/manualCamera/add',
+                                'GET',
                                 auth=HTTPDigestAuth(username, password),
                                 params = stream_data,
-                                verify=False)       
+                                verify=False)
     else: # adding a camera
         camera_data = dict(
             user = camera_user,
@@ -106,6 +106,6 @@ def main():
                             f'/api/manualCamera/stop?uuid={search_data["reply"]["processUuid"]}', 
                             'GET', 
                             auth=HTTPDigestAuth(username, password),
-                            verify=False)  
+                            verify=False)
 if __name__ == '__main__':
     main()
