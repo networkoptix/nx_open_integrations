@@ -48,10 +48,8 @@ def is_cloud_user(api_response):
 
 
 def create_payload(cloud_system_id=None):
-    scope = ''
     payload = {
         'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
-        'scope': scope,
         'username': CLOUD_USER, 'password': CLOUD_PASSWORD
     }
     if cloud_system_id is not None:
