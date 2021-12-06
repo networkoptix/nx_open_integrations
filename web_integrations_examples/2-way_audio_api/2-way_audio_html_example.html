@@ -1,0 +1,153 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Upload Files</title>
+</head>
+<body>
+    Server: <input type="text" id="server" size="40" value="localhost:7001"><br>
+    User: <input type="text" id="user" size="40" value="admin"><br>
+    Password: <input type="text" id="pass" size="40" value="qweasd234"><br>
+    Camera ID: <input type="text" id="camera_id" size="40" value="2a4717bb-1d3e-4878-a28b-af4eaedbfb89"><br>
+
+    <h2>Mic</h2>
+    <input type="button" value="Connect" onclick="connectMic()" />
+    <br>
+    <input type="button" value="Mic" onclick="initWebAudio()" />
+    <br>
+    <br>
+
+    <h2>File Upload</h2>
+    <input type="file" id="filename" />
+    <br>
+    <input type="button" value="Connect" onclick="connectFile()" />
+    <br>
+    <input type="button" value="Upload" onclick="sendFile()" />
+    <br>
+    <input type="button" value="close" onclick="close()" />
+    <br>
+    <h2>Audio from camera(update camera ID in url manually)</h2>
+    <audio controls="controls">
+      <source src="http://localhost:7001/media/2a4717bb-1d3e-4878-a28b-af4eaedbfb89.webm?audio_only" type="audio/aac">
+    </audio>
+
+
+    <script>
+
+    var ws;
+    function close()
+    {
+        ws.close();
+    }
+    function urlPrefix() {
+        return url = "ws://"
+            + document.getElementById('user').value + ":"
+            + document.getElementById('pass').value + "@"
+            + document.getElementById('server').value + "/api/http_audio?camera_id=";
+    }
+    function connectFile() {
+        var url = urlPrefix() + document.getElementById('camera_id').value;
+        connect(url);
+    }
+    function connectMic() {
+        var url = urlPrefix() + document.getElementById('camera_id').value + "&format=f32le&sample_rate=44100&channels=1";
+        connect(url);
+    }
+
+    function connect(url) {
+        console.log("connect to", url);
+        ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+        ws.onopen = function() {
+            console.log("connected");
+        };
+        ws.onclose = function() {
+            console.log("Connection is closed...");
+        };
+        ws.onerror = function(e) {
+            console.log("Websocket error: " + e.msg);
+        }
+
+    }
+    function sendFile() {
+        var file = document.getElementById('filename').files[0];
+        var reader = new FileReader();
+        var rawData = new ArrayBuffer();
+        reader.loadend = function() {
+        }
+
+        reader.onload = function(e) {
+            rawData = e.target.result;
+            ws.send(rawData);
+            //ws.close();
+            alert("the File has been transferred.")
+        }
+
+        reader.readAsArrayBuffer(file);
+
+    }
+
+    var initWebAudio = function () {
+        var audioContext = new AudioContext();
+        console.log("audio is starting up ...");
+        var BUFF_SIZE = 16384;
+        var audioInput = null,
+            microphoneStream = null,
+            gainNode = null,
+            scriptProcessorNode = null,
+            script_processor_fft_node = null,
+            analyserNode = null;
+
+        if (!navigator.getUserMedia)
+                navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                            navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        if (navigator.getUserMedia){
+            navigator.getUserMedia({audio:true},
+            function(stream) {
+                startMicrophone(stream);
+            },
+            function(e) {
+                alert('Error capturing audio.');
+            }
+            );
+
+        } else { alert('getUserMedia not supported in this browser.'); }
+
+        // ---
+
+        function processMicrophoneBuffer(event) { // invoked by event loop
+
+            var i, N, inp, microphone_output_buffer;
+
+            if (ws.readyState != WebSocket.OPEN) {
+                console.log("connection closed");
+                gainNode.disconnect(audioContext.destination);
+                microphoneStream.disconnect(gainNode);
+                return;
+            }
+            microphone_output_buffer = event.inputBuffer.getChannelData(0); // just mono - 1 channel for now
+            console.log("sample rate(update in url if differ)", event.inputBuffer.sampleRate);
+            ws.send(microphone_output_buffer);
+        }
+
+        function startMicrophone(stream){
+            console.log("microphone is starting up ...");
+            gainNode = audioContext.createGain();
+            gainNode.connect( audioContext.destination );
+
+            microphoneStream = audioContext.createMediaStreamSource(stream);
+            microphoneStream.connect(gainNode);
+
+            scriptProcessorNode = audioContext.createScriptProcessor(BUFF_SIZE, 1, 1);
+            scriptProcessorNode.onaudioprocess = processMicrophoneBuffer;
+            scriptProcessorNode.connect(gainNode);
+
+            microphoneStream.connect(scriptProcessorNode);
+
+        }
+
+    }; //  initWebAudio = function()
+
+    </script>
+</body>
+</html>

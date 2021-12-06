@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        margin: 0;
+        background: black;
+      }
+
+      video {
+        width: 100%;
+      }
+
+      .d-flex {
+        display: flex;
+      }
+
+      .d-none {
+        display: none !important;
+      }
+
+      .flex-1 {
+        flex: 1;
+      }
+
+      .h-0 {
+        max-height: 0 !important;
+      }
+
+      .hw-100 {
+        height: 100%;
+        width: 100%;
+      }
+
+      .player {
+        flex: 1;
+        max-height: calc(100vh - 44px);
+      }
+
+      .src-ctrl {
+        width:  100%;
+        align-self: center;
+      }
+
+      .wrapper {
+        display:  flex;
+        align-content: center;
+        justify-content: center;
+      }
+
+      .vjs-loading-spinner {
+        display: flex !important;
+      }
+
+      .vjs-text-track-display,
+      .vjs-big-play-button,
+      .vjs-control-bar,
+      .vjs-control-text,
+      .vjs-error-display {
+      display:  none !important;
+      }
+    </style>
+    <link href="https://unpkg.com/video.js@7.0.0/dist/video-js.css" rel="stylesheet">
+    <script src="https://unpkg.com/video.js@7.0.0/dist/video.min.js"></script>
+  </head>
+  <body>
+    <div id="src-wrapper" class="wrapper flex-1">
+      <div class="d-flex src-ctrl">
+        <input class="flex-1" placeholder="https://localhost:7001" />
+        <button id="update-src">Change source</button>
+      </div>
+    </div>
+
+    <div id="player-wrapper" class="wrapper player h-0">
+        <video id="my-player"></video>
+    </div>
+
+    <div class="wrapper">
+      <button id="toggle-btn" class="d-none">Toggle Play</button>
+    </div>
+    <script type="module">
+      window.VIDEOJS_NO_DYNAMIC_STYLE = true;
+      const updateSrc = () => {
+        const src = input.value;
+        const type = src.includes('m3u8') ? 'application/x-mpegURL': 'video/webm';
+        toggleButton.classList.remove('d-none');
+        document.getElementById('src-wrapper').classList.remove('flex-1');
+        document.getElementById('player-wrapper').classList.remove('h-0');
+        player.src({ src, type });
+        player.load();
+        player.play();
+      };
+
+      const input = document.querySelector('input');
+      const source = document.querySelector('source');
+      const srcButton = document.getElementById('update-src');
+      const toggleButton = document.getElementById('toggle-btn');
+
+      const player = videojs('my-player', {}, function onPlayerReady() {
+        videojs.log('Your player is ready!');
+        this.on('error', () => {
+          videojs.log('an error occured')
+        })
+        this.on('ended', () => {
+          videojs.log('its over now')
+        });
+      });
+
+      player.addClass('d-flex');
+      player.addClass('hw-100');
+
+      input.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.stopPropagation();
+          updateSrc();
+        }
+      });
+      srcButton.addEventListener('click', updateSrc);
+      toggleButton.addEventListener('click', () => {
+        player.paused() ? player.play() : player.pause();
+      });
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.10.0/js/md5.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+crossorigin="anonymous"></script>
+<video  id="video" controls></video>
+
+<script>
+var username = 'user@example.com';\
+var password = 'password123';
+var cameraId = 'a02d3776-a7eb-faea-97d5-6251c1694151';
+var systemId = '3770508e-569a-423b-a61a-a85abb0ffff2';
+var serverCloudAddress = "https://" + systemId + ".relay.vmsproxy.com";
+var serverLocalAddress = "https://127.0.0.1:7001";
+var serverAddress = serverCloudAddress; // serverLocalAddress;
+
+function step1GenerateKey() {
+
+    $.ajax({
+
+        url: serverAddress + "/api/getNonce",
+        type: "GET",
+        success: function(response) {
+            var realm = response.reply.realm;
+            var nonce = response.reply.nonce;
+            var digest = md5(username + ":" + realm + ":" + password);
+            var partial_ha2 = md5("GET" + ":");
+            var simplified_ha2 = md5(digest + ":" + nonce + ":" + partial_ha2);
+            var authKey = btoa(username + ":" + nonce + ":" + simplified_ha2);
+            step2GenerateVideoUrl(authKey); // This key can be used in URL now
+        }
+    });
+}
+
+function step2GenerateVideoUrl(authKey) {
+    var cameraURL = serverAddress + '/hls/' + cameraId + '.m3u8?lo&auth=' + authKey;
+    console.log(cameraURL); // this URL can be tested with VLC player for verification. VLC should not ask for additional credentials
+    step3InitPlayer(cameraURL);
+}
+
+function step3InitPlayer(cameraURL) {
+
+    var video = document.getElementById('video');
+
+    if (Hls.isSupported()) {
+
+        var hls = new Hls();
+        hls.loadSource(cameraURL);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+
+            video.play();
+
+        });
+    }
+}
+
+step1GenerateKey();
+</script>
