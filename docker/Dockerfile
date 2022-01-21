@@ -1,31 +1,39 @@
-FROM ubuntu:18.04
-# Takes the customization and applies it as a build ARG and an ENV so it can be passed to the entrypoint
+# Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-# This will override our EULA check.
+FROM ubuntu:20.04
+LABEL maintainer "Network Optix <support@networkoptix.com>"
+
+# VMS Server debian package file or URL.
+ARG MEDIASERVER_DEB="http://updates.networkoptix.com/default/4.2.0.32840/linux/nxwitness-server-4.2.0.32840-linux64.deb"
+
+# VMS Server user and directory name.
+ARG COMPANY="networkoptix"
+# Also export as environment variable to use at entrypoint.
+ENV COMPANY=${COMPANY}
+
+# Disable EULA dialogs and confirmation prompts in installers.
 ENV DEBIAN_FRONTEND noninteractive
 
-# This is the deb file used to install mediaserver
-ARG mediaserver_deb
-ARG cust
+# Copy the .deb file into the container.
+ADD "${MEDIASERVER_DEB}" /opt/mediaserver/package/
 
-# Make a location to copy in the deb filee
-RUN mkdir /debs
+# Install packages.
+RUN apt-get update && \
+    apt-get install -y \
+        apt-utils \
+        binutils \
+        curl \
+        /opt/mediaserver/package/${MEDIASERVER_DEB##*/} && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy the deb file into the container
-COPY "${mediaserver_deb}" /debs/
+# Fix permissions.
+RUN chown ${COMPANY}: /opt/${COMPANY}/mediaserver/var/
 
-# Install the mediaserver and give user permissions for root-tool
+ADD entrypoint.sh /opt/mediaserver/
 
-RUN apt-get update \
-    && apt-get install -y \/debs/${mediaserver_deb} sudo \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/ \
-    && echo "${cust} ALL = NOPASSWD: /opt/${cust}/mediaserver/bin/entrypoint.sh, /opt/${cust}/mediaserver/bin/root-tool-bin" > /etc/sudoers.d/${cust}
-# Move the entrypoint script into the container
-COPY entrypoint.sh /opt
-# Set the user to run the commands to the networkoptix user created on installation
-USER ${CUSTOMIZATION}
-ENV CUSTOMIZATION ${cust}
+USER ${COMPANY}
+WORKDIR /home/${COMPANY}
 
-# Runs the media server and root-tool on container start
-ENTRYPOINT ["/bin/sh", "-c", "/opt/entrypoint.sh ${CUSTOMIZATION}"]
+# Runs the media server on container start unless argument(s) specified.
+ENTRYPOINT ["/opt/mediaserver/entrypoint.sh"]

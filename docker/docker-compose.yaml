@@ -1,12 +1,31 @@
 # Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-version: '3'
+version: "3"
 services:
-  webapp:
-    image: mediaserver
+  mediaserver:
+    build:
+      context: .
+      args:
+        COMPANY: "${COMPANY}"
+        MEDIASERVER_DEB: "${MEDIASERVER_URL}"
+    image: "nxwitness-server:${COMPANY}-${MEDIASERVER_VERSION}"
+    user: "${COMPANY}"
     ports:
-      - "7001:7001"
-    network_mode: "bridge"
+      - "${PORTS}"
+    # To use the host network mode, comment out the ports above and uncomment the line below.
+    # network_mode: "host"
     volumes:
-      - ~/video:/recordings
-      - ~/data/:/opt/networkoptix/mediaserver/var
+      - ${VOLUMES_PATH}/etc:/opt/${COMPANY}/mediaserver/etc
+      - ${VOLUMES_PATH}/var:/opt/${COMPANY}/mediaserver/var
+      - ${VOLUMES_PATH}/nx_ini:/home/${COMPANY}/.config/nx_ini
+      - ${VOLUMES_PATH}/entrypoint.d:/opt/mediaserver/entrypoint.d
+      - ${VOLUMES_PATH}/recordings:/recordings
+      - ${VOLUMES_PATH}/tmp:/tmp
+
+  mediaserver-root-tool:
+    image: "nxwitness-server:${COMPANY}-${MEDIASERVER_VERSION}"
+    user: "root"
+    # root-tool-bin is for versions < 4.3, root-tool is for versions >= 4.3.
+    command: ["/opt/${COMPANY}/mediaserver/bin/root-tool-bin"]
+    volumes:
+      - ${VOLUMES_PATH}/tmp:/tmp

@@ -29,70 +29,70 @@ issues in future releases.
 
 Building an image from current directory
 
-You can use build.sh utility:
+Recommended way is to use [docker-compose](https://docs.docker.com/compose/) utility.
+Follow [Installation guide](https://docs.docker.com/compose/install/).
+
+
+Review [build environment configuration](.env). Build image:
 
 ```bash
-# Building from existing debian package. It will copy it to the build folder and build the image.
-build.sh ~/Downloads/nxwitness-server-4.0.0.28737-linux64-beta-test.deb
-
-# Or using url. It will download the debian package and build the image.
-build.sh https://beta.networkoptix.com/beta-builds/default/28608/linux/nxwitness-server-4.0.0.28608-linux64-beta-prod.deb
+docker-compose build
 ```
-| Parameter | Effect |
-| --------- | ------ |
-| -d --deb <path to deb file> | Uses deb file as a source. |
-| -b --build <path to build folder> | Uses build folder as a source. |
-| -c --cust <customization name> | Changes the customization to the desired one. |
-| -u --url <url to download> | Uses URL as a source for debian file. Will automatically set customization based on url.|
-| -n --name <name> |   Sets the name for the container.  Default is 'mediaserver'. |
-| -h --host <new cloud host url> | Changes the cloud host.  This is for testing purposes. |
-| -v --verbose | Gives verbose output when run. |
-
-The script will use current directory as a docker workspace. It also copies necessary 
-files (deb package) to this folder.
-
-You can use docker directly:
-
-```bash
-docker build -t mediaserver --build-arg mediaserver_deb=path_to_mediaserver.deb .
-```
-
-It will fetch all necessary layers and build docker image with name `mediaserver`.
 
 ## Running ##
 
-Running it:
+If a host is already running a VMS Server in the traditional way, port setting have to be different
+for the container Server and the Server on a host. Also, make sure you don't have too many Docker
+images filing up the space. Even if the Desktop Client sees that the mounted directory has space
+but is filled with other things, it may claim the storage location inaccessible and show "Invalid
+Storage" on the Storage Management tab in Server Settings.
 
-```bash
-sudo docker run -d --name mediaserver1 -t mediaserver
-```
+The docker-compose.yaml file will give you one storage location for video. If you want more storage
+locations, you will need to mount additional volumes to the container. Note that these need to be
+separate volumes on the host as well.
 
-OR
+Volumes are required to configure the Sever and save its state data.
 
-You can use the docker-compose file which has the run parameters set, and will provide 
-volumes for persistent database and video storage.
+### Volumes description: ###
 
-If you are already running a Nx Server on host in the traditional way, you will either want to 
-change the port setting of your server or update the port setting in the docker-compose.yaml file.
-Make sure you don't have too many Docker images filing up space either. Even if the Nx Desktop 
-client sees that the mounted directory has space but is filled with other things, it may claim the 
-storage location is inaccessible and show Invalid storage on the Storage Management tab in Server Settings.
-
-The docker-compose.yaml file will give you one storage location for video. If you want more storage 
-locations you will need to mount additional volumes to the container.  Note that these need to be 
-separate volumes on the host as well. 
-
-### For example: ###
-
-| Mount location | Effect |
-| -------------- | ------- |
-| ./video:/recordings | Mounts video storage on the volume ./video as /recordings in the Docker container. |
-| ./data/:/opt/networkoptix/mediaserver/var | Mounts DB storage on the volume ./data as /opt/networkoptix/mediaserver/var in the Docker container. |
-| /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2:/dock2 | Mounts /media/user/f9b06bbd-8d74-4bb6-a7f3-2799223ec517/video2 as /dock2 in the Docker container. |
-| /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3:/dock3 | Mounts /media/user/c84fcf04-bc47-47ee-8e47-5c4f15822e8b/video3 as /dock3 in Docker container. |
+| Default source mount location | Description               | Container mount point             |
+| ----------------------------- | ------------------------- | --------------------------------- |
+| /srv/mediaserver/entrypoind.d | User init scripts         | /opt/mediaserver/entrypoint.d     |
+| /srv/mediaserver/etc          | Configuration             | /opt/networkoptix/mediaserver/etc |
+| /srv/mediaserver/nx_ini       | Additional configuration  | /home/${COMPANY}/.config/nx_ini   |
+| /srv/mediaserver/recordings   | Video storage             | /recordings                       |
+| /srv/mediaserver/var          | State and logs            | /opt/networkoptix/mediaserver/var |
+| /srv/mediaserver/tmp          | Unix socket and tmp files | /opt/networkoptix/mediaserver/tmp |
 
 Note that the video storage location, if modified, needs to be short. Changing the name 
 is fine but changing the path may result in no valid storage location.
+
+The default location of the volumes is specified at [environment file](.env).
+
+```bash
+# Run as root or use sudo.
+# Create /srv/mediaserver directory.
+install -d /srv/mediaserver
+
+# Copy the example volumes to /srv/mediaserver/ directory and set permissions - the directory has
+# to be owned by a VMS Server user with UID & GID equal to 999.
+cp -a config-volumes/* /srv/mediaserver
+chown 999:999 -R /srv/mediaserver
+
+# Review configurations and scripts - amend according to your needs.
+
+# Run containers in the daemon mode.
+docker-compose up -d
+```
+
+# Clean up.
+```bash
+# Stop services and remove containers.
+docker-compose down
+
+# Remove state volumes.
+rm -rf /srv/mediaserver
+```
 
 ### Notes about storage ###
 Note that the media server still retains it's limitations regarding valid storage locations.
@@ -230,24 +230,15 @@ support. For more details see https://support.networkoptix.com/hc/en-us/articles
 ## Software Updates ##
 
 Both in-client and manual image updates will invalidate licenses.
+Run:
+```bash
+docker-compose down
 
-In-client update:
-Currently in-client update works but several limitations. 
+# Update the version in the .env file.
 
-Since we removed the use of systemd from the image, in-client updates will no longer work.  Please refer to the below method.
-
-Updating the image itself:
-
-1.  Stop your container.
-2.  Move the copy of the DB and recorded video to another folder.
-3.  Stop and Remove container.
-    * sudo docker container stop <container id>
-    * sudo docker container rm <container id>
-4.  Remove Docker image.
-    * sudo docker image rm <image id>
-5.  Build new Docker image with the new Server version.
-6.  Bring DB and video files back.
-7.  Run the new image referencing the DB and video files.
+docker-compose build
+docker-compose up -d 
+```
 
 ## MacOS support ##
 
@@ -257,10 +248,3 @@ With this Docker container you can run a container on MacOS. It does come with s
 directly on the main OS. See https://docs.docker.com/docker-for-mac/networking/ for details.
 *  "Bridge" is probably the best option but for the reasons above requires some manual 
 addition of servers and cameras
-
-
-## TODO ##
-
-1. ~~Provide a better ways to specify deb file for mediaserver.~~ Done
-1. Provide some scripts to simplify start & restart.
-1. Interaction with cmake.
