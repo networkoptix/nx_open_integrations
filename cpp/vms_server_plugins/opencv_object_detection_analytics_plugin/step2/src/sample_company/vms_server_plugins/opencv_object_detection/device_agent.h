@@ -35,9 +35,9 @@ private:
     nx::sdk::Ptr<nx::sdk::analytics::IMetadataPacket> generateObjectMetadataPacket();
 
 private:
-    const std::string kPersonObjectType = "sample.opencv_object_detection.person";
-    const std::string kCatObjectType = "sample.opencv_object_detection.cat";
-    const std::string kDogObjectType = "sample.opencv_object_detection.dog";
+    const std::string kPersonObjectType = "nx.base.Person";
+    const std::string kCatObjectType = "nx.base.Cat";
+    const std::string kDogObjectType = "nx.base.Dog";
     const std::string kNewTrackEventType = "nx.sample.newTrack";
 
     /** Length of the the track (in frames). The value was chosen arbitrarily. */

@@ -64,18 +64,15 @@ std::string DeviceAgent::manifestString() const
             "name": "New track started"
         }
     ],
-    "objectTypes": [
+    "supportedTypes": [
         {
-            "id": ")json" + kPersonObjectType + R"json(",
-            "name": "Person"
+            "objectTypeId": ")json" + kPersonObjectType + R"json("
         },
         {
-            "id": ")json" + kCatObjectType + R"json(",
-            "name": "Cat"
+            "objectTypeId": ")json" + kCatObjectType + R"json("
         },
         {
-            "id": ")json" + kDogObjectType + R"json(",
-            "name": "Dog"
+            "objectTypeId": ")json" + kDogObjectType + R"json("
         }
     ]
 }
