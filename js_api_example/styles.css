@@ -1,0 +1,73 @@
+/* Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ */
+
+* {
+    background: #2b383f;
+    color: #a5b7c0;
+    border-color: #171c1f;
+}
+
+option:hover {
+    background: #a5b7c0;
+    color: #2b383f;
+}
+
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+select {
+    width: 100%;
+}
+
+section, form {
+    padding: 6px;
+    flex-grow: 1;
+    align-items: stretch;
+}
+
+button {
+    margin-top: 6px;
+    background: #171c1f;
+    padding: 6px 12px;
+    border: none;
+}
+
+.dialogButtons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+label {
+    font-size: 1.15em;
+    font-weight: 100;
+    margin-bottom: 6px;
+    display: block;
+}
+
+fieldset {
+    border: none;
+    padding: 4px 0 8px 0;
+}
+
+dialog {
+    border: 2px solid #303f47;
+}
+
+dialog, dialog * {
+    background: #171c1f;
+}
+
+dialog button {
+    background: #2b343a;
+}
+
+
+dialog input {
+    border: 1px solid #171c1f;
+    background-color: #2b383f;
+    padding: 2 8px;
+}
