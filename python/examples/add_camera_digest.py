@@ -56,27 +56,7 @@ def parse_arguments(args):
     
     return sc, cc
 
-def main():
-    
-    parser = ArgumentParser()
-    parser.add_argument("camera_data", 
-        help="A string containing credentials and an address of a camera in the format <username>:<password>@<address>:<port> or <username>:<password>@<RTSP url>")
-    parser.add_argument("server_data",
-        help="A string containing credentials and an address of a server in the format <username>:<password>@<address>:<port>")
-    args = parser.parse_args()
-    
-    server_creds, camera_creds = parse_arguments(args)
-    # server_creds, server_address = args.server_data.split("@")
-    # server_url = f'https://{server_address}'
-    # username, password = server_creds.split(":")
-    
-    # camera_creds, camera_address = args.camera_data.split("@")
-    # if str(camera_address).startswith("rtsp://"):
-    #     is_stream = True
-    # if not is_stream:
-    #     camera_ip, camera_port = camera_address.split(":")
-    # camera_user, camera_password = camera_creds.split(":")
-
+def search_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials):
     if camera_creds.is_stream:
         api_uri = f'/api/manualCamera/search?url={camera_creds.url}'
     else:
@@ -89,21 +69,36 @@ def main():
     # poll the search process status until camera(s) found or timeout exceeded
     start_time = time.time()
     while True:
-        search_status = request_api(server_url,
+        search_status = request_api(server_creds.url,
                                 f'/api/manualCamera/status?uuid={search_data["reply"]["processUuid"]}', 
                                 'GET', 
-                                auth=HTTPDigestAuth(username, password),
+                                auth=HTTPDigestAuth(server_creds.username, server_creds.password),
                                 verify=False)
         if search_status["reply"]["cameras"] != []:
-            break
+            return search_status, search_data
         time.sleep(1)
         if time.time() - start_time > search_timeout:
-            print("Timeout exceeded. No camera found.")
-            exit(1)
- 
-    # adding an RTSP stream
-    # for RTSP stream parameters names and HTTP method differ
-    if is_stream:
+            raise RuntimeError('Timeout exceeded. No camera found.')
+          
+def main():
+    
+    parser = ArgumentParser()
+    parser.add_argument("camera_data", 
+        help="A string containing credentials and an address of a camera in the format <username>:<password>@<address>:<port> or <username>:<password>@<RTSP url>")
+    parser.add_argument("server_data",
+        help="A string containing credentials and an address of a server in the format <username>:<password>@<address>:<port>")
+    args = parser.parse_args()
+    
+    server_creds, camera_creds = parse_arguments(args)
+    
+    try:
+        serach_status, serach_data = search_camera(server_creds, camera_creds)
+    except Exception as ex:
+        print(ex.args)
+        exit(1)
+
+    
+    if camera_creds.is_stream:
         stream_data = dict(
             user = camera_user,
             password = camera_password,
