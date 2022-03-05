@@ -79,7 +79,42 @@ def search_camera(server_creds: ServerCredentials, camera_creds : CameraCredenti
         time.sleep(1)
         if time.time() - start_time > search_timeout:
             raise RuntimeError('Timeout exceeded. No camera found.')
-          
+
+def add_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials, search_status):
+    if camera_creds.is_stream:
+        stream_data = dict(
+            user = camera_creds.username,
+            password = camera_creds.password,
+            uniqueId0=search_status["reply"]["cameras"][0]["uniqueId"],
+            url0=search_status["reply"]["cameras"][0]["url"],
+            manufacturer0=search_status["reply"]["cameras"][0]["manufacturer"]
+        )
+        add_status = request_api(server_creds.url,
+                                f'/api/manualCamera/add',
+                                'GET',
+                                auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                                params = stream_data,
+                                verify=False)
+    else: # adding a camera
+        camera_data = dict(
+            user = camera_creds.username,
+            password = camera_creds.password,
+            cameras = [
+                dict(
+                    uniqueId = search_status["reply"]["cameras"][0]["uniqueId"],
+                    url = search_status["reply"]["cameras"][0]["url"],
+                    manufacturer = search_status["reply"]["cameras"][0]["manufacturer"],
+                )
+            ]
+        )
+        add_status = request_api(server_creds.url,
+                            f'/api/manualCamera/add', 
+                            'POST', 
+                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                            data = json.dumps(camera_data),
+                            verify=False)                          
+    return add_status
+
 def main():
     
     parser = ArgumentParser()
@@ -92,44 +127,13 @@ def main():
     server_creds, camera_creds = parse_arguments(args)
     
     try:
-        serach_status, serach_data = search_camera(server_creds, camera_creds)
+        search_status, serach_data = search_camera(server_creds, camera_creds)
     except Exception as ex:
         print(ex.args)
         exit(1)
 
-    
-    if camera_creds.is_stream:
-        stream_data = dict(
-            user = camera_user,
-            password = camera_password,
-            uniqueId0=search_status["reply"]["cameras"][0]["uniqueId"],
-            url0=search_status["reply"]["cameras"][0]["url"],
-            manufacturer0=search_status["reply"]["cameras"][0]["manufacturer"]
-        )
-        add_status = request_api(server_url,
-                                f'/api/manualCamera/add',
-                                'GET',
-                                auth=HTTPDigestAuth(username, password),
-                                params = stream_data,
-                                verify=False)
-    else: # adding a camera
-        camera_data = dict(
-            user = camera_user,
-            password = camera_password,
-            cameras = [
-                dict(
-                    uniqueId = search_status["reply"]["cameras"][0]["uniqueId"],
-                    url = search_status["reply"]["cameras"][0]["url"],
-                    manufacturer = search_status["reply"]["cameras"][0]["manufacturer"],
-                )
-            ]
-        )
-        add_status = request_api(server_url,
-                            f'/api/manualCamera/add', 
-                            'POST', 
-                            auth=HTTPDigestAuth(username, password),
-                            data = json.dumps(camera_data),
-                            verify=False)                          
+    add_status = add_camera(server_creds, camera_creds, search_status)
+                          
     stop_status = request_api(server_url,
                             f'/api/manualCamera/stop?uuid={search_data["reply"]["processUuid"]}', 
                             'GET', 
