@@ -24,8 +24,40 @@ def request_api(url, uri, method, **kwargs):
     else:
         return response.content
 
+class ServerCredentials:
+    def __init__(self):
+        self.url = ""
+        self.username = ""
+        self.password = ""
+
+class CameraCredentials:
+    def __init__(self):
+        self.url = ""
+        self.is_stream = False
+        self.username = ""
+        self.password = ""
+        self.ip = ""
+        self.port = ""
+
+def parse_arguments(args):
+    sc = ServerCredentials()
+    server_creds, server_address = args.server_data.split("@")
+    sc.url = f'https://{server_address}'
+    sc.username, sc.password = server_creds.split(":")
+    
+    cc = CameraCredentials()
+    camera_creds, camera_address = args.camera_data.split("@")
+    if str(camera_address).startswith("rtsp://"):
+        cc.is_stream = True
+        cc.url = camera_address
+    if not cc.is_stream:
+        cc.ip, cc.port = camera_address.split(":")
+    cc.username, cc.password = camera_creds.split(":")
+    
+    return sc, cc
+
 def main():
-    is_stream = False
+    
     parser = ArgumentParser()
     parser.add_argument("camera_data", 
         help="A string containing credentials and an address of a camera in the format <username>:<password>@<address>:<port> or <username>:<password>@<RTSP url>")
@@ -33,25 +65,26 @@ def main():
         help="A string containing credentials and an address of a server in the format <username>:<password>@<address>:<port>")
     args = parser.parse_args()
     
-    server_creds, server_address = args.server_data.split("@")
-    server_url = f'https://{server_address}'
-    username, password = server_creds.split(":")
+    server_creds, camera_creds = parse_arguments(args)
+    # server_creds, server_address = args.server_data.split("@")
+    # server_url = f'https://{server_address}'
+    # username, password = server_creds.split(":")
     
-    camera_creds, camera_address = args.camera_data.split("@")
-    if str(camera_address).startswith("rtsp://"):
-        is_stream = True
-    if not is_stream:
-        camera_ip, camera_port = camera_address.split(":")
-    camera_user, camera_password = camera_creds.split(":")
+    # camera_creds, camera_address = args.camera_data.split("@")
+    # if str(camera_address).startswith("rtsp://"):
+    #     is_stream = True
+    # if not is_stream:
+    #     camera_ip, camera_port = camera_address.split(":")
+    # camera_user, camera_password = camera_creds.split(":")
 
-    if is_stream:
-        api_uri = f'/api/manualCamera/search?url={camera_address}'
+    if camera_creds.is_stream:
+        api_uri = f'/api/manualCamera/search?url={camera_creds.url}'
     else:
-        api_uri = f'/api/manualCamera/search?start_ip={camera_ip}&port={camera_port}user={camera_user}&password={camera_password}'
-    search_data = request_api(server_url,
+        api_uri = f'/api/manualCamera/search?start_ip={camera_creds.ip}&port={camera_creds.port}&user={camera_creds.username}&password={camera_creds.password}'
+    search_data = request_api(server_creds.url,
                             api_uri, 
                             'GET', 
-                            auth=HTTPDigestAuth(username, password),
+                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
                             verify=False)
     # poll the search process status until camera(s) found or timeout exceeded
     start_time = time.time()
