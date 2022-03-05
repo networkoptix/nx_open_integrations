@@ -115,6 +115,13 @@ def add_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials
                             verify=False)                          
     return add_status
 
+def stop_search(server_creds: ServerCredentials, search_uuid):
+    return request_api(server_creds.url,
+                            f'/api/manualCamera/stop?uuid={search_uuid}', 
+                            'GET', 
+                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                            verify=False)
+    
 def main():
     
     parser = ArgumentParser()
@@ -127,17 +134,14 @@ def main():
     server_creds, camera_creds = parse_arguments(args)
     
     try:
-        search_status, serach_data = search_camera(server_creds, camera_creds)
+        search_status, search_data = search_camera(server_creds, camera_creds)
     except Exception as ex:
         print(ex.args)
         exit(1)
 
     add_status = add_camera(server_creds, camera_creds, search_status)
-                          
-    stop_status = request_api(server_url,
-                            f'/api/manualCamera/stop?uuid={search_data["reply"]["processUuid"]}', 
-                            'GET', 
-                            auth=HTTPDigestAuth(username, password),
-                            verify=False)
+
+    stop_status = stop_search(server_creds, search_data["reply"]["processUuid"])                   
+   
 if __name__ == '__main__':
     main()
