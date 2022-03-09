@@ -27,18 +27,18 @@ def request_api(url, uri, method, **kwargs):
 
 @dataclass
 class ServerCredentials:
-    url : str
-    username : str
-    password : str
+    url: str
+    username: str
+    password: str
 
 @dataclass
 class CameraCredentials:
-    url : str
-    username : str
-    password : str
-    ip : str
-    port : str
-    is_stream : Boolean = False
+    url: str
+    username: str
+    password: str
+    ip: str
+    port: str
+    is_stream: bool = False
 
 def parse_arguments(args):
     sc = ServerCredentials("","","")
