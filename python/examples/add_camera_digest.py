@@ -1,4 +1,3 @@
-from xmlrpc.client import Boolean
 import requests
 import time
 from pprint import pprint
