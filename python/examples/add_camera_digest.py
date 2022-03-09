@@ -1,11 +1,12 @@
+from xmlrpc.client import Boolean
 import requests
 import time
 from pprint import pprint
 from requests.auth import HTTPDigestAuth
 from argparse import ArgumentParser
+from dataclasses import dataclass
 import json
 
-search_timeout = 10
 def check_status(response, verbose):
     if response.status_code == requests.codes.ok:
         if verbose:
@@ -24,28 +25,28 @@ def request_api(url, uri, method, **kwargs):
     else:
         return response.content
 
+@dataclass
 class ServerCredentials:
-    def __init__(self):
-        self.url = ""
-        self.username = ""
-        self.password = ""
+    url : str
+    username : str
+    password : str
 
+@dataclass
 class CameraCredentials:
-    def __init__(self):
-        self.url = ""
-        self.is_stream = False
-        self.username = ""
-        self.password = ""
-        self.ip = ""
-        self.port = ""
+    url : str
+    username : str
+    password : str
+    ip : str
+    port : str
+    is_stream : Boolean = False
 
 def parse_arguments(args):
-    sc = ServerCredentials()
+    sc = ServerCredentials("","","")
     server_creds, server_address = args.server_data.split("@")
     sc.url = f'https://{server_address}'
     sc.username, sc.password = server_creds.split(":")
     
-    cc = CameraCredentials()
+    cc = CameraCredentials("","","","","")
     camera_creds, camera_address = args.camera_data.split("@")
     if str(camera_address).startswith("rtsp://"):
         cc.is_stream = True
@@ -57,14 +58,15 @@ def parse_arguments(args):
     return sc, cc
 
 def search_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials):
+    search_timeout = 20
     if camera_creds.is_stream:
         api_uri = f'/api/manualCamera/search?url={camera_creds.url}'
     else:
-        api_uri = f'/api/manualCamera/search?'\
-                    'start_ip={camera_creds.ip}'\
-                    '&port={camera_creds.port}'\
-                    '&user={camera_creds.username}'\
-                    '&password={camera_creds.password}'
+        api_uri =   f"/api/manualCamera/search?"\
+                    f"start_ip={camera_creds.ip}"\
+                    f"&port={camera_creds.port}"\
+                    f"&user={camera_creds.username}"\
+                    f"&password={camera_creds.password}"
     search_data = request_api(
                     server_creds.url,
                     api_uri, 
