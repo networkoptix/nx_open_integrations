@@ -60,20 +60,26 @@ def search_camera(server_creds: ServerCredentials, camera_creds : CameraCredenti
     if camera_creds.is_stream:
         api_uri = f'/api/manualCamera/search?url={camera_creds.url}'
     else:
-        api_uri = f'/api/manualCamera/search?start_ip={camera_creds.ip}&port={camera_creds.port}&user={camera_creds.username}&password={camera_creds.password}'
-    search_data = request_api(server_creds.url,
-                            api_uri, 
-                            'GET', 
-                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
-                            verify=False)
+        api_uri = f'/api/manualCamera/search?'\
+                    'start_ip={camera_creds.ip}'\
+                    '&port={camera_creds.port}'\
+                    '&user={camera_creds.username}'\
+                    '&password={camera_creds.password}'
+    search_data = request_api(
+                    server_creds.url,
+                    api_uri, 
+                    'GET', 
+                    auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                    verify=False)
     # poll the search process status until camera(s) found or timeout exceeded
     start_time = time.time()
     while True:
-        search_status = request_api(server_creds.url,
-                                f'/api/manualCamera/status?uuid={search_data["reply"]["processUuid"]}', 
-                                'GET', 
-                                auth=HTTPDigestAuth(server_creds.username, server_creds.password),
-                                verify=False)
+        search_status = request_api(
+                            server_creds.url,
+                            f'/api/manualCamera/status?uuid={search_data["reply"]["processUuid"]}', 
+                            'GET', 
+                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                            verify=False)
         if search_status["reply"]["cameras"] != []:
             return search_status, search_data
         time.sleep(1)
@@ -89,12 +95,13 @@ def add_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials
             url0=search_status["reply"]["cameras"][0]["url"],
             manufacturer0=search_status["reply"]["cameras"][0]["manufacturer"]
         )
-        add_status = request_api(server_creds.url,
-                                f'/api/manualCamera/add',
-                                'GET',
-                                auth=HTTPDigestAuth(server_creds.username, server_creds.password),
-                                params = stream_data,
-                                verify=False)
+        add_status = request_api(
+                        server_creds.url,
+                        f'/api/manualCamera/add',
+                        'GET',
+                        auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                        params = stream_data,
+                        verify=False)
     else: # adding a camera
         camera_data = dict(
             user = camera_creds.username,
@@ -107,28 +114,32 @@ def add_camera(server_creds: ServerCredentials, camera_creds : CameraCredentials
                 )
             ]
         )
-        add_status = request_api(server_creds.url,
-                            f'/api/manualCamera/add', 
-                            'POST', 
-                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
-                            data = json.dumps(camera_data),
-                            verify=False)                          
+        add_status = request_api(
+                        server_creds.url,
+                        f'/api/manualCamera/add', 
+                        'POST', 
+                        auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+                        data = json.dumps(camera_data),
+                        verify=False)                          
     return add_status
 
 def stop_search(server_creds: ServerCredentials, search_uuid):
-    return request_api(server_creds.url,
-                            f'/api/manualCamera/stop?uuid={search_uuid}', 
-                            'GET', 
-                            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
-                            verify=False)
+    return request_api(
+            server_creds.url,
+            f'/api/manualCamera/stop?uuid={search_uuid}', 
+            'GET', 
+            auth=HTTPDigestAuth(server_creds.username, server_creds.password),
+            verify=False)
     
 def main():
     
     parser = ArgumentParser()
     parser.add_argument("camera_data", 
-        help="A string containing credentials and an address of a camera in the format <username>:<password>@<address>:<port> or <username>:<password>@<RTSP url>")
+        help="A string containing credentials and an address of a camera in the format'\
+            ' <username>:<password>@<address>:<port> or <username>:<password>@<RTSP url>")
     parser.add_argument("server_data",
-        help="A string containing credentials and an address of a server in the format <username>:<password>@<address>:<port>")
+        help="A string containing credentials and an address of a server in the format'\
+            ' <username>:<password>@<address>:<port>")
     args = parser.parse_args()
     
     server_creds, camera_creds = parse_arguments(args)
