@@ -1,5 +1,5 @@
 # Demo of API available within embedded browser within desktop client
-This is an example of how to use the C2P API's provided by the desktop client within the built in browser.
+This is an example of how to use the API's provided by the desktop client within the built in browser.
 
 Before running any of the scripts below please make sure to run `npm install` to install dev dependencies.
 
