@@ -40,7 +40,7 @@ def check_status(response, verbose):
         if verbose:
             print("Request successful\n{0}".format(response.text))
         return True
-    print(response.url + " Request error {0}\n{1}".format(response.status_code, response.text))
+    print(f"{response.url} Request error {response.status_code}\n{response.text}")
     return False
 
 def request_api(url, uri, method, **kwargs):
