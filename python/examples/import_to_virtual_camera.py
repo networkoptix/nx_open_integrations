@@ -38,7 +38,7 @@ def parse_arguments(args):
 def check_status(response, verbose):
     if response.status_code == requests.codes.ok:
         if verbose:
-            print("Request successful\n{0}".format(response.text))
+            print(f"Request successful\n{response.text}")
         return True
     print(f"{response.url} Request error {response.status_code}\n{response.text}")
     return False
