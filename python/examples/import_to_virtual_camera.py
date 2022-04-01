@@ -76,8 +76,8 @@ class FileUploader():
         '''Create a Virtual Camera automatically using API'''
         
         self.virtual_camera_name = virtual_camera_name
-        api_uri =   f'/api/wearableCamera/add' \
-                    f'?name={virtual_camera_name}' 
+        api_uri = f'/api/wearableCamera/add' \
+                  f'?name={virtual_camera_name}' 
         
         response = request_api(
                 self.server_creds.url,
