@@ -28,7 +28,7 @@ class CameraCredentials:
     is_stream: bool = False
 
 def parse_arguments(args):
-    sc = ServerCredentials("","","")
+    sc = ServerCredentials("", "", "")
     server_creds, server_address = args.server_data.split("@")
     sc.url = f'https://{server_address}'
     sc.username, sc.password = server_creds.split(":")
