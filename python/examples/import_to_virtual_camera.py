@@ -80,12 +80,12 @@ class FileUploader():
                   f'?name={virtual_camera_name}' 
         
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                'POST',
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                headers = {'Content-Type': 'application/json'},
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            'POST',
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            headers = {'Content-Type': 'application/json'},
+            verify=False)
         if self.verbose:
             print("create_virtual_camera")
             print(response)
@@ -98,20 +98,20 @@ class FileUploader():
     
         # filename is needed in Step 5
         self.remote_filename= f'videofile{now_str}'
-        api_uri =   f"/api/downloads/{self.remote_filename}"\
-                    f"?size={os.stat(self.filename).st_size}"\
-                    f"&chunkSize={self.chunk_size}"\
-                    f"&md5={md5(self.filename)}"\
-                    f"&ttl=86400000"\
-                    f"&upload=true"
+        api_uri = f"/api/downloads/{self.remote_filename}"\
+                  f"?size={os.stat(self.filename).st_size}"\
+                  f"&chunkSize={self.chunk_size}"\
+                  f"&md5={md5(self.filename)}"\
+                  f"&ttl=86400000"\
+                  f"&upload=true"
 
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                "POST",
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                headers = {'Content-Type': 'application/json'},
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            "POST",
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            headers = {'Content-Type': 'application/json'},
+            verify=False)
         if self.verbose:
             print("_create_upload_job")
             print(response)
@@ -123,13 +123,13 @@ class FileUploader():
             for chunk in iter(lambda: f.read(self.chunk_size), b""):
                 api_uri =   f'/api/downloads/videofile{now_str}/chunks/{chunk_index}'
                 response = request_api(
-                        self.server_creds.url,
-                        api_uri,
-                        "PUT",
-                        auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                        headers = {'Content-Type': 'application/octet-stream'},
-                        data = chunk,
-                        verify=False)
+                    self.server_creds.url,
+                    api_uri,
+                    "PUT",
+                    auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+                    headers = {'Content-Type': 'application/octet-stream'},
+                    data = chunk,
+                    verify=False)
                 chunk_index += 1
         if self.verbose:
             print("_upload_file")
@@ -139,11 +139,11 @@ class FileUploader():
         now_str=self.now.strftime("%F_%H_%M")
         api_uri =   f"/api/downloads/videofile{now_str}/status"
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                "GET",
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            "GET",
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            verify=False)
         if self.verbose:
             print("_validate_upload")
             print(response)
@@ -155,11 +155,11 @@ class FileUploader():
     def _get_user_id(self):
         api_uri = f'/ec2/getUsers'
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                "GET",
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            "GET",
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            verify=False)
         for user_data in response:
             if user_data["name"] == self.server_creds.username:
                 self.user_id = user_data["id"]
@@ -176,19 +176,19 @@ class FileUploader():
         #   ttl — lock timeout in ms
         user_id = self._get_user_id()
         ttl = 300
-        api_uri =   f'/api/wearableCamera/lock' \
-                    f'?cameraId={self.camera_id}' \
-                    f'&userId={user_id}' \
-                    f'&ttl={ttl*1000}'
+        api_uri = f'/api/wearableCamera/lock' \
+                  f'?cameraId={self.camera_id}' \
+                  f'&userId={user_id}' \
+                  f'&ttl={ttl*1000}'
 
         start_time = time.time()
         while True:
             response = request_api(
-                    self.server_creds.url,
-                    api_uri,
-                    "POST",
-                    auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                    verify=False)
+                self.server_creds.url,
+                api_uri,
+                "POST",
+                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+                verify=False)
             if self.verbose:
                 print(response)
             if response['reply']['locked'] == True:
@@ -205,17 +205,17 @@ class FileUploader():
         #   token — token acquired when this camera was first locked
         #   uploadId — name of the previously uploaded file
         #   startTime — starting time of the file in msecs since epoch
-        api_uri =   f'/api/wearableCamera/consume' \
-                    f'?cameraId={self.camera_id}' \
-                    f'&token={self.lock_token}' \
-                    f'&uploadId={self.remote_filename}' \
-                    f'&startTime=0'
+        api_uri = f'/api/wearableCamera/consume' \
+                  f'?cameraId={self.camera_id}' \
+                  f'&token={self.lock_token}' \
+                  f'&uploadId={self.remote_filename}' \
+                  f'&startTime=0'
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                "POST",
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            "POST",
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            verify=False)
         if self.verbose:
             print("_import_file")
             print(response)
@@ -231,19 +231,19 @@ class FileUploader():
         #   ttl — lock timeout in ms
         #   token — token acquired when this camera was first locked
         ttl = 300
-        api_uri =   f"/api/wearableCamera/extend" \
-                    f"?cameraId={self.camera_id}" \
-                    f'&userId={self.user_id}' \
-                    f'&ttl={ttl*1000}' \
-                    f'&token={self.lock_token}'
+        api_uri = f"/api/wearableCamera/extend" \
+                  f"?cameraId={self.camera_id}" \
+                  f'&userId={self.user_id}' \
+                  f'&ttl={ttl*1000}' \
+                  f'&token={self.lock_token}'
         start_time = time.time()
         while True:
             response = request_api(
-                    self.server_creds.url,
-                    api_uri,
-                    "POST",
-                    auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                    verify=False)
+                self.server_creds.url,
+                api_uri,
+                "POST",
+                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+                verify=False)
             if self.verbose:
                 print(response)
             # when upload is finished progress is 0
@@ -254,15 +254,15 @@ class FileUploader():
                 raise RuntimeError('Timeout exceeded. File import failed')
                 
     def _release_camera(self):
-        api_uri =   f"/api/wearableCamera/release" \
-                    f"?cameraId={self.camera_id}" \
-                    f'&token={self.lock_token}'
+        api_uri = f"/api/wearableCamera/release" \
+                  f"?cameraId={self.camera_id}" \
+                  f'&token={self.lock_token}'
         response = request_api(
-                self.server_creds.url,
-                api_uri,
-                "POST",
-                auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
-                verify=False)
+            self.server_creds.url,
+            api_uri,
+            "POST",
+            auth=HTTPDigestAuth(self.server_creds.username, self.server_creds.password),
+            verify=False)
         if self.verbose:
             print("_release_camera")
             print(response)
