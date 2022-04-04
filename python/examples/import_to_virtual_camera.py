@@ -166,16 +166,16 @@ class FileUploader():
                 return self.user_id
 
     def _lock_camera(self):
-        '''POST /api/wearableCamera/lock — locks Virtual Camera.
-        Parameters:
-        cameraId — id of the camera
-        userId — id of the user performing the lock
-        ttl — lock timeout in ms
-        '''
         if self.verbose:
             print("_lock_camera")
+        
+        # POST /api/wearableCamera/lock — locks Virtual Camera.
+        # Parameters:
+        #   cameraId — id of the camera
+        #   userId — id of the user performing the lock
+        #   ttl — lock timeout in ms
         user_id = self._get_user_id()
-        ttl = 300 
+        ttl = 300
         api_uri =   f'/api/wearableCamera/lock' \
                     f'?cameraId={self.camera_id}' \
                     f'&userId={user_id}' \
@@ -199,14 +199,12 @@ class FileUploader():
                 raise RuntimeError("Timeout exceeded. Locking the camera failed.")
           
     def _import_file(self):
-        ''' POST /api/wearableCamera/consume
-        Parameters:
-        cameraId — id of the camera
-        token — token acquired when this camera was first locked
-        uploadId — name of the previously uploaded file
-        startTime — starting time of the file in msecs since epoch
-
-        '''
+        # POST /api/wearableCamera/consume
+        # Parameters:
+        #   cameraId — id of the camera
+        #   token — token acquired when this camera was first locked
+        #   uploadId — name of the previously uploaded file
+        #   startTime — starting time of the file in msecs since epoch
         api_uri =   f'/api/wearableCamera/consume' \
                     f'?cameraId={self.camera_id}' \
                     f'&token={self.lock_token}' \
@@ -223,22 +221,21 @@ class FileUploader():
             print(response)
                  
     def _check_progress(self):
-        '''POST /api/wearableCamera/extend — extends Virtual Camera lock
-        Parameters:
-        cameraId — id of the camera
-        userId — id of the user performing the lock
-        ttl — lock timeout in ms
-        token — token acquired when this camera was first locked
-        '''
         if self.verbose:
             print("_check_progress")
-
+        
+        # POST /api/wearableCamera/extend — extends Virtual Camera lock
+        # Parameters:
+        #   cameraId — id of the camera
+        #   userId — id of the user performing the lock
+        #   ttl — lock timeout in ms
+        #   token — token acquired when this camera was first locked
         ttl = 300
-        api_uri = f"/api/wearableCamera/extend" \
-                  f"?cameraId={self.camera_id}" \
-                  f'&userId={self.user_id}' \
-                  f'&ttl={ttl*1000}' \
-                  f'&token={self.lock_token}'
+        api_uri =   f"/api/wearableCamera/extend" \
+                    f"?cameraId={self.camera_id}" \
+                    f'&userId={self.user_id}' \
+                    f'&ttl={ttl*1000}' \
+                    f'&token={self.lock_token}'
         start_time = time.time()
         while True:
             response = request_api(
