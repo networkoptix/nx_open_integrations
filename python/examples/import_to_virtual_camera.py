@@ -234,11 +234,11 @@ class FileUploader():
             print("_check_progress")
 
         ttl = 300
-        api_uri =   f"/api/wearableCamera/extend" \
-                        f"?cameraId={self.camera_id}" \
-                        f'&userId={self.user_id}' \
-                        f'&ttl={ttl*1000}' \
-                        f'&token={self.lock_token}'
+        api_uri = f"/api/wearableCamera/extend" \
+                  f"?cameraId={self.camera_id}" \
+                  f'&userId={self.user_id}' \
+                  f'&ttl={ttl*1000}' \
+                  f'&token={self.lock_token}'
         start_time = time.time()
         while True:
             response = request_api(
