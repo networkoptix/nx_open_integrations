@@ -71,7 +71,17 @@ class FileUploader():
         self.lock_token = ""
         self.chunk_size = 1024 * 1024
         self.filename = ""
+        self.version = self.get_server_version()
 
+    def get_server_version(self):
+        api_uri = f'/api/moduleInformation'
+        response = request_api(
+            self.server_creds.url,
+            api_uri,
+            'GET',
+            verify=False)
+        return response["reply"]["version"]
+   
     def create_virtual_camera(self, virtual_camera_name):    
         '''Create a Virtual Camera automatically using API'''
         
