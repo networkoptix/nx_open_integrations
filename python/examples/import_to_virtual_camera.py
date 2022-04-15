@@ -72,6 +72,10 @@ class FileUploader():
         self.chunk_size = 1024 * 1024
         self.filename = ""
         self.version = self.get_server_version()
+        if self.version[0] == 4:
+            self.camera_api_name = "wearableCamera"
+        else:
+            self.camera_api_name = "virtualCamera"
 
     def get_server_version(self):
         api_uri = f'/api/moduleInformation'
@@ -86,7 +90,7 @@ class FileUploader():
         '''Create a Virtual Camera automatically using API'''
         
         self.virtual_camera_name = virtual_camera_name
-        api_uri = f'/api/wearableCamera/add' \
+        api_uri = f'/api/{self.camera_api_name}/add' \
                   f'?name={virtual_camera_name}' 
         
         response = request_api(
@@ -186,7 +190,7 @@ class FileUploader():
         #   ttl — lock timeout in ms
         user_id = self._get_user_id()
         ttl = 300
-        api_uri = f'/api/wearableCamera/lock' \
+        api_uri = f'/api/{self.camera_api_name}/lock' \
                   f'?cameraId={self.camera_id}' \
                   f'&userId={user_id}' \
                   f'&ttl={ttl*1000}'
@@ -215,7 +219,7 @@ class FileUploader():
         #   token — token acquired when this camera was first locked
         #   uploadId — name of the previously uploaded file
         #   startTime — starting time of the file in msecs since epoch
-        api_uri = f'/api/wearableCamera/consume' \
+        api_uri = f'/api/{self.camera_api_name}/consume' \
                   f'?cameraId={self.camera_id}' \
                   f'&token={self.lock_token}' \
                   f'&uploadId={self.remote_filename}' \
@@ -241,7 +245,7 @@ class FileUploader():
         #   ttl — lock timeout in ms
         #   token — token acquired when this camera was first locked
         ttl = 300
-        api_uri = f"/api/wearableCamera/extend" \
+        api_uri = f"/api/{self.camera_api_name}/extend" \
                   f"?cameraId={self.camera_id}" \
                   f'&userId={self.user_id}' \
                   f'&ttl={ttl*1000}' \
@@ -264,7 +268,7 @@ class FileUploader():
                 raise RuntimeError('Timeout exceeded. File import failed')
                 
     def _release_camera(self):
-        api_uri = f"/api/wearableCamera/release" \
+        api_uri = f"/api/{self.camera_api_name}/release" \
                   f"?cameraId={self.camera_id}" \
                   f'&token={self.lock_token}'
         response = request_api(
