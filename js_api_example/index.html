@@ -48,6 +48,28 @@
         </fieldset>
     </section>
 
+    <section id="authBlock">
+        <fieldset>
+            <label>Authentication</label>
+            <table>
+                <tr>
+                    <td>Token</td>
+                    <td><input type='text' id='token' readonly/></td>
+                    <td><button onclick='authController.updateToken()'>Get token</button></td>
+                </tr>
+                <tr>
+                    <td>Server address</td>
+                    <td><input type='text' id='address' value="https://localhost:7001/"/></td>
+                </tr>
+                <tr>
+                    <td>User</td>
+                    <td><input type='text' id='user' readonly/></td>
+                    <td><button onclick='authController.updateUser()'>Get user</button></td>
+                </tr>
+            </table>
+        </fieldset>
+    </section>
+
     <dialog id=settingsDialog>
         <label>Parameters</label>
         <form method='dialog'>

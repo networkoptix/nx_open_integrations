@@ -1,5 +1,5 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
-import { SceneItemsController, LayoutSettingsController } from "./controllers";
+import { SceneItemsController, LayoutSettingsController, AuthController } from "./controllers";
 import { initResourcesUI, initSceneItemsUI } from "./initHandlers";
 import { screenshot } from "./screenshot";
 
@@ -16,6 +16,12 @@ setTimeout(() => {
 window.vmsApiInit = () => {
   window.sceneItemsController = new SceneItemsController();
   window.layoutSettingsController = new LayoutSettingsController();
+
+  // vms.auth is available in the 5.1 version.
+  if (window.vms.auth)
+    window.authController = new AuthController();
+  else
+    window.authBlock.style.visibility = "hidden"
 
   initResourcesUI(window.resourcesList);
   initSceneItemsUI(window.sceneItemsList);

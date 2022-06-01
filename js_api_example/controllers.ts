@@ -1,6 +1,7 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
 import { getSelectedItemId, timestampToString, updateEditsAvailability } from "./helpers";
+import * as http from 'http';
 
 export class LayoutSettingsController {
   /**
@@ -284,5 +285,27 @@ export class SceneItemsController {
       "Please select item to be synced with"
     );
     if (itemId) window.vms.tab.syncWith(itemId);
+  }
+}
+
+export class AuthController {
+  async updateToken() {
+    const token = await window.vms.auth.sessionToken();
+    window.token.value = token;
+  }
+
+  async updateUser() {
+    window.user.value = "";
+    if (!window.token.value || !window.address.value)
+      return;
+
+    const request = new XMLHttpRequest();
+    const url = new URL(`rest/v1/login/sessions/${window.token.value}`, window.address.value);
+    request.onload = () => {
+      const response = JSON.parse(request.response);
+      window.user.value = response.username;
+    }
+    request.open("GET", url);
+    request.send();
   }
 }
