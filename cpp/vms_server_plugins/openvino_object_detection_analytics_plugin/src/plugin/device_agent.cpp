@@ -105,22 +105,22 @@ Ptr<ObjectMetadataPacket> convertDetectionsToObjectMetadataPacket(
 {
     if (detections.empty())
         return nullptr;
-    
+
     const auto objectMetadataPacket = makePtr<ObjectMetadataPacket>();
-    
+
     for (const DetectionPtr& detection: detections)
     {
         const auto objectMetadata = makePtr<ObjectMetadata>();
-        
+
         objectMetadata->setBoundingBox(convertBoostRectToNxRect(detection->boundingBox));
         objectMetadata->setConfidence(detection->confidence);
         objectMetadata->setTrackId(detection->trackId);
         objectMetadata->setTypeId(kPersonObjectType);
-        
-        objectMetadataPacket->addItem(objectMetadata.get()); 
+
+        objectMetadataPacket->addItem(objectMetadata.get());
     }
     objectMetadataPacket->setTimestampUs(timestampUs);
-    
+
     return objectMetadataPacket;
 }
 
@@ -170,13 +170,13 @@ MetadataPacketList convertObjectDetectionResultToMetadataPacketList(
     int64_t timestampUs)
 {
     MetadataPacketList result;
-    
+
     const Ptr<IMetadataPacket> objectMetadataPacket = convertDetectionsToObjectMetadataPacket(
         objectDetectionResult.detections,
         timestampUs);
     if (objectMetadataPacket)
         result.push_back(objectMetadataPacket);
-    
+
     const MetadataPacketList objectTrackBestShotPackets = convertBestShotsToMetadataPacketList(
         objectDetectionResult.bestShots);
     result.insert(
@@ -213,60 +213,92 @@ DeviceAgent::DeviceAgent(Engine* engine, const nx::sdk::IDeviceInfo* deviceInfo)
 
 std::string DeviceAgent::manifestString() const noexcept
 {
-    using nx::kit::Json;
-    Json manifestJson = Json::object {
-        { "eventTypes", Json::array {
-            Json::object {
-                { "id", PersonDetected::kType },
-                { "name", PersonDetected::kName },
+    return /*suppress newline*/ 1 + (const char*)
+R"json(
+{
+    "typeLibrary": {
+        "eventTypes": [
+            {
+                "id": ")json" + PersonDetected::kType + R"json(",
+                "name": ")json" + PersonDetected::kName + R"json("
             },
-            Json::object {
-                { "id", PersonLost::kType },
-                { "name", PersonLost::kName },
+            {
+                "id": ")json" + PersonLost::kType + R"json(",
+                "name": ")json" + PersonLost::kName + R"json("
             },
-            Json::object {
-                { "id", PeopleDetected::kType },
-                { "name", PeopleDetected::kName },
-                { "flags", "stateDependent" },
+            {
+                "id": ")json" + PeopleDetected::kType + R"json(",
+                "name": ")json" + PeopleDetected::kName + R"json(",
+                "flags": "stateDependent"
             },
-            Json::object {
-                { "id", LineCrossed::kType },
-                { "name", LineCrossed::kName },
+            {
+                "id": ")json" + LineCrossed::kType + R"json(",
+                "name": ")json" + LineCrossed::kName + R"json("
             },
-            Json::object {
-                { "id", AreaCrossed::kType },
-                { "name", AreaCrossed::kName },
+            {
+                "id": ")json" + AreaCrossed::kType + R"json(",
+                "name": ")json" + AreaCrossed::kName + R"json("
             },
-            Json::object {
-                { "id", AreaEntranceDetected::kType },
-                { "name", AreaEntranceDetected::kName },
+            {
+                "id": ")json" + AreaEntranceDetected::kType + R"json(",
+                "name": ")json" + AreaEntranceDetected::kName + R"json("
             },
-            Json::object {
-                { "id", AreaExitDetected::kType },
-                { "name", AreaExitDetected::kName },
+            {
+                "id": ")json" + AreaExitDetected::kType + R"json(",
+                "name": ")json" + AreaExitDetected::kName + R"json("
             },
-            Json::object {
-                { "id", AppearanceInAreaDetected::kType },
-                { "name", AppearanceInAreaDetected::kName },
+            {
+                "id": ")json" + AppearanceInAreaDetected::kType + R"json(",
+                "name": ")json" + AppearanceInAreaDetected::kName + R"json("
             },
-            Json::object {
-                { "id", DisappearanceInAreaDetected::kType },
-                { "name", DisappearanceInAreaDetected::kName },
+            {
+                "id": ")json" + DisappearanceInAreaDetected::kType + R"json(",
+                "name": ")json" + DisappearanceInAreaDetected::kName + R"json("
             },
-            Json::object {
-                { "id", Loitering::kType },
-                { "name", Loitering::kName },
-                { "flags", "stateDependent" },
-            },
-        } },
-        { "objectTypes", Json::array {
-            Json::object {
-                { "id", kPersonObjectType },
-                { "name", kPersonObjectName },
-            },
-        } },
-    };
-    return manifestJson.dump();
+            {
+                "id": ")json" + Loitering::kType + R"json(",
+                "name": ")json" + Loitering::kName + R"json(",
+                "flags": "stateDependent"
+            }
+        ]
+    },
+   "supportedTypes": [
+        {
+            "objectTypeId": ")json" + kPersonObjectType + R"json(",
+            "attributes": []
+        },
+        {
+            "eventTypeId": ")json" + PersonDetected::kType + R"json(",
+        },
+         {
+            "eventTypeId": ")json" + PersonLost::kType + R"json(",
+        },
+          {
+            "eventTypeId": ")json" + PeopleDetected::kType + R"json(",
+        },
+         {
+            "eventTypeId": ")json" + LineCrossed::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + AreaCrossed::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + AreaEntranceDetected::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + AreaExitDetected::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + AppearanceInAreaDetected::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + DisappearanceInAreaDetected::kType + R"json(",
+        },
+        {
+            "eventTypeId": ")json" + Loitering::kType + R"json(",
+        }
+    ]
+})json";
 }
 
 Result<const ISettingsResponse*> DeviceAgent::settingsReceived()

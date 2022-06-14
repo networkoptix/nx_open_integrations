@@ -82,7 +82,6 @@ private:
     int m_networkInputWidth = 0;
 };
 
-const std::string kPersonObjectType = "nx.openvino_object_detection.person";
-const std::string kPersonObjectName = "Person";
+const std::string kPersonObjectType = "nx.base.Person";
 
 } // namespace nx::vms_server_plugins::analytics::openvino_object_detection
