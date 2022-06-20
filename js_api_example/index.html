@@ -97,11 +97,67 @@
                     <button id='setNowTimeButton'>Now</button>
                     <button id='clearTimeButton'>Clear</button>
                 </fieldset>
+                <button id="advancedSettingsButton">Advanced</button>
             </div>
 
             <div class="dialogButtons">
                 <button id='settingsSubmitButton' type='submit'>Ok</button>
                 <button id='settingsCancelButton'>Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id='advancedSettingsDialog'>
+        <label>Advanced parameters</label>
+        <form method='dialog'>
+            <fieldset>
+                <label>Timeline window:</label>
+                <table>
+                    <tr>
+                        <td>From</td>
+                        <td>
+                            <input type='datetime-local' id='timelineStart' step=1 />
+                            <button id='setCurrentTimelineStartButton'>Media Time</button>
+                            <button id='setNowTimelineStartButton'>Now</button>
+                            <button id='clearTimelineStartButton'>Clear</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>
+                            <input type='datetime-local' id='timelineEnd' step=1 />
+                            <button id='setCurrentTimelineEndButton'>Media Time</button>
+                            <button id='setNowTimelineEndButton'>Now</button>
+                            <button id='clearTimelineEndButton'>Clear</button>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+            <fieldset>
+                <label>Timeline selection:</label>
+                <table>
+                    <tr>
+                        <td>From</td>
+                        <td>
+                            <input type='datetime-local' id='selectionStart' step=1 />
+                            <button id='setCurrentSelectionStartButton'>Media Time</button>
+                            <button id='setNowSelectionStartButton'>Now</button>
+                            <button id='clearSelectionStartButton'>Clear</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>
+                            <input type='datetime-local' id='selectionEnd' step=1 />
+                            <button id='setCurrentSelectionEndButton'>Media Time</button>
+                            <button id='setNowSelectionEndButton'>Now</button>
+                            <button id='clearSelectionEndButton'>Clear</button>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+            <div class='dialogButtons'>
+                <button id='advancedSettingsSubmitButton'>Ok</button>
             </div>
         </form>
     </dialog>

@@ -67,15 +67,14 @@ export class SceneItemsController {
     this.initListeners();
   }
 
-  private initListeners() {
-
-    window.setNowTimeButton.addEventListener("click", (e) => {
+  private setupDateTimeButtons(dateTimeControl, currentButton, nowButton, clearButton) {
+    nowButton.addEventListener("click", (e) => {
       e.preventDefault();
 
-      window.dateTimeControl.value = timestampToString(Date.now());
+      dateTimeControl.value = timestampToString(Date.now());
     });
 
-    window.setCurrentDeviceTimeButton.addEventListener(
+    currentButton.addEventListener(
       "click",
       async (e) => {
         e.preventDefault();
@@ -91,17 +90,57 @@ export class SceneItemsController {
           itemResult.item.params.media.timestampMs;
 
         if (timestampMs)
-          window.dateTimeControl.value = timestampToString(
+          dateTimeControl.value = timestampToString(
             timestampMs * 1 /**Force integer value**/
           );
       }
     );
 
-    window.clearTimeButton.addEventListener("click", (e) => {
+    clearButton.addEventListener("click", (e) => {
       e.preventDefault();
 
-      window.dateTimeControl.value = null;
+      dateTimeControl.value = null;
     });
+  }
+
+  private initListeners() {
+    this.setupDateTimeButtons(
+      window.dateTimeControl,
+      window.setCurrentDeviceTimeButton,
+      window.setNowTimeButton,
+      window.clearTimeButton);
+
+    this.setupDateTimeButtons(
+      window.timelineStart,
+      window.setCurrentTimelineStartButton,
+      window.setNowTimelineStartButton,
+      window.clearTimelineStartButton);
+
+    this.setupDateTimeButtons(
+      window.timelineEnd,
+      window.setCurrentTimelineEndButton,
+      window.setNowTimelineEndButton,
+      window.clearTimelineEndButton);
+
+    this.setupDateTimeButtons(
+      window.selectionStart,
+      window.setCurrentSelectionStartButton,
+      window.setNowSelectionStartButton,
+      window.clearSelectionStartButton);
+
+    this.setupDateTimeButtons(
+      window.selectionEnd,
+      window.setCurrentSelectionEndButton,
+      window.setNowSelectionEndButton,
+      window.clearSelectionEndButton);
+
+    window.advancedSettingsButton.addEventListener("click", () => {
+      window.advancedSettingsDialog.showModal();
+    });
+
+    window.advancedSettingsSubmitButton.addEventListener("click", () => {
+      window.settingsDialog.showModal();
+    })
 
     window.settingsSubmitButton.addEventListener("click", async () => {
       let settings: Record<any, any> = {};
@@ -142,16 +181,23 @@ export class SceneItemsController {
             ).getTime();
             settings.media.timestampMs = timestampMs;
 
-            const selectionLength = 6 * 1000;
-            settings.media.timelineSelection = {
-              startTimeMs: timestampMs - selectionLength / 2,
-              durationMs: selectionLength,
-            };
+          }
 
-            const windowSize = 60 * 60 * 1000;
+          if (window.selectionStart.value && window.selectionEnd.value) {
+            const selectionStart = new Date(window.selectionStart.value).getTime();
+            const selectionEnd = new Date(window.selectionEnd.value).getTime();
+            settings.media.timelineSelection = {
+              startTimeMs: selectionStart,
+              durationMs: selectionEnd - selectionStart
+            };
+          }
+
+          if (window.timelineStart.value && window.timelineEnd.value) {
+            const timelineStart = new Date(window.timelineStart.value).getTime();
+            const timelineEnd = new Date(window.timelineEnd.value).getTime();
             settings.media.timelineWindow = {
-              startTimeMs: timestampMs - windowSize / 2,
-              durationMs: windowSize,
+              startTimeMs: timelineStart,
+              durationMs: timelineEnd - timelineStart
             };
           }
         }
@@ -229,6 +275,10 @@ export class SceneItemsController {
         : "";
 
     window.dateTimeControl.value = null;
+    window.timelineStart.value = null;
+    window.timelineEnd.value = null;
+    window.selectionStart.value = null;
+    window.selectionEnd.value = null;
 
     return true;
   }
