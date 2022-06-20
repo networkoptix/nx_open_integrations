@@ -5,7 +5,7 @@ import * as http from 'http';
 
 export class LayoutSettingsController {
   /**
-   * Manages layout settings. Now only "minimal layout size" property is supported.
+   * Manages layout settings. Now only "minimal layout size" and "locked" property are supported.
    */
   constructor() {
     window.submitLayoutSettings.addEventListener("click", () => {
@@ -22,6 +22,7 @@ export class LayoutSettingsController {
               ? window.minLayoutSizeHeightEdit.value
               : 0,
         },
+        locked: window.lockedLayoutCheckbox.checked
       };
 
       window.vms.tab.setLayoutProperties(properties);
@@ -48,6 +49,8 @@ export class LayoutSettingsController {
       .checked
       ? minSize.height
       : "";
+
+    window.lockedLayoutCheckbox.checked = state.properties.locked;
 
     updateEditsAvailability();
     window.layoutSettingsDialog.showModal();
