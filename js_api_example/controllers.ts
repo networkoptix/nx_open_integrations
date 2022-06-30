@@ -349,23 +349,13 @@ export class SceneItemsController {
 }
 
 export class AuthController {
-  async updateToken() {
+  async updateServerToken() {
     const token = await window.vms.auth.sessionToken();
-    window.token.value = token;
+    window.serverToken.value = token;
   }
 
-  async updateUser() {
-    window.user.value = "";
-    if (!window.token.value || !window.address.value)
-      return;
-
-    const request = new XMLHttpRequest();
-    const url = new URL(`rest/v1/login/sessions/${window.token.value}`, window.address.value);
-    request.onload = () => {
-      const response = JSON.parse(request.response);
-      window.user.value = response.username;
-    }
-    request.open("GET", url);
-    request.send();
+  async updateCloudToken() {
+    const token = await window.vms.auth.cloudToken();
+    window.cloudToken.value = token;
   }
 }
