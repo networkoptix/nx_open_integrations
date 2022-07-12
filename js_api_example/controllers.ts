@@ -33,6 +33,13 @@ export class LayoutSettingsController {
       "change",
       updateEditsAvailability
     );
+    window.minimalInterfaceCheckbox.addEventListener(
+      "change",
+      () => {
+        window.vms.tab.setItemMinimalInterfaceMode(window.minimalInterfaceCheckbox.checked);
+        window.header.style.display = window.minimalInterfaceCheckbox.checked ? "block" : "none"
+      }
+    );
   }
 
   async changeLayoutSettings() {
