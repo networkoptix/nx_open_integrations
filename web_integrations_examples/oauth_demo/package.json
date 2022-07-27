@@ -1,0 +1,11 @@
+{
+  "name": "oauth_demo",
+  "version": "1.0.0",
+  "description": "An example of how to use oauth.",
+  "scripts": {
+    "start": "http-server"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
