@@ -111,7 +111,7 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
     }
 
     ++m_frameIndex;
-
+    NX_PRINT << "ZZZZ: ";
     return true;
 }
 
