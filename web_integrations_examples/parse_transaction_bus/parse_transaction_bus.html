@@ -1,0 +1,65 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Parse</title>
+</head>
+<body>
+    Server: <input type="text" id="server" size="40" value="127.0.0.1:7001"><br>
+    User: <input type="text" id="user" size="40" value="admin"><br>
+    Password: <input type="text" id="pass" size="40" value="password"><br>
+    Camera ID: <input type="text" id="camera_id" size="40" value="1ef25d66-8d56-8645-036e-de1bc6e61603"><br>
+
+    <input type="button" id="connect" value="Connect" onclick="connect()" />
+    <input type="button" value="Disconnect" onclick="disconnect()" />
+
+    <div style="font-weight: bold" id="message"></div>
+
+
+<script>
+    var ws;
+
+    function connect() {
+        const url = "wss://"
+            + document.getElementById('user').value + ":"
+            + document.getElementById('pass').value + "@"
+            + document.getElementById('server').value + "/ec2/transactionBus/websocket";
+
+        console.log("connect to", url);
+        ws = new WebSocket(url);
+        ws.onopen = function() {
+            document.getElementById('connect').disabled = true
+            document.getElementById('message').innerHTML = "Result in console"
+            console.log("connected");
+        };
+        ws.onclose = function() {
+            document.getElementById('connect').disabled = false;
+            document.getElementById('message').innerHTML = ""
+            console.log("Connection is closed...");
+        };
+        ws.onerror = function(e) {
+            document.getElementById('connect').innerHTML = ""
+            document.getElementById('message').disabled = false;
+            console.log("Websocket error: " + e.msg);
+        }
+
+        ws.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            const newJson = JSON.parse(event.data);
+            if (data?.tran?.command.toLowerCase() === 'broadcastaction') {
+                const base64 = atob(JSON.parse(event.data).tran.params.runtimeParams);
+                newJson.tran.params.runtimeParams = JSON.parse(base64);
+                console.log(newJson);
+            }
+        })
+
+    }
+    function disconnect()
+    {
+        ws.close();
+    }
+</script>
+
+</body>
+</html>
