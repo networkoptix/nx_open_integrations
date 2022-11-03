@@ -157,8 +157,6 @@ target_link_libraries(opencv_object_detection_analytics_plugin
     nx_sdk
     opencv::core opencv::flann opencv::imgproc opencv::imgcodecs opencv::dnn opencv::opencv_dnn opencv::ml 
     opencv::plot opencv::opencv_features2d opencv::opencv_calib3d opencv::datasets opencv::video opencv::tracking
-   -static-libgcc
-   -static-libstdc++
 )
 
 target_compile_definitions(opencv_object_detection_analytics_plugin
