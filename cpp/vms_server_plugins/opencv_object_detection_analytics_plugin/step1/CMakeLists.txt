@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.3.2)
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "4.2.0.32836 R4")
+set(metadataSdkVersion "5.0.0.35270")
 set(metadataSdkDir "" CACHE PATH
     "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
 
