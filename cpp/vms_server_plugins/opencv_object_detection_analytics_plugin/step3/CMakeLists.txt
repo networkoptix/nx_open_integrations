@@ -13,7 +13,7 @@ if(metadataSdkDir STREQUAL "")
 endif()
 
 if(NOT DEFINED ARTIFACTORY_URL)
-    set(ARTIFACTORY_URL "https://resources.vmsproxy.com/nx_open_integrations")
+    set(ARTIFACTORY_URL "https://artifactory.nxvms.dev/artifactory/artifacts/nx_open_integrations")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
@@ -84,7 +84,7 @@ foreach(model_file_name IN LISTS model_file_names)
     if(NOT EXISTS "${model_file}")
         message("Downloading ${model_file_name}")
         file(DOWNLOAD
-            "${ARTIFACTORY_URL}/opencv/${model_file_name}"
+            "${ARTIFACTORY_URL}/opencv_object_detection_analytics_plugin/models/${model_file_name}"
             "${model_file}"
             SHOW_PROGRESS
             STATUS DOWNLOAD_STATUS
@@ -92,7 +92,7 @@ foreach(model_file_name IN LISTS model_file_names)
         list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
         if(NOT STATUS_CODE EQUAL 0)
             file(REMOVE "${model_file}")
-            message(FATAL_ERROR "Error downloading ${ARTIFACTORY_URL}/opencv/${model_file_name}")
+            message(FATAL_ERROR "Error downloading ${ARTIFACTORY_URL}/opencv_object_detection_analytics_plugin/models/${model_file_name}")
         endif()
     elseif()
         message("${model_file_name} already exits")
