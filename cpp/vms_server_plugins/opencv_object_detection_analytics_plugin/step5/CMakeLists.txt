@@ -46,6 +46,7 @@ set(OPENCV_OPTIONS
     opencv:with_cuda=False
     opencv:with_cublas=False
     opencv:dnn=True
+    opencv:with_ffmpeg=False
 )
 
 if(UNIX)
@@ -59,7 +60,7 @@ if(UNIX)
 endif()
 
 conan_cmake_run(BUILD_TYPE "Release")
-conan_cmake_configure(REQUIRES opencv/4.1.2
+conan_cmake_configure(REQUIRES opencv/4.5.5
     GENERATORS cmake_find_package
     OPTIONS ${OPENCV_OPTIONS}
     SETTINGS ${CONAN_VS_RUNTIME_MT_SETTING}
