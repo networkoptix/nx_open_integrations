@@ -20,6 +20,12 @@
                 Add with parameters
             </button>
         </div>
+        <div>
+            <button id='add8Cameras' onclick='addCameras(8)'>+8 cameras</button>
+            <button id='add16Cameras' onclick='addCameras(16)'>+16 cameras</button>
+            <button id='add32Cameras' onclick='addCameras(32)'>+32 cameras</button>
+            <button id='add64Cameras' onclick='addCameras(64)'>+64 cameras</button>
+        </div>
     </section>
 
     <section>
@@ -178,4 +184,12 @@
             </div>
         </form>
     </dialog>
+    <script>
+        function addCameras(count) {
+            const numberCamerasToAdd = window.resourcesList.length > count ? count : window.resourcesList.length
+            for (let i = 0; i < numberCamerasToAdd; i++) {
+                window.vms.tab.addItem(window.resourcesList[i].id,{})
+            }
+        }
+    </script>
 </body>
