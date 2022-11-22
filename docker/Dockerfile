@@ -4,10 +4,10 @@ FROM ubuntu:20.04
 LABEL maintainer "Network Optix <support@networkoptix.com>"
 
 # VMS Server debian package file or URL.
-ARG MEDIASERVER_DEB="http://updates.networkoptix.com/default/4.2.0.32840/linux/nxwitness-server-4.2.0.32840-linux64.deb"
+ARG MEDIASERVER_DEB=https://updates.networkoptix.com/metavms/35744/linux/metavms-server-5.0.0.35744-linux_x64.deb
 
 # VMS Server user and directory name.
-ARG COMPANY="networkoptix"
+ARG COMPANY="networkoptix-metavms"
 # Also export as environment variable to use at entrypoint.
 ENV COMPANY=${COMPANY}
 
@@ -23,7 +23,7 @@ RUN apt-get update && \
         apt-utils \
         binutils \
         curl \
-        /opt/mediaserver/package/${MEDIASERVER_DEB##*/} && \
+        "/opt/mediaserver/package/${MEDIASERVER_DEB##*/}" && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

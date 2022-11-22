@@ -6,12 +6,12 @@ services:
     build:
       context: .
       args:
-        COMPANY: "${COMPANY}"
-        MEDIASERVER_DEB: "${MEDIASERVER_URL}"
-    image: "nxwitness-server:${COMPANY}-${MEDIASERVER_VERSION}"
-    user: "${COMPANY}"
+        COMPANY: ${COMPANY}
+        MEDIASERVER_DEB: ${MEDIASERVER_URL}
+    image: metavms-server:${MEDIASERVER_VERSION}
+    user: ${COMPANY}
     ports:
-      - "${PORTS}"
+      - ${PORTS}
     # To use the host network mode, comment out the ports above and uncomment the line below.
     # network_mode: "host"
     volumes:
@@ -23,9 +23,9 @@ services:
       - ${VOLUMES_PATH}/tmp:/tmp
 
   mediaserver-root-tool:
-    image: "nxwitness-server:${COMPANY}-${MEDIASERVER_VERSION}"
-    user: "root"
+    image: metavms-server:${MEDIASERVER_VERSION}
+    user: root
     # root-tool-bin is for versions < 4.3, root-tool is for versions >= 4.3.
-    command: ["/opt/${COMPANY}/mediaserver/bin/root-tool-bin"]
+    command: ["/opt/${COMPANY}/mediaserver/bin/root-tool"]
     volumes:
       - ${VOLUMES_PATH}/tmp:/tmp

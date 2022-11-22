@@ -29,7 +29,7 @@ issues in future releases.
 
 Building an image from current directory
 
-Recommended way is to use [docker-compose](https://docs.docker.com/compose/) utility.
+Recommended way is to use [docker-compose >= 1.25](https://docs.docker.com/compose/) utility.
 Follow [Installation guide](https://docs.docker.com/compose/install/).
 
 
