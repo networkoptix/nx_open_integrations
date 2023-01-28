@@ -36,8 +36,7 @@ export class LayoutSettingsController {
     window.minimalInterfaceCheckbox.addEventListener(
       "change",
       () => {
-        window.vms.tab.setItemMinimalInterfaceMode(window.minimalInterfaceCheckbox.checked);
-        window.header.style.display = window.minimalInterfaceCheckbox.checked ? "block" : "none"
+        window.vms.self.setMinimalInterfaceMode(window.minimalInterfaceCheckbox.checked);
       }
     );
   }
