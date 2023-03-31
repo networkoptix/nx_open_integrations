@@ -1,0 +1,62 @@
+/* Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ */
+
+* {
+    background: #2b383f;
+    color: #a5b7c0;
+    border-color: #171c1f;
+}
+
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0;
+    height: 100%;
+    max-height: 100%;
+}
+
+.canvasPieContainer {
+    display:block;
+    box-sizing:border-box;
+    width:350px;
+    height:300px
+}
+.canvasBarContainer {
+    display:block;
+    box-sizing:border-box;
+    width:550px;
+
+}
+
+.entry-event {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    width: 500px;
+    cursor: pointer;
+    border-bottom: none;
+}
+.entry-event:not(:last-child) {
+    border-bottom: solid 1px;
+    padding-bottom: 12px;
+}
+#eventEntryList {
+    overflow: auto;
+    height: 100%;
+}
+
+.token-block {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%)
+}
+.token-block label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.token-block input {
+    margin-bottom: 12px;
+}

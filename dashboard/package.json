@@ -1,0 +1,17 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "description": "Demo of API available within embedded browser within desktop client",
+  "source": "index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "rm -rf dist && parcel build"
+  },
+  "author": "",
+  "license": "MPL-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "parcel": "^2.0.1",
+    "parcel-plugin-static-files-copy": "^2.6.0"
+  }
+}
