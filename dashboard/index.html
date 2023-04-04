@@ -8,13 +8,6 @@
 
 <body>
 <div>
-    <div class="token-block" id="tokenBlock">
-        <div>
-            <label for="input-token">Enter the token</label>
-            <input id="input-token"/>
-        </div>
-        <button onclick=saveToken()>Save</button>
-    </div>
     <div id="chartsBlock">
         <div class="canvasPieContainer">
             <canvas id="pieChart"></canvas>
@@ -109,9 +102,6 @@
        return fetch(requestUrl, options).then(r => {
            const res = r.json()
            return res;
-       }).catch(() => {
-           localStorage.removeItem('dashboard_token');
-           updateUI();
        });
    };
 
@@ -240,24 +230,6 @@
         eventEntryList.innerHTML = htmlString;
     }
 
-    const saveToken = async() => {
-       const token = document.getElementById('input-token').value;
-       localStorage.setItem('dashboard_token', token);
-        updateUI();
-        await drawCharts(token)
-    }
-
-    const updateUI = () => {
-        const dashboardToken = localStorage.getItem('dashboard_token');
-        if(dashboardToken) {
-            document.getElementById('tokenBlock').style.display = 'none';
-            document.getElementById('chartsBlock').style.display = 'block';
-        } else {
-            document.getElementById('tokenBlock').style.display = 'block';
-            document.getElementById('chartsBlock').style.display = 'none';
-        }
-    }
-
     const drawCharts = async (token) => {
         const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay-la.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
         const serverList =  res.reply.map((action) => {
@@ -269,13 +241,10 @@
         createEventList(res);
     }
 
-    updateUI();
-
 
     setInterval(async() => {
        // for version 5.1
-       // const token = await window.vms.auth.sessionToken();
-        const token = localStorage.getItem('dashboard_token');
+       const token = await window.vms.auth.sessionToken();
 
         if (token) {
             await drawCharts(token)
