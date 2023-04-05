@@ -268,34 +268,34 @@ R"json(
             "attributes": []
         },
         {
-            "eventTypeId": ")json" + PersonDetected::kType + R"json(",
+            "eventTypeId": ")json" + PersonDetected::kType + R"json("
         },
          {
-            "eventTypeId": ")json" + PersonLost::kType + R"json(",
+            "eventTypeId": ")json" + PersonLost::kType + R"json("
         },
           {
-            "eventTypeId": ")json" + PeopleDetected::kType + R"json(",
+            "eventTypeId": ")json" + PeopleDetected::kType + R"json("
         },
          {
-            "eventTypeId": ")json" + LineCrossed::kType + R"json(",
+            "eventTypeId": ")json" + LineCrossed::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + AreaCrossed::kType + R"json(",
+            "eventTypeId": ")json" + AreaCrossed::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + AreaEntranceDetected::kType + R"json(",
+            "eventTypeId": ")json" + AreaEntranceDetected::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + AreaExitDetected::kType + R"json(",
+            "eventTypeId": ")json" + AreaExitDetected::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + AppearanceInAreaDetected::kType + R"json(",
+            "eventTypeId": ")json" + AppearanceInAreaDetected::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + DisappearanceInAreaDetected::kType + R"json(",
+            "eventTypeId": ")json" + DisappearanceInAreaDetected::kType + R"json("
         },
         {
-            "eventTypeId": ")json" + Loitering::kType + R"json(",
+            "eventTypeId": ")json" + Loitering::kType + R"json("
         }
     ]
 })json";
