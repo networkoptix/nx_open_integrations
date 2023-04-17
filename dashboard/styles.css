@@ -1,10 +1,5 @@
 /* Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ */
-
-* {
-    background: #2b383f;
-    color: #a5b7c0;
-    border-color: #171c1f;
-}
+@import url(loader.css);
 
 body {
     font-family: sans-serif;
@@ -14,31 +9,40 @@ body {
     margin: 0;
     height: 100%;
     max-height: 100%;
+    background: #2b383f;
+    color: #a5b7c0;
+    border-color: #171c1f;
 }
 
 .canvasPieContainer {
-    display:block;
     box-sizing:border-box;
-    width:350px;
-    height:300px
+    height:300px;
+    display: flex;
+    justify-content: center;
 }
 .canvasBarContainer {
-    display:block;
     box-sizing:border-box;
     width:550px;
-
+    display: block;
+    margin: 0 auto;
 }
 
 .entry-event {
     margin-top: 12px;
     margin-bottom: 12px;
-    width: 500px;
     cursor: pointer;
     border-bottom: none;
+    padding: 8px;
 }
 .entry-event:not(:last-child) {
     border-bottom: solid 1px;
     padding-bottom: 12px;
+}
+.entry-event:hover {
+    background-color: rgb(54, 162, 235, 0.5);
+    cursor:pointer;
+    color: white;
+    display: block;
 }
 #eventEntryList {
     overflow: auto;
@@ -56,7 +60,37 @@ body {
     display: block;
     margin-bottom: 8px;
 }
-
+.containerLoader {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background: rgba(0,0,0, 0.7);
+}
+.content-container {
+    width: 100%;
+}
+.tabs {
+    background: black;
+}
+.tab-content {
+    padding: 20px;
+}
+.tabs button {
+    background: black;
+    border: none;
+    color: white;
+    padding: 12px;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+}
+.tabs .selected {
+    background:rgb(54, 162, 235, 0.5)
+}
 .token-block input {
     margin-bottom: 12px;
+}
+
+#location {
+    margin-bottom: 8px;
 }

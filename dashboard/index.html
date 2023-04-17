@@ -7,17 +7,34 @@
 </head>
 
 <body>
-<div>
-    <div id="chartsBlock">
-        <div class="canvasPieContainer">
-            <canvas id="pieChart"></canvas>
-        </div>
-        <div class="canvasBarContainer">
-            <canvas id="barChart"></canvas>
+<div class="content-container">
+    <div class="tabs">
+        <button class="tab tab-charts selected" onclick="openCity(event,'charts')">Charts</button>
+        <button class="tab tab-info" onclick="openCity(event,'info')">Info</button>
+    </div>
+    <div id="charts" class="tab-content">
+        <div id="chartsBlock">
+            <div class="canvasPieContainer">
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="canvasBarContainer">
+                <canvas id="barChart"></canvas>
+            </div>
         </div>
     </div>
+    <div id="info" class="tab-content" style="display:none">
+        <select onchange=changeLocation() id="location">
+            <option value="All">All</option>
+            <option value="Burbank">Burbank</option>
+            <option value="Walnut Creek">Walnut Creek</option>
+            <option value="Demo">Demo</option>
+        </select>
+        <div id="eventEntryList"></div>
+    </div>
 </div>
-<div id="eventEntryList"></div>
+<div id="containerLoader" class="containerLoader">
+    <div class="loader">Loading...</div>
+</div>
 
 <script>
     const pieChartContext = document.getElementById('pieChart');
@@ -89,6 +106,20 @@
         },
     });
 
+    function openCity(evt, tabName) {
+        var i, x, tablinks;
+        x = document.getElementsByClassName("tab-content");
+        for (i = 0; i < x.length; i++) {
+            x[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tab");
+        for (i = 0; i < x.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" selected", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " selected";
+    }
+
    const systemGetWrapper = (systemToken, url) => {
        const requestUrl = new URL(url);
        const options = {
@@ -117,6 +148,11 @@
        const today = new Date().getTime();
        const daysAgo = 7;
        return new Date(today - (daysAgo * 24 * 60 * 60 * 1000));
+   }
+
+   const changeLocation = async() => {
+       const token = localStorage.getItem('tokenDashboard');
+       await drawCharts(token);
    }
 
     const createDatasetForBarChart = (data) => {
@@ -210,8 +246,14 @@
     }
 
     const createEventList = (res) => {
+        const selectedLocation = document.getElementById('location').value;
         const eventEntryList = document.getElementById('eventEntryList')
         let htmlString = '';
+        if(selectedLocation && selectedLocation !== 'All') {
+            res.reply = res.reply.filter((item) => {
+                return getDoor(item)?.server === selectedLocation
+            })
+        }
         res.reply.forEach((action) => {
             if(getDoor(action)) {
                 const cameras = getDoor(action).doors.find((door) => {
@@ -220,7 +262,7 @@
                 const timestamp = JSON.parse(action.eventParams.eventTimestampUsec);
 
                 htmlString= `<div class="entry-event" onclick='selectAction("${cameras}", "${timestamp}")' >
-                            <b>Entry event:</b> ${moment(JSON.parse(action.eventParams.eventTimestampUsec) / 1000 - 5).format('YYYY-MM-DD hh:mm:ss')}
+                            <b>Entry event:</b> ${moment(JSON.parse(action.eventParams.eventTimestampUsec) / 1000 - 5).format('DD.MM hh:mm:ss')}
                             <div>${getDoor(action)?.server},</div>
                             <div>${action.eventParams?.resourceName},</div>
                             <div>${action.eventParams?.description}</div>
@@ -231,23 +273,25 @@
     }
 
     const drawCharts = async (token) => {
+        document.getElementById('containerLoader').style.display = 'block';
         const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay-la.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
-        const serverList =  res.reply.map((action) => {
+        const serverList = res.reply.map((action) => {
             return getDoor(action)?.server;
         });
         updatePieChart(serverList);
         updateBarChart(createDatasetForBarChart(res));
 
         createEventList(res);
+        document.getElementById('containerLoader').style.display = 'none';
     }
 
 
     setInterval(async() => {
-       // for version 5.1
-       const token = await window.vms.auth.sessionToken();
-
+        // for version 5.1
+        const token = await window.vms.auth.sessionToken();
+        localStorage.setItem('tokenDashboard', token);
         if (token) {
-            await drawCharts(token)
+            await drawCharts(token);
         }
    }, 20000);
 
