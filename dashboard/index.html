@@ -39,6 +39,7 @@
 <script>
     const pieChartContext = document.getElementById('pieChart');
     const barChartContext = document.getElementById('barChart');
+    let currentLayout;
     const pieChart =  new Chart(pieChartContext, {
         type: 'pie',
         data: {
@@ -151,6 +152,7 @@
    }
 
    const changeLocation = async() => {
+       document.getElementById('containerLoader').style.display = 'block';
        const token = localStorage.getItem('tokenDashboard');
        await drawCharts(token);
    }
@@ -179,7 +181,7 @@
 
     const closeOpendedTabs = (tabs, webPageId) => {
         tabs.items.forEach((tab) => {
-            if(tab.id !== webPageId) {
+            if(!currentLayout.items.some((item) => item.id === tab.id)) {
                 window.vms.tab.removeItem(tab.id);
             }
         })
@@ -202,9 +204,17 @@
        initGeometryWebPage(webPage.id, settings);
        closeOpendedTabs(tab, webPage.id);
 
+       let rightItem = currentLayout.items[0];
+       let minY = currentLayout.items[0].params.geometry.pos.y;
+       currentLayout && currentLayout.items.forEach((item) => {
+           rightItem = item.params.geometry.pos.x + item.params.geometry.size.width > rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width ? item : rightItem;
+           minY =  item.params.geometry.pos.y < minY ? item.params.geometry.pos.y : minY;
+       })
+
+
        cameras.split(',').forEach((cameraId, i) => {
            settings.geometry = {
-               pos: {x: 4, y: i},
+               pos: {x: rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width, y: minY + i},
                size: {
                    width: 1,
                    height: 1,
@@ -273,7 +283,6 @@
     }
 
     const drawCharts = async (token) => {
-        document.getElementById('containerLoader').style.display = 'block';
         const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay-la.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
         const serverList = res.reply.map((action) => {
             return getDoor(action)?.server;
@@ -285,6 +294,9 @@
         document.getElementById('containerLoader').style.display = 'none';
     }
 
+    setTimeout(async() => {
+       currentLayout = await window.vms.tab.state();
+    }, 100)
 
     setInterval(async() => {
         // for version 5.1
