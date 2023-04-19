@@ -193,15 +193,15 @@
 
        let tab = await window.vms.tab.state();
 
-       settings.geometry = {
-           pos: {x: 0, y: 0},
-           size: {
-               width: 4,
-               height: 4,
-           },
-       }
+       // settings.geometry = {
+       //
+       //     size: {
+       //         width: 4,
+       //         height: 4,
+       //     },
+       // }
        const webPage = tab.items.find((item) => item.resource.type === "web_page");
-       // initGeometryWebPage(webPage.id, settings);
+       // await initGeometryWebPage(webPage.id, settings);
        closeOpendedTabs(tab, webPage.id);
        //
        // const index = currentLayout.items.findIndex((item) => item.id === webPage.id)
@@ -298,6 +298,21 @@
     }
 
     setTimeout(async() => {
+        let settings = {media: {}};
+        // settings.media.timestampMs = timestampMs / 1000;
+
+        let tab = await window.vms.tab.state();
+
+        settings.geometry = {
+
+            size: {
+                width: 4,
+                height: 4,
+            },
+        }
+        const webPage = tab.items.find((item) => item.resource.type === "web_page");
+        await initGeometryWebPage(webPage.id, settings);
+
        currentLayout = await window.vms.tab.state();
     }, 100)
 
