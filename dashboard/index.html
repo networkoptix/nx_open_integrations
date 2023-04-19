@@ -201,8 +201,12 @@
            },
        }
        const webPage = tab.items.find((item) => item.resource.type === "web_page");
-       initGeometryWebPage(webPage.id, settings);
+       // initGeometryWebPage(webPage.id, settings);
        closeOpendedTabs(tab, webPage.id);
+       //
+       // const index = currentLayout.items.findIndex((item) => item.id === webPage.id)
+       //
+       // currentLayout.items[index].params.geometry = settings.geometry;
 
        let rightItem = currentLayout.items[0];
        let minY = currentLayout.items[0].params.geometry.pos.y;
@@ -210,7 +214,6 @@
            rightItem = item.params.geometry.pos.x + item.params.geometry.size.width > rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width ? item : rightItem;
            minY =  item.params.geometry.pos.y < minY ? item.params.geometry.pos.y : minY;
        })
-
 
        cameras.split(',').forEach((cameraId, i) => {
            settings.geometry = {
