@@ -286,7 +286,7 @@
     }
 
     const drawCharts = async (token) => {
-        const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay-la.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
+        const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
         const serverList = res.reply.map((action) => {
             return getDoor(action)?.server;
         });
@@ -304,16 +304,15 @@
         let tab = await window.vms.tab.state();
 
         settings.geometry = {
-
             size: {
                 width: 4,
                 height: 4,
             },
         }
-        const webPage = tab.items.find((item) => item.resource.type === "web_page");
-        await initGeometryWebPage(webPage.id, settings);
-
-       currentLayout = await window.vms.tab.state();
+        const index = tab.items.findIndex((item) => item.resource.type === "web_page");
+        tab.items[index].params.geometry.size = settings.geometry.size;
+        currentLayout = tab
+        await initGeometryWebPage(tab.items[index].id, settings);
     }, 100)
 
     setInterval(async() => {
