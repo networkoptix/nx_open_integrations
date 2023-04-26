@@ -72,10 +72,10 @@ const DOORS_LIST = [
         ]
     },
     {
-        "server": "Dubai Demo VM Server",
+        "server": "Demo Server",
         "doors": [
             {
-                "name": "Dubai Intersec Reader",
+                "name": "Demo Reader",
                 "cameras": [
                     "aa877c68-b2e4-bd1a-cc81-255e0b34af60",
                     "0690778c-4e7f-9cb2-cbd6-70b140d9806e"
