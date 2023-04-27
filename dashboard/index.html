@@ -161,7 +161,8 @@
         let datasets = {};
         data.reply.forEach((action) => {
             const door = getDoor(action);
-            const numberDay = new Date(JSON.parse(action.eventParams.eventTimestampUsec)).getDay();
+            const time = action.eventParams.eventTimestampUsec / 1000;
+            const numberDay = new Date(JSON.parse(time)).getDay();
             if(door?.server) {
                 if(!datasets.hasOwnProperty(door.server)) {
                     datasets[door.server] = [0,0,0,0,0,0,0];
