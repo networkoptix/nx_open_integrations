@@ -10,6 +10,11 @@ open source integration examples** - the source code and specifications which sh
 a third-party solution with the Nx Meta Video Management Platform (VMP) and thus all Powered-By-Nx
 products, including Nx Witness Video Management System (VMS).
 
+There are sevral branches in the repository corresponding to the VMS releases: vms_5.0, vms_5.1.
+The master branch corresponds to the current development version of the VMS. Code examples in the 
+branch does not necessary work with the release versions.
+Pay your attention to what branch you are about to clone.
+
 Most of the source code and other files are licensed under the terms of Mozilla Public License 2.0
 (unless specified otherwise in the files) which can be found in the license_mpl2.md file in the
 root directory of the repository.
