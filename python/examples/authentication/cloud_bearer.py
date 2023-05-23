@@ -1,11 +1,16 @@
 import requests
 from pprint import pprint
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-CLOUD_USER = 'user@gmail.com'  # cloud account email
-CLOUD_PASSWORD = 'pass123'  # cloud account password
-LOCAL_URL = 'https://localhost:7001'  # https://<server_ip>:<sever_port>
+CLOUD_USER = 'cloudAccount@networkoptix.com'  # cloud account 
+CLOUD_PASSWORD = 'cloudAccountPassword'  # cloud account password
+CLOUD_SYSTEM_ID = "" # (RFC 4122) More detail to locate your cloud system Id.
+                     # https://support.networkoptix.com/hc/en-us/articles/360026419393-What-is-Cloud-Connect-
+
 CLOUD_DOMAIN_NAME = 'nxvms.com'  # Cloud service domain name
-CLOUD_URL = 'https://' + CLOUD_DOMAIN_NAME
+CLOUD_URL = 'https://' + CLOUD_DOMAIN_NAME # Cloud portal URL 
+RELAY_DOMAIN_NAME = '.relay.vmsproxy.com' # Cloud relay entry
 
 
 def check_status(response, verbose):
@@ -32,21 +37,6 @@ def request_api(url, uri, method, **kwargs):
         return response.content
 
 
-def get_cloud_system_id(api_response):
-    return api_response['cloudId']
-
-
-def has_cloud_host(api_response):
-    return api_response['cloudHost'] == CLOUD_DOMAIN_NAME
-
-
-def is_cloud_user(api_response):
-    if api_response['type'] != 'cloud':
-        return False
-    else:
-        return True
-
-
 def create_payload(cloud_system_id=None):
     payload = {
         'grant_type': 'password', 'response_type': 'token', 'client_id': '3rdParty',
@@ -55,6 +45,10 @@ def create_payload(cloud_system_id=None):
     if cloud_system_id is not None:
         payload['scope'] = f'cloudSystemId={cloud_system_id}'
     return payload
+
+
+def get_cloud_system_host_url(cloud_system_id):
+    return cloud_system_id + RELAY_DOMAIN_NAME
 
 
 def get_token(api_response):
@@ -89,18 +83,8 @@ def print_system_info(response):
 
 
 def main():
-    system_info = request_api(LOCAL_URL, '/rest/v1/system/info', 'GET', verify=False)
-    if not has_cloud_host(system_info):
-        print('Not a cloud-connected system')
-        exit(1)
-    cloud_system_id = get_cloud_system_id(system_info)
-    oauth_payload = create_payload(cloud_system_id)
 
-    user_info = request_api(LOCAL_URL, f'/rest/v1/login/users/{CLOUD_USER}', 'GET', verify=False)
-
-    if not is_cloud_user(user_info):
-        print(CLOUD_USER + ' is not a cloud user.')
-        exit(1)
+    oauth_payload = create_payload(CLOUD_SYSTEM_ID)
 
     oath_response = request_api(CLOUD_URL, f'/cdb/oauth2/token', 'POST', json=oauth_payload)
     primary_token = get_token(oath_response)
@@ -109,20 +93,23 @@ def main():
     oath_response = request_api(CLOUD_URL, f'/cdb/oauth2/token', 'POST', json=oauth_payload)
     secondary_token = get_token(oath_response)
 
-    token_info = request_api(LOCAL_URL, f'/rest/v1/login/sessions/{primary_token}', 'GET', verify=False)
-
+    #https://{cloudSystemId}.relay.vmsproxy.com
+    cloud_system_url = "https://" + get_cloud_system_host_url(CLOUD_SYSTEM_ID) 
+    
+    token_info = request_api(cloud_system_url, f'/rest/v1/login/sessions/{primary_token}', 'GET', verify=False)
     if is_expired(token_info):
         print('Expired token')
         exit(1)
 
     primary_token_header = create_header(primary_token)
 
-    system_info = request_api(LOCAL_URL, f'/rest/v1/servers/*/info', 'GET',
+    system_info = request_api(cloud_system_url, f'/rest/v1/servers/*/info', 'GET',
                               headers=primary_token_header, verify=False)
     print_system_info(system_info)
-    secondary_token_header = create_header(secondary_token)
 
-    request_api(CLOUD_URL, f'/cdb/oauth2/token/{primary_token}', 'DELETE', headers=secondary_token_header)
+    secondary_token_header = create_header(secondary_token)
+    
+    request_api(CLOUD_URL, f'/cdb/oauth2/token/{primary_token}', 'DELETE', headers=secondary_token_header)   
 
 
 if __name__ == '__main__':
