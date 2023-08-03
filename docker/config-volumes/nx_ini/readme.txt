@@ -1,1 +1,0 @@
-VMS Server ini files.
