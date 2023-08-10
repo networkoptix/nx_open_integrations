@@ -1,329 +1,335 @@
 <!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+
 <head>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <script type="text/javascript" src="constants.ts"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type = "text/JavaScript" src = "https://MomentJS.com/downloads/moment.js"></script>
+    <script type="text/JavaScript" src="https://MomentJS.com/downloads/moment.js"></script>
 </head>
 
 <body>
-<div class="content-container">
-    <div class="tabs">
-        <button class="tab tab-charts selected" onclick="openCity(event,'charts')">Charts</button>
-        <button class="tab tab-info" onclick="openCity(event,'info')">Info</button>
-    </div>
-    <div id="charts" class="tab-content">
-        <div id="chartsBlock">
-            <div class="canvasPieContainer">
-                <canvas id="pieChart"></canvas>
-            </div>
-            <div class="canvasBarContainer">
-                <canvas id="barChart"></canvas>
+    <div class="content-container">
+        <div class="tabs">
+            <button class="tab tab-charts selected" onclick="openCity(event,'charts')">Charts</button>
+            <button class="tab tab-info" onclick="openCity(event,'info')">Info</button>
+        </div>
+        <div id="charts" class="tab-content">
+            <div id="chartsBlock">
+                <div class="canvasPieContainer">
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <div class="canvasBarContainer">
+                    <canvas id="barChart"></canvas>
+                </div>
             </div>
         </div>
+        <div id="info" class="tab-content" style="display:none">
+            <select onchange=changeLocation() id="location">
+                <option value="All">All</option>
+                <option value="Burbank">Burbank</option>
+                <option value="Walnut Creek">Walnut Creek</option>
+                <option value="Demo">Demo</option>
+            </select>
+            <div id="eventEntryList"></div>
+        </div>
     </div>
-    <div id="info" class="tab-content" style="display:none">
-        <select onchange=changeLocation() id="location">
-            <option value="All">All</option>
-            <option value="Burbank">Burbank</option>
-            <option value="Walnut Creek">Walnut Creek</option>
-            <option value="Demo">Demo</option>
-        </select>
-        <div id="eventEntryList"></div>
+    <div id="containerLoader" class="containerLoader">
+        <div class="loader">Loading...</div>
     </div>
-</div>
-<div id="containerLoader" class="containerLoader">
-    <div class="loader">Loading...</div>
-</div>
 
-<script>
-    const pieChartContext = document.getElementById('pieChart');
-    const barChartContext = document.getElementById('barChart');
-    let currentLayout;
-    const pieChart =  new Chart(pieChartContext, {
-        type: 'pie',
-        data: {
-            labels: [
-                'Burbank',
-                'Walnut Creek',
-                'Demo'
-            ],
-            datasets: [{
-                label: 'Entries',
-                data: [0,0,0],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.5)',
-                    'rgb(54, 162, 235, 0.5)',
-                    'rgb(52, 235, 128, 0.5)'
+    <script>
+        const pieChartContext = document.getElementById('pieChart');
+        const barChartContext = document.getElementById('barChart');
+        let currentLayout;
+        const pieChart = new Chart(pieChartContext, {
+            type: 'pie',
+            data: {
+                labels: [
+                    'Burbank',
+                    'Walnut Creek',
+                    'Demo'
                 ],
-                hoverOffset: 4
-            }]
-        },
-    });
-    const barChart = new Chart(barChartContext, {
-        type: 'bar',
-        data: {
-            labels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            datasets: [
+                datasets: [{
+                    label: 'Entries',
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgb(54, 162, 235, 0.5)',
+                        'rgb(52, 235, 128, 0.5)'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+        });
+        const barChart = new Chart(barChartContext, {
+            type: 'bar',
+            data: {
+                labels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                datasets: [
+                    {
+                        label: 'Walnut Creek',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 0.5)'
+                    },
+                    {
+                        label: 'Burbank',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgb(54, 162, 235, 0.5)',
+                        borderColor: 'rgb(54, 162, 235, 0.5)'
+                    },
+                    {
+                        label: 'Demo',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgb(52, 235, 128, 0.5)',
+                        borderColor: 'rgb(52, 235, 128, 0.5)'
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                // Elements options apply to all of the options unless overridden in a dataset
+                // In this case, we are setting the border of each horizontal bar to be 2px wide
+                elements: {
+                    bar: {
+                        borderWidth: 1,
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Daily entries by location'
+                    }
+                }
+            },
+        });
+
+        function openCity(evt, tabName) {
+            var i, x, tablinks;
+            x = document.getElementsByClassName("tab-content");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < x.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" selected", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " selected";
+        }
+
+        const systemGetWrapper = (systemToken, url) => {
+            const requestUrl = new URL(url);
+            const options = {
+                method: "GET",
+                headers: {},
+            };
+            if (systemToken) {
+                options.headers['Authorization'] = `Bearer ${systemToken}`;
+                options.headers['Content-Type'] = "application/json";
+            }
+            return fetch(requestUrl, options).then(r => {
+                const res = r.json()
+                return res;
+            });
+        };
+
+        const getDoor = (action) => {
+            return DOORS_LIST.find((item) => {
+                return item.doors.some((door) => {
+                    return action?.eventParams?.resourceName === door.name
+                });
+            })
+        }
+
+        const getDateWeekAgo = () => {
+            const today = new Date().getTime();
+            const daysAgo = 7;
+            return new Date(today - (daysAgo * 24 * 60 * 60 * 1000));
+        }
+
+        const changeLocation = async () => {
+            document.getElementById('containerLoader').style.display = 'block';
+            const token = localStorage.getItem('tokenDashboard');
+            await drawCharts(token);
+        }
+
+        const createDatasetForBarChart = (data) => {
+            let datasets = {};
+            data.reply.forEach((action) => {
+                const door = getDoor(action);
+                const time = action.eventParams.eventTimestampUsec / 1000;
+                const numberDay = new Date(JSON.parse(time)).getDay();
+                if (door?.server) {
+                    if (!datasets.hasOwnProperty(door.server)) {
+                        datasets[door.server] = [0, 0, 0, 0, 0, 0, 0];
+                    }
+                    datasets[door.server][numberDay] = datasets[door.server][numberDay] + 1;
+                }
+            });
+            return datasets;
+        }
+
+        const initGeometryWebPage = async (webPageId, settings) => {
+            await window.vms.tab.setItemParams(
+                webPageId,
+                settings
+            );
+        }
+
+        const closeOpendedTabs = (tabs, webPageId) => {
+            tabs.items.forEach((tab) => {
+                if (!currentLayout.items.some((item) => item.id === tab.id)) {
+                    window.vms.tab.removeItem(tab.id);
+                }
+            })
+        }
+
+        async function selectAction(cameras, timestampMs) {
+            let settings = { media: {} };
+            settings.media.timestampMs = timestampMs / 1000;
+
+            let tab = await window.vms.tab.state();
+
+            // settings.geometry = {
+            //
+            //     size: {
+            //         width: 4,
+            //         height: 4,
+            //     },
+            // }
+            const webPage = tab.items.find((item) => item.resource.type === "web_page");
+            // await initGeometryWebPage(webPage.id, settings);
+            closeOpendedTabs(tab, webPage.id);
+            //
+            // const index = currentLayout.items.findIndex((item) => item.id === webPage.id)
+            //
+            // currentLayout.items[index].params.geometry = settings.geometry;
+
+            let rightItem = currentLayout.items[0];
+            let minY = currentLayout.items[0].params.geometry.pos.y;
+            currentLayout && currentLayout.items.forEach((item) => {
+                rightItem = item.params.geometry.pos.x + item.params.geometry.size.width > rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width ? item : rightItem;
+                minY = item.params.geometry.pos.y < minY ? item.params.geometry.pos.y : minY;
+            })
+
+            cameras.split(',').forEach((cameraId, i) => {
+                settings.geometry = {
+                    pos: { x: rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width, y: minY + i },
+                    size: {
+                        width: 1,
+                        height: 1,
+                    },
+                }
+                window.vms.tab.addItem(cameraId, settings);
+            })
+        }
+        const updatePieChart = (data) => {
+            pieChart.data.datasets = [{
+                data: [data.filter((it) => it === 'Burbank').length, data.filter((it) => it === 'Walnut Creek').length, data.filter((it) => it === "Demo Server").length],
+                backgroundColor: ['rgb(54, 162, 235, 0.5)', 'rgba(255, 99, 132, 0.5)', 'rgb(52, 235, 128, 0.5)']
+            }];
+            pieChart.update();
+        }
+
+        const updateBarChart = (data) => {
+            barChart.data.datasets = [
                 {
                     label: 'Walnut Creek',
-                    data: [0,0,0,0,0,0,0],
+                    data: data['Walnut Creek'],
                     backgroundColor: 'rgba(255, 99, 132, 0.5)',
                     borderColor: 'rgba(255, 99, 132, 0.5)'
                 },
                 {
                     label: 'Burbank',
-                    data:  [0,0,0,0,0,0,0],
+                    data: data['Burbank'],
                     backgroundColor: 'rgb(54, 162, 235, 0.5)',
                     borderColor: 'rgb(54, 162, 235, 0.5)'
                 },
                 {
                     label: 'Demo',
-                    data:  [0,0,0,0,0,0,0],
+                    data: data['Demo Server'],
                     backgroundColor: 'rgb(52, 235, 128, 0.5)',
                     borderColor: 'rgb(52, 235, 128, 0.5)'
                 }
             ]
-        },
-        options: {
-            indexAxis: 'y',
-            // Elements options apply to all of the options unless overridden in a dataset
-            // In this case, we are setting the border of each horizontal bar to be 2px wide
-            elements: {
-                bar: {
-                    borderWidth: 1,
-                }
-            },
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                title: {
-                    display: true,
-                    text: 'Daily entries by location'
-                }
-            }
-        },
-    });
-
-    function openCity(evt, tabName) {
-        var i, x, tablinks;
-        x = document.getElementsByClassName("tab-content");
-        for (i = 0; i < x.length; i++) {
-            x[i].style.display = "none";
+            barChart.update();
         }
-        tablinks = document.getElementsByClassName("tab");
-        for (i = 0; i < x.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" selected", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " selected";
-    }
 
-   const systemGetWrapper = (systemToken, url) => {
-       const requestUrl = new URL(url);
-       const options = {
-           method: "GET",
-           headers: {},
-       };
-       if (systemToken) {
-           options.headers['Authorization'] = `Bearer ${systemToken}`;
-           options.headers['Content-Type'] = "application/json";
-       }
-       return fetch(requestUrl, options).then(r => {
-           const res = r.json()
-           return res;
-       });
-   };
-
-   const getDoor = (action) => {
-       return DOORS_LIST.find((item) => {
-           return item.doors.some((door) => {
-               return action?.eventParams?.resourceName === door.name
-           });
-       })
-   }
-
-   const getDateWeekAgo = () => {
-       const today = new Date().getTime();
-       const daysAgo = 7;
-       return new Date(today - (daysAgo * 24 * 60 * 60 * 1000));
-   }
-
-   const changeLocation = async() => {
-       document.getElementById('containerLoader').style.display = 'block';
-       const token = localStorage.getItem('tokenDashboard');
-       await drawCharts(token);
-   }
-
-    const createDatasetForBarChart = (data) => {
-        let datasets = {};
-        data.reply.forEach((action) => {
-            const door = getDoor(action);
-            const time = action.eventParams.eventTimestampUsec / 1000;
-            const numberDay = new Date(JSON.parse(time)).getDay();
-            if(door?.server) {
-                if(!datasets.hasOwnProperty(door.server)) {
-                    datasets[door.server] = [0,0,0,0,0,0,0];
-                }
-                    datasets[door.server][numberDay] = datasets[door.server][numberDay] + 1;
+        const createEventList = (res) => {
+            const selectedLocation = document.getElementById('location').value;
+            const eventEntryList = document.getElementById('eventEntryList')
+            let htmlString = '';
+            if (selectedLocation && selectedLocation !== 'All') {
+                res.reply = res.reply.filter((item) => {
+                    return getDoor(item)?.server === selectedLocation
+                })
             }
-        });
-        return datasets;
-    }
+            res.reply.forEach((action) => {
+                if (getDoor(action)) {
+                    const cameras = getDoor(action).doors.find((door) => {
+                        return door.name === action.eventParams.resourceName;
+                    }).cameras;
+                    const timestamp = JSON.parse(action.eventParams.eventTimestampUsec);
 
-    const initGeometryWebPage = async(webPageId, settings) => {
-        await window.vms.tab.setItemParams(
-            webPageId,
-            settings
-        );
-    }
-
-    const closeOpendedTabs = (tabs, webPageId) => {
-        tabs.items.forEach((tab) => {
-            if(!currentLayout.items.some((item) => item.id === tab.id)) {
-                window.vms.tab.removeItem(tab.id);
-            }
-        })
-    }
-
-   async function selectAction(cameras, timestampMs) {
-       let settings = {media: {}};
-       settings.media.timestampMs = timestampMs / 1000;
-
-       let tab = await window.vms.tab.state();
-
-       // settings.geometry = {
-       //
-       //     size: {
-       //         width: 4,
-       //         height: 4,
-       //     },
-       // }
-       const webPage = tab.items.find((item) => item.resource.type === "web_page");
-       // await initGeometryWebPage(webPage.id, settings);
-       closeOpendedTabs(tab, webPage.id);
-       //
-       // const index = currentLayout.items.findIndex((item) => item.id === webPage.id)
-       //
-       // currentLayout.items[index].params.geometry = settings.geometry;
-
-       let rightItem = currentLayout.items[0];
-       let minY = currentLayout.items[0].params.geometry.pos.y;
-       currentLayout && currentLayout.items.forEach((item) => {
-           rightItem = item.params.geometry.pos.x + item.params.geometry.size.width > rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width ? item : rightItem;
-           minY =  item.params.geometry.pos.y < minY ? item.params.geometry.pos.y : minY;
-       })
-
-       cameras.split(',').forEach((cameraId, i) => {
-           settings.geometry = {
-               pos: {x: rightItem.params.geometry.pos.x + rightItem.params.geometry.size.width, y: minY + i},
-               size: {
-                   width: 1,
-                   height: 1,
-               },
-           }
-           window.vms.tab.addItem(cameraId, settings);
-       })
-   }
-    const updatePieChart = (data) => {
-        pieChart.data.datasets = [{
-            data: [data.filter((it) => it === 'Burbank').length, data.filter((it) => it === 'Walnut Creek').length, data.filter((it) => it === "Demo Server").length],
-            backgroundColor: [ 'rgb(54, 162, 235, 0.5)', 'rgba(255, 99, 132, 0.5)', 'rgb(52, 235, 128, 0.5)']
-        }];
-        pieChart.update();
-    }
-
-    const updateBarChart = (data) => {
-        barChart.data.datasets = [
-            {
-                label: 'Walnut Creek',
-                data: data['Walnut Creek'],
-                backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                borderColor: 'rgba(255, 99, 132, 0.5)'
-            },
-            {
-                label: 'Burbank',
-                data: data['Burbank'],
-                backgroundColor: 'rgb(54, 162, 235, 0.5)',
-                borderColor: 'rgb(54, 162, 235, 0.5)'
-            },
-            {
-                label: 'Demo',
-                data: data['Demo Server'],
-                backgroundColor: 'rgb(52, 235, 128, 0.5)',
-                borderColor: 'rgb(52, 235, 128, 0.5)'
-            }
-        ]
-        barChart.update();
-    }
-
-    const createEventList = (res) => {
-        const selectedLocation = document.getElementById('location').value;
-        const eventEntryList = document.getElementById('eventEntryList')
-        let htmlString = '';
-        if(selectedLocation && selectedLocation !== 'All') {
-            res.reply = res.reply.filter((item) => {
-                return getDoor(item)?.server === selectedLocation
-            })
-        }
-        res.reply.forEach((action) => {
-            if(getDoor(action)) {
-                const cameras = getDoor(action).doors.find((door) => {
-                    return door.name === action.eventParams.resourceName;
-                }).cameras;
-                const timestamp = JSON.parse(action.eventParams.eventTimestampUsec);
-
-                htmlString= `<div class="entry-event" onclick='selectAction("${cameras}", "${timestamp}")' >
+                    htmlString = `<div class="entry-event" onclick='selectAction("${cameras}", "${timestamp}")' >
                             <b>Entry event:</b> ${moment(JSON.parse(action.eventParams.eventTimestampUsec) / 1000 - 5).format('DD.MM hh:mm:ss')}
                             <div>${getDoor(action)?.server},</div>
                             <div>${action.eventParams?.resourceName},</div>
                             <div>${action.eventParams?.description}</div>
                          </div>` + htmlString;
+                }
+            });
+            eventEntryList.innerHTML = htmlString;
+        }
+
+        const drawCharts = async (token) => {
+            let res;
+            try {
+                res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay.vmsproxy.com/ec2/getEvents?limit=200000&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction&text=Person`);
+            } catch (err) {
+                console.log('err from systemGetWrapper', err);
             }
-        });
-        eventEntryList.innerHTML = htmlString;
-    }
+            const serverList = res.reply.map((action) => {
+                return getDoor(action)?.server;
+            });
+            updatePieChart(serverList);
+            updateBarChart(createDatasetForBarChart(res));
 
-    const drawCharts = async (token) => {
-        const res = await systemGetWrapper(token, `https://322ed674-4f26-4a8d-b43b-cc4547874e7f.relay.vmsproxy.com/ec2/getEvents?limit=50000&from=${getDateWeekAgo()}&format=json&event_type=userDefinedEvent&action_type=diagnosticsAction`);
-        const serverList = res.reply.map((action) => {
-            return getDoor(action)?.server;
-        });
-        updatePieChart(serverList);
-        updateBarChart(createDatasetForBarChart(res));
-
-        createEventList(res);
-        document.getElementById('containerLoader').style.display = 'none';
-    }
-
-    setTimeout(async() => {
-        let settings = {media: {}};
-        // settings.media.timestampMs = timestampMs / 1000;
-
-        let tab = await window.vms.tab.state();
-
-        settings.geometry = {
-            size: {
-                width: 4,
-                height: 4,
-            },
+            createEventList(res);
+            document.getElementById('containerLoader').style.display = 'none';
         }
-        const index = tab.items.findIndex((item) => item.resource.type === "web_page");
-        tab.items[index].params.geometry.size = settings.geometry.size;
-        currentLayout = tab
-        await initGeometryWebPage(tab.items[index].id, settings);
-    }, 100)
 
-    setInterval(async() => {
-        // for version 5.1
-        const token = await window.vms.auth.sessionToken();
-        localStorage.setItem('tokenDashboard', token);
-        if (token) {
-            await drawCharts(token);
-        }
-   }, 20000);
+        setTimeout(async () => {
+            let settings = { media: {} };
+            // settings.media.timestampMs = timestampMs / 1000;
 
-</script>
+            let tab = await window.vms.tab.state();
+
+            settings.geometry = {
+                size: {
+                    width: 4,
+                    height: 4,
+                },
+            }
+            const index = tab.items.findIndex((item) => item.resource.type === "web_page");
+            tab.items[index].params.geometry.size = settings.geometry.size;
+            currentLayout = tab
+            await initGeometryWebPage(tab.items[index].id, settings);
+        }, 100)
+
+        setInterval(async () => {
+            // for version 5.1
+            const token = await window.vms.auth.sessionToken();
+            localStorage.setItem('tokenDashboard', token);
+            if (token) {
+                await drawCharts(token);
+            }
+        }, 20000);
+
+    </script>
 </body>

@@ -15,8 +15,8 @@ const DOORS_LIST = [
                 "name": "WC - Front Door",
                 "cameras": [
                     "62f711ed-e26d-e3dc-4ea0-a378ca0ecc26",
-                    "90553aac-05dd-a3c1-d76c-2986b8e34c3b",
-                    "9044626e-9ef4-4394-785c-66c9569c9a5c"
+                    "90553aac-05dd-a3c1-d76c-2986b8e34c3b", // has something in the view that keeps triggering motion probably
+                    "9044626e-9ef4-4394-785c-66c9569c9a5c" // duplicate of building entry 4th
                 ]
             },
             {
@@ -24,21 +24,21 @@ const DOORS_LIST = [
                 "cameras": [
                     "3c2cbdd6-7e6c-14be-f093-140e79979160",
                     "1020806b-e210-9ffa-6fe1-51e30b20e03f",
-                    "1020806b-e210-9ffa-6fe1-51e30b20e03f"
+                    "1020806b-e210-9ffa-6fe1-51e30b20e03f" // duplicate above
                 ]
             },
             {
                 "name": "WC - IDF/SERVER",
                 "cameras": [
-                    "a4413776-217c-a65f-e4de-2a8354fec64a",
+                    "a4413776-217c-a65f-e4de-2a8354fec64a", // in a folder
                     "5bfd7271-1a20-2e04-ce48-877bc544f43f"
                 ]
             },
             {
                 "name": "WC - Hallway door",
                 "cameras": [
-                    "3c2cbdd6-7e6c-14be-f093-140e79979160",
-                    "1020806b-e210-9ffa-6fe1-51e30b20e03f"
+                    "3c2cbdd6-7e6c-14be-f093-140e79979160", // duplicate
+                    "1020806b-e210-9ffa-6fe1-51e30b20e03f" // duplicate
                 ]
             }
         ]
@@ -49,8 +49,9 @@ const DOORS_LIST = [
             {
                 "name": "LA - Double door main entry",
                 "cameras": [
-                    "2968dd29-93ab-1c26-c117-6fe6ae42ebd8",
-                    "8bbd4c7d-49b8-3950-6371-d726882adf86"
+                    "2968dd29-93ab-1c26-c117-6fe6ae42ebd8", // erroring
+                    "2f8480a3-100e-f444-c493-69e960772db0", // other door video, but also erroring
+                    "8bbd4c7d-49b8-3950-6371-d726882adf86" // should be server room, part of a group
                 ]
             },
             {
@@ -58,7 +59,7 @@ const DOORS_LIST = [
                 "cameras": [
                     "6a5f7d8a-aba6-b6f5-404e-2bb3f84dec35",
                     "0e7bd3da-46e0-4472-c72b-f9ddbc9e6508",
-                    "4c3926e2-c23f-7dcb-aa2b-817a35c0a1f2"
+                    "4c3926e2-c23f-7dcb-aa2b-817a35c0a1f2" // should be main entry by elevator
                 ]
             },
             {
