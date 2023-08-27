@@ -1,0 +1,2 @@
+ip_address,port,system_name,local_admin_password,cloud_host,cloud_account,cloud_password
+127.0.0.1,7001,Nx_sys,password_local,nxvms.com,cloud_account@networkoptix.com,password_cloud
