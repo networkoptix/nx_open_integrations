@@ -1,0 +1,5 @@
+{
+    "mangle": {
+        "keepFnNames": true
+    }
+}

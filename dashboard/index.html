@@ -6,21 +6,6 @@
     <!-- <script type="text/javascript" src="constants.ts"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="text/JavaScript" src="https://MomentJS.com/downloads/moment.js"></script>
-    <script>
-        const openCity = (evt, tabName) => {
-            var i, x, tablinks;
-            x = document.getElementsByClassName("tab-content");
-            for (i = 0; i < x.length; i++) {
-                x[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tab");
-            for (i = 0; i < x.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" selected", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " selected";
-        }
-    </script>
 </head>
 
 <body>
@@ -211,19 +196,19 @@
             },
         });
 
-        // const openCity = (evt, tabName) => {
-        //     var i, x, tablinks;
-        //     x = document.getElementsByClassName("tab-content");
-        //     for (i = 0; i < x.length; i++) {
-        //         x[i].style.display = "none";
-        //     }
-        //     tablinks = document.getElementsByClassName("tab");
-        //     for (i = 0; i < x.length; i++) {
-        //         tablinks[i].className = tablinks[i].className.replace(" selected", "");
-        //     }
-        //     document.getElementById(tabName).style.display = "block";
-        //     evt.currentTarget.className += " selected";
-        // }
+        const openCity = (evt, tabName) => {
+            var i, x, tablinks;
+            x = document.getElementsByClassName("tab-content");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab");
+            for (i = 0; i < x.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" selected", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " selected";
+        }
 
         const systemGetWrapper = (systemToken, url) => {
             const requestUrl = new URL(url);
