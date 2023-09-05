@@ -196,7 +196,7 @@
             },
         });
 
-        function openCity(evt, tabName) {
+        const openCity = (evt, tabName) => {
             var i, x, tablinks;
             x = document.getElementsByClassName("tab-content");
             for (i = 0; i < x.length; i++) {
@@ -277,7 +277,7 @@
             })
         }
 
-        async function selectAction(cameras, timestampMs) {
+        const selectAction = async (cameras, timestampMs) => {
             let settings = { media: {} };
             settings.media.timestampMs = timestampMs / 1000;
 
