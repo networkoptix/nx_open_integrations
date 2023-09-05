@@ -1,5 +1,5 @@
 {
     "mangle": {
-        "keepFnNames": true
+        "keep_fnames": true
     }
 }
