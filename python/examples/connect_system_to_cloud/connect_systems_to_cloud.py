@@ -15,7 +15,7 @@ logging.basicConfig(filename="connect_to_cloud.log",
                     datefmt="%Y-%m-%d %H:%M:%S",
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+'''
 def get_args(argv):
     description = """Helper script for setting up servers.
     Usage:
@@ -45,43 +45,27 @@ def get_args(argv):
         assert data.instance and data.email and data.password
 
     return data
-
+'''
 
 if __name__ == "__main__":
-
-    systemlistFile = "systems.csv"
-    # Retrieve the systems that needs to be handled.
-    systems_list = []
-
+    input_file_csv = "systems.csv"
+    #systems_list = []
     try:
-        with open(systemlistFile, newline='') as csvfile:
-            systems = csv.DictReader(csvfile)
+        with open(input_file_csv, newline='') as system_list:
+            systems = csv.DictReader(system_list)
             for system_entry in systems:
-                #system_entry.
-                '''
-                systems_list.append(system.system(
+                system_to_be_setup = system.system(
                     system_entry["ip_address"],
                     system_entry["port"],
                     system_entry["system_name"],
                     system_entry["local_admin_password"],
                     system_entry["cloud_host"],
                     system_entry["cloud_account"],
-                    system_entry["cloud_password"]
-                ))
-                '''
-                local_sys = system.system(
-                    system_entry["ip_address"],
-                    system_entry["port"],
-                    system_entry["system_name"],
-                    system_entry["local_admin_password"],
-                    system_entry["cloud_host"],
-                    system_entry["cloud_account"],
-                    system_entry["cloud_password"]
+                    system_entry["cloud_password"],
+                    system_entry["connect_to_cloud"],
+                    system_entry["enable_auto_discovery"]
                 )
-                with requests.Session() as s:
-                    local_sys.connect_to_cloud(s)
-                    s.close
-            
+                system_to_be_setup.setup_system()
     except IOError:
         print ("Erro: The list of the transferred systems : '{path}' does not appear to exist.".format(path=systemlistFile))
         logging.critical("Error: System list does not appear to exist. Path:{path}".format(path=systemlistFile))

@@ -1,2 +1,2 @@
-ip_address,port,system_name,local_admin_password,cloud_host,cloud_account,cloud_password
-127.0.0.1,7001,Nx_sys,password_local,nxvms.com,cloud_account@networkoptix.com,password_cloud
+ip_address,port,system_name,local_admin_password,cloud_host,cloud_account,cloud_password,connect_to_cloud,enable_auto_discovery
+10.211.55.3,7001,Nx_sys,Admin12345,nxvms.com,iliu@networkoptix.com,Admin12345,True,True
