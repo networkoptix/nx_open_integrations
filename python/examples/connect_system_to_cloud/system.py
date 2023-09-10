@@ -56,10 +56,9 @@ class system:
                     "owner": data.get("ownerAccountEmail")
                 }
                 session.post(f"{local_url}/rest/v1/system/cloudBind", json=cloud_info)
-                session.delete(f"{local_url}/rest/v1/login/sessions")
-                
-                logger.info(f"{self.system_name} has been connected to {self.cloud_host} with {self.cloud_account}'s account.")
-                #print(f"{self.system_name} has been connected to {self.cloud_host} with {self.cloud_account}'s account.")
+                session.delete(f"{local_url}/rest/v1/login/sessions")               
+                logger.info(
+                    f"{self.system_name} has been connected to {self.cloud_host} with {self.cloud_account}'s account.")            
         except requests.exceptions.HTTPError as e:
             logger.error(f"Something went wrong. {self.system_name} will not be connecting to the cloud")
             logger.warning(res.status_code)
@@ -76,7 +75,8 @@ class system:
         local_url = f"https://{self.ip_address}:{self.port}"
         try:
             self.login(session,self.local_admin_password)
-            res = session.patch(f"{local_url}/rest/v1/system/settings", json={"autoDiscoveryEnabled": False, "autoDiscoveryResponseEnabled": False})
+            res = session.patch(f"{local_url}/rest/v1/system/settings", 
+                json={"autoDiscoveryEnabled": False, "autoDiscoveryResponseEnabled": False})
             session.delete(f"{local_url}/rest/v1/login/sessions")
             logger.info(f"Auto discovery on {self.system_name} has been disabled")
         except requests.exceptions.HTTPError as e:
@@ -102,12 +102,9 @@ class system:
             
             if self.is_connect_to_cloud():
                 self.connect_system_to_cloud(session)
-                #print("connect_to_cloud")
 
             if self.is_auto_discovery_disabled():
                 self.disable_auto_discovery_on_system(session)
-                #print("Disable Auto discovery")
-
 
     def __del__(self):
         logging.debug( "System (" + self.system_name + ") Destructor called, instance removed.")
