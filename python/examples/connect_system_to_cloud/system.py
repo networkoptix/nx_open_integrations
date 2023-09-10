@@ -44,7 +44,11 @@ class system:
         cloud_url = f"https://{self.cloud_host}"
         try:
             self.login(session,self.local_admin_password)
-            cloud_credentials = {"name": self.system_name, "email": self.cloud_account, "password": self.cloud_password}
+            cloud_credentials = {
+                "name": self.system_name, 
+                "email": self.cloud_account, 
+                "password": self.cloud_password
+            }
             res = session.post(f"{cloud_url}/api/systems/connect", json=cloud_credentials, verify=False)
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
