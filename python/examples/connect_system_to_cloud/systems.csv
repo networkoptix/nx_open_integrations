@@ -1,2 +1,2 @@
-ip_address,port,system_name,local_admin_password,cloud_host,cloud_account,cloud_password,connect_to_cloud,enable_auto_discovery
-127.0.0.1,7001,{system_name},{admin_password},nxvms.com,{cloud_account@networkoptix.com},{cloud_account_password},True,False
+ip_address,port,system_name,local_admin_password,cloud_host,cloud_account,cloud_password,connect_to_cloud,enable_auto_discovery,allow_anonymous_statistics_report,enable_camera_optimization
+127.0.0.1,7001,{System_name}t,{local_admin_password},nxvms.com,{cloud_account_email},{cloud_account_password},True,True,True,True

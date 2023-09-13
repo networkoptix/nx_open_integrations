@@ -39,14 +39,22 @@ The APIs that used to configure the system default settings :
 
 ### The output of the script
 
-There is a log file, called [connect_system_to_cloud.log]. 
-You would be able to find the execution detail of the script, including the fail/success requests and the final result of the system. (whether it is connected to Cloud successfully)
+There is a log file, called [system_setup.log]. 
+You would be able to find the execution detail of the script, including the fail/success requests and the final result of the system. (whether it is setup successfully)
 
-There is a output summary.[summarized_report.log]
+There is a output summary.[{timestamp}_result_summary.log]
 The summary report will tell if the system has been successfully connected to the cloud. 
 If yes, then show which Cloud account was the system attached to.
 If no, then the system was available by local accounts.(Not connect to the Cloud)
-
+Sample output : 
+====================
+* Start at                    : 2023-09-13 16:54:31
+* System Name                 : Nx_test
+* Connect to Cloud            : DISCONNECTED(LOCAL)
+* Auto Discovery              : DISABLED
+* Anonymous Statistics Report : ENABLED
+* Camera Optimization         : ENABLED
+* Finish at                   : 2023-09-13 16:54:31
 
 ## Authors
 
