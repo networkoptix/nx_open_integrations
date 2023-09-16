@@ -9,6 +9,7 @@ import json
 import csv
 import system
 
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logging.basicConfig(filename="system_setup.log",
                     filemode='a',
@@ -16,26 +17,8 @@ logging.basicConfig(filename="system_setup.log",
                     datefmt="%Y-%m-%d %H:%M:%S",
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-SHIFT_POS = 30
-CONNECT_CLOUD_OK_STR = "* Connect to Cloud".ljust(SHIFT_POS) + ": CONNECTED\n"
-CONNECT_CLOUD_FAIL_STR = "* Connect to Cloud".ljust(SHIFT_POS) + ": DISCONNECTED(LOCAL)\n"
-AUTO_DISCOVERY_OK_STR = "* Auto Discovery".ljust(SHIFT_POS) + ": ENABLED\n"
-AUTO_DISCOVERY_FAIL_STR = "* Auto Discovery".ljust(SHIFT_POS) + ": DISABLED\n"
-ANONYMOUS_STASTICS_REPORT_OK_STR = "* Anonymous Statistics Report".ljust(SHIFT_POS) + ": ENABLED\n"
-ANONYMOUS_STASTICS_REPORT_FAIL_STR = "* Anonymous Statistics Report".ljust(SHIFT_POS) + ": DISABLED\n"
-CAMERA_OPTIMIZATION_OK_STR = "* Camera Optimization".ljust(SHIFT_POS) + ": ENABLED\n"
-CAMERA_OPTIMIZATION_FAIL_STR = "* Camera Optimization".ljust(SHIFT_POS) + ": DISABLED\n"
 TIMESTAMP_STR =f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 OUTPUT_FILE_PATH = f"{TIMESTAMP_STR}_result_summary.log"
-
-def get_timestamp_str(stage):
-    return_str = ""
-    if stage == "start":
-        return_str = "* Start at".ljust(SHIFT_POS) + ": " + TIMESTAMP_STR + "\n"
-    else:
-        return_str = "* Finish at".ljust(SHIFT_POS) + ": " + TIMESTAMP_STR + "\n"
-    return return_str 
 
 def get_args(argv):
     parser = argparse.ArgumentParser("connect_to_cloud.py",formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -48,34 +31,21 @@ def get_args(argv):
     data = parser.parse_args(argv)
     return data
 
+def format_output_string(setting, value):
+    shift_pos = 28
+    format_string = "* " + setting.ljust(shift_pos) + ": " + value + "\n"
+    return format_string
+
 def create_output_str(output_str, result):
     output_str = "====================\n"
-    output_str += get_timestamp_str("start")
-    output_str += "* System Name".ljust(SHIFT_POS) + f': {result["system_name"]}\n'
-    
-    if result["connect_to_cloud"]:
-        output_str += CONNECT_CLOUD_OK_STR
-    else:
-        output_str += CONNECT_CLOUD_FAIL_STR
-
-    if result["auto_discovery"]:
-        output_str += AUTO_DISCOVERY_OK_STR
-    else:
-        output_str += AUTO_DISCOVERY_FAIL_STR
-    
-    if result["anonymous_statistics_report"]:
-        output_str += ANONYMOUS_STASTICS_REPORT_OK_STR
-    else:
-        output_str += ANONYMOUS_STASTICS_REPORT_FAIL_STR
-    
-    if result["camera_optimization"]:
-        output_str += CAMERA_OPTIMIZATION_OK_STR
-    else:
-        output_str += CAMERA_OPTIMIZATION_FAIL_STR
-
-    output_str += get_timestamp_str("finish")
+    output_str += format_output_string("Start Time",TIMESTAMP_STR)
+    output_str += format_output_string("System Name",result["system_name"])
+    output_str += format_output_string("Connect to Cloud",result["connect_to_cloud"])
+    output_str += format_output_string("Auto Discovery", result["auto_discovery"])
+    output_str += format_output_string("Anonymous Statistics Report",result["anonymous_statistics_report"])
+    output_str += format_output_string("Camera Optimization",result["camera_optimization"])
+    output_str += format_output_string("Finish Time",TIMESTAMP_STR)
     return output_str
-
 
 def output_to_file(str_to_file):
     try:
@@ -93,10 +63,9 @@ if __name__ == "__main__":
     is_output_to_file_required = cmd_args.output
     is_display_on_terminal = cmd_args.print
     str_for_output = ""
-
     try:
         with open(input_file_csv, newline='') as system_list:
-            systems = csv.DictReader(system_list)
+            systems = csv.DictReader(system_list) 
             for system_entry in systems:
                 system_to_be_setup = system.system(
                     system_entry["ip_address"],
@@ -111,14 +80,17 @@ if __name__ == "__main__":
                     system_entry["allow_anonymous_statistics_report"],
                     system_entry["enable_camera_optimization"]
                 )
-                result = system_to_be_setup.setup_system()
-                str_for_output += create_output_str(str_for_output, result)
-
-        if is_output_to_file_required:
-            output_to_file(str_for_output)
-        if is_display_on_terminal:
-            print(str_for_output)  
-
-    except IOError:
+                try:
+                    result = system_to_be_setup.setup_system()
+                    str_for_output += create_output_str(str_for_output, result)
+                    if is_output_to_file_required:
+                        output_to_file(str_for_output)
+                    if is_display_on_terminal:
+                        print(str_for_output)  
+                except :
+                    print(f'Openration Failed : The operation to {system_entry["system_name"]} is not successfully done.')
+                    logging.error(f'Openration Failed : The operation to {system_entry["system_name"]} is not successfully done.')
+                    continue            
+    except :
         print("Error: Input file specified seems not appear to exist. Path:{path}".format(path=input_file_csv))
         logging.error("System list can't be opened/found. Path:{path}".format(path=input_file_csv))

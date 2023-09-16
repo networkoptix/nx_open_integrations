@@ -4,7 +4,9 @@
 
 Nx Witness allows third-party developers to configure the system by using the mediaserver API.
 - Connect to Nx Cloud (Ture/False) and attach to a specific Nx Cloud Account
-- Enable the Auto-discovery (Ture/False)
+- Enable the Auto Discovery (Ture/False)
+- Enable the Camera Optmization (Ture/False)
+- Enable the Anonymous statistics collection (Ture/False)
 - Name the system
 - Set the local admin password.
 
@@ -17,6 +19,9 @@ The sample scripts provided in the repository are for basic demonstration of wha
 For example, you can see how to configure the system default settings and how to connect the system to cloud via APIs. 
 The scripts also contain the code for authenticating to a System. (refer to the [Authentication](#authentication) section below).
 To test a script example, insert your information where applicable and run the script.
+
+You would need to put the system information in the file called systems.csv and placed in the same folder as the script.
+The scripti will load the system information automatically from the file.
 
 #### Authentication
 
@@ -48,13 +53,13 @@ If yes, then show which Cloud account was the system attached to.
 If no, then the system was available by local accounts.(Not connect to the Cloud)
 Sample output : 
 ====================
-* Start at                    : 2023-09-13 16:54:31
+* Start Time                  : 2023-01-01 00:00:00
 * System Name                 : Nx_test
 * Connect to Cloud            : DISCONNECTED(LOCAL)
-* Auto Discovery              : DISABLED
+* Auto Discovery              : ENABLED
 * Anonymous Statistics Report : ENABLED
-* Camera Optimization         : ENABLED
-* Finish at                   : 2023-09-13 16:54:31
+* Camera Optimization         : DISABLED
+* Finish Time                 : 2023-01-01 00:00:10
 
 ## Authors
 

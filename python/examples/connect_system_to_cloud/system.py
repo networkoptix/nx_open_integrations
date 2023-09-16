@@ -5,13 +5,17 @@ import sys
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-logging.basicConfig(filename="connect_to_cloud.log",
+
+logging.basicConfig(filename="system_setup.log",
                     filemode='a',
                     format='%(asctime)s %(levelname)s %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S",
-                    level=logging.INFO)
+                    level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+#For checking current system settings.
+PARAMETER_SET = "cloudSystemID,autoDiscoveryEnabled,autoDiscoveryResponseEnabled,cameraSettingsOptimization,statisticsAllowed"
+HTTP_TIMEOUT = 10
 class system:
 
     def __init__(self, ip_address, port, 
@@ -19,7 +23,7 @@ class system:
                  cloud_host, cloud_account, cloud_password, connect_to_cloud, 
                  enable_auto_discovery,
                  allow_anonymous_statistics_report,
-                 enable_camera_optimization):
+                 enable_camera_optimization,):
         self.ip_address = ip_address
         self.port = port
         self.system_name = system_name
@@ -35,9 +39,44 @@ class system:
     def login(self, session, password="admin"):
         local_url = f"https://{self.ip_address}:{self.port}"
         credentials = {"username": "admin", "password": password, "setCookie": True}
-        session.post(f"{local_url}/rest/v1/login/sessions", json=credentials, verify=False)
+        session.post(f"{local_url}/rest/v2/login/sessions", timeout=(HTTP_TIMEOUT), json=credentials, verify=False)
 
-    def is_connect_to_cloud(self):
+    def get_current_system_settings(self,session):
+        local_url = f"https://{self.ip_address}:{self.port}"
+        current_system_settings = {
+            "cloudSystemID":"",
+            "autoDiscoveryEnabled":"False",
+            "autoDiscoveryResponseEnabled":"False",
+            "cameraSettingsOptimization":"False",
+            "statisticsAllowed":"False"}
+        try:
+            self.login(session,self.local_admin_password)
+            res = session.get(f"{local_url}/rest/v2/system/settings?_with={PARAMETER_SET}") 
+            if res.status_code != 200:
+                raise(requests.exceptions.HTTPError)
+            else:
+                settings = res.json()
+                session.delete(f"{local_url}/rest/v2/login/sessions")               
+                logger.info(f"{self.system_name} : Current Settings = {settings}")
+                for setting in settings:
+                    if setting in current_system_settings.keys():
+                        current_system_settings[setting] = settings.get(setting)
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"Something went wrong. {self.system_name} will not be connecting to the cloud")
+            logger.warning(res.status_code)
+            logger.warning(res.content)
+            logger.error(e)
+            current_system_settings = {
+                "cloudSystemID":"Unknown",
+                "autoDiscoveryEnabled":"Unknown",
+                "autoDiscoveryResponseEnabled":"Unknown",
+                "cameraSettingsOptimization":"Unknown",
+                "statisticsAllowed":"Unknown"}
+        #print(current_system_settings)
+        return current_system_settings
+
+    ######DONE
+    def is_user_want_to_connect_to_cloud(self):
         if self.connect_to_cloud == "True":
             return True
         else:
@@ -63,182 +102,268 @@ class system:
                     "authKey": data.get("authKey"),
                     "owner": data.get("ownerAccountEmail")
                 }
-                session.post(f"{local_url}/rest/v1/system/cloudBind", json=cloud_info)
-                session.delete(f"{local_url}/rest/v1/login/sessions")               
-                logger.info(
-                    f"{self.system_name} has been connected to {self.cloud_host} with {self.cloud_account}'s account.")
+                r = session.post(f"{local_url}/rest/v2/system/cloudBind", json=cloud_info)
+                session.delete(f"{local_url}/rest/v2/login/sessions")               
+                logger.info(f"{self.system_name} : Connected to {self.cloud_host} bind to {self.cloud_account}'s account")
+                logger.info(f"{self.system_name} : Cloud System Id = {data.get('id')}")
                 return True           
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Something went wrong. {self.system_name} will not be connecting to the cloud")
+            logger.error(f"{self.system_name} : Something went wrong, will not be connecting to the cloud")
             logger.warning(res.status_code)
             logger.warning(res.content)
             logger.error(e)
             return False
 
-    def is_auto_discovery_disabled(self):
+    def detach_system_to_cloud(self,session):
+        local_url = f"https://{self.ip_address}:{self.port}"
+        cloud_url = f"https://{self.cloud_host}"
+        try:
+            self.login(session,self.local_admin_password)
+            detach_cloud_info = {
+                "password": self.local_admin_password,
+                "userAgent": "3rd_party_tool"
+            }
+            session.post(f"{local_url}/rest/v2/system/cloudUnbind", json=detach_cloud_info)
+            session.delete(f"{local_url}/rest/v2/login/sessions")               
+            logger.info( f"{self.system_name}: Disconnect from {self.cloud_host} , detach from {self.cloud_account}'s account.")
+            return True           
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"{self.system_name}: Something went wrong, will be still connecting to the cloud")
+            logger.warning(res.status_code)
+            logger.warning(res.content)
+            logger.error(e)
+            return False
+
+    def setup_connect_to_cloud(self, session, current_cloud_state):
+        logger.info(f"{self.system_name} : Previous Cloud State = {current_cloud_state}") #Cloud System ID or None
+        if current_cloud_state == "": 
+            if self.is_user_want_to_connect_to_cloud():            
+                if self.connect_system_to_cloud(session):
+                    current_cloud_state = "CONNECTED"
+            else:
+                current_cloud_state = "DISCONNECTED(LOCAL)"                    
+        elif current_cloud_state == "UNKNOWN":
+            logger.warning(f"{self.system_name} has unknown state for cloud connection, state has not changed.")
+        else:
+            if self.is_user_want_to_connect_to_cloud():
+                current_cloud_state = "CONNECTED"
+            else:
+                if self.detach_system_to_cloud(session):
+                    current_cloud_state = "DISCONNECTED(LOCAL)"  
+                else:
+                    current_cloud_state = "CONNECTED"
+                    logger.warning(f"{self.system_name} has unknown state for cloud connection, state remains no changed - Connected)")
+        
+        logger.info(f"{self.system_name} : Complete Cloud connect operation.")
+        logger.info(f"{self.system_name} : Current Cloud Connected state = {current_cloud_state}") 
+        
+        return current_cloud_state
+
+    ######DONE
+    def is_user_want_to_enable_auto_discovery(self):
         if self.enable_auto_discovery == "True":
-            return False
-        else:
             return True
+        else:
+            return False
 
-    def disable_auto_discovery_on_system(self,session):
+    def configure_auto_discovery_on_system(self,session,state):
         local_url = f"https://{self.ip_address}:{self.port}"
         try:
             self.login(session,self.local_admin_password)
-            res = session.patch(f"{local_url}/rest/v1/system/settings", 
-                json={"autoDiscoveryEnabled": False, "autoDiscoveryResponseEnabled": False})
+            res = session.patch(f"{local_url}/rest/v2/system/settings", 
+                json={"autoDiscoveryEnabled": state, "autoDiscoveryResponseEnabled": state})
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
             else:
-                session.delete(f"{local_url}/rest/v1/login/sessions")
-                logger.info(f"Auto discovery on {self.system_name} has been disabled")
+                session.delete(f"{local_url}/rest/v2/login/sessions")
                 return True
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Something went wrong. Auto discovery on {self.system_name} remains enabled")
+            logger.error(f"Something went wrong. Auto discovery on {self.system_name} remains same state")
             logger.warning(res.status_code)
             logger.warning(res.content)
             logger.error(e)
             return False
 
-    def is_camera_optimization_disabled(self):
+    def setup_auto_discovery(self,session,current_auto_discover_state):
+        logger.info(f"{self.system_name} : Auto Discover previous state = {current_auto_discover_state}")
+        if current_auto_discover_state == "UNKNOWN":
+            logger.warning(
+                f"{self.system_name} : Auto Discover Report state = {current_auto_discover_state}")
+        else:
+            if self.is_user_want_to_enable_auto_discovery():
+                if self.configure_auto_discovery_on_system(session, True):
+                    current_auto_discover_state = "ENABLED"
+                    logger.debug(
+                        f"{self.system_name} : Auto Discovery state has been changed. State = {current_auto_discover_state}")
+                else:
+                    print(f"{self.system_name} : Operation failed. Auto Discovery state has not been changed. State = {current_auto_discover_state} )")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Auto Discovery state has not been changed. State = {current_auto_discover_state} )")
+            else:
+                if self.configure_auto_discovery_on_system(session, False):
+                    current_auto_discover_state = "DISABLED"
+                    logger.debug(f"{self.system_name} : Auto Discovery has been disabled")
+                else:
+                    print(f"{self.system_name} : Operation failed. Auto Discovery state has not been changed. State = {current_auto_discover_state} )")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Auto Discovery state has not been changed. State = {current_auto_discover_state} )")
+
+        logger.info(f"{self.system_name} : Complete Auto discovery operation.")
+        logger.info(f"{self.system_name} : Current Auto discovery state = {current_auto_discover_state}")
+        return current_auto_discover_state           
+    
+    ######
+    def is_user_want_to_enable_camera_optimization(self):
         if self.enable_camera_optimization == "True":
-            return False
-        else:
             return True
+        else:
+            return False
 
-    def disable_camera_optimization_on_system(self,session):
+    def configure_camera_optimization_on_system(self,session,state):
         local_url = f"https://{self.ip_address}:{self.port}"
+        logger.debug(f"{self.system_name} : configure_camera_optimization_on_system to {state}")
         try:
             self.login(session,self.local_admin_password)
-            res = session.patch(f"{local_url}/rest/v1/system/settings", 
-                json={"cameraSettingsOptimization": False})
+            res = session.patch(f"{local_url}/rest/v2/system/settings", 
+                json={"cameraSettingsOptimization": state})
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
             else:
-                session.delete(f"{local_url}/rest/v1/login/sessions")
-                logger.info(f"System optmization on {self.system_name} has been disabled")
+                session.delete(f"{local_url}/rest/v2/login/sessions")
                 return True
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Something went wrong. System optmization on {self.system_name} remains enabled")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(f"Something went wrong. System optmization on {self.system_name} remains same status")
+            logger.debug(res.status_code)
+            logger.debug(res.content)
             logger.error(e)
             return False
 
-    def is_anonymous_statistics_report_allowed(self):
+    def setup_camera_optimization(self,session,current_camera_optimization_state):
+        logger.info(f"{self.system_name} : Camera Optimization previous state = {current_camera_optimization_state}")
+        if current_camera_optimization_state == "UNKNOWN":
+            logger.warning(
+                f"{self.system_name} :  Camera Optimization state = {current_camera_optimization_state} )")
+        else:
+            if self.is_user_want_to_enable_camera_optimization():
+                if self.configure_camera_optimization_on_system(session, True):
+                    current_camera_optimization_state = "ENABLED"
+                    logger.debug(
+                        f"{self.system_name} :  Camera Optimization state has been changed. State = {current_camera_optimization_state}")
+                else:
+                    print(f"{self.system_name} : Operation failed. Camera Optimization state has not been changed. State = {current_camera_optimization_state}")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Camera Optimization state has not been changed. State = {current_camera_optimization_state}")
+            else:
+                if self.configure_camera_optimization_on_system(session, False):
+                    current_camera_optimization_state = "DISABLED"
+                    logger.debug(
+                        f"{self.system_name} : Camera Optimization state has been changed. State = {current_camera_optimization_state}")
+                else:
+                    print(f"{self.system_name} : Operation failed. Camera Optimization state has not been changed. State = {current_camera_optimization_state} )")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Camera Optimization state has not been changed. State = {current_camera_optimization_state} )")
+
+        logger.info(f"{self.system_name} : Complete Camera Optimization operation.")
+        logger.info(f"{self.system_name} : Current Camera Optimization state = {current_camera_optimization_state}")
+        return current_camera_optimization_state
+           
+    ######DONE
+    def is_user_want_to_enable_anonymous_statistics_report(self):
         if self.allow_anonymous_statistics_report == "True":
-            return False
-        else:
             return True
+        else:
+            return False
 
-    def disable_anonymous_statistics_report_on_system(self,session):
+    def configure_anonymous_statistics_report_on_system(self,session,state):
         local_url = f"https://{self.ip_address}:{self.port}"
         try:
             self.login(session,self.local_admin_password)
-            res = session.patch(f"{local_url}/rest/v1/system/settings", 
-                json={"statisticsAllowed": False})
+            res = session.patch(f"{local_url}/rest/v2/system/settings", 
+                json={"statisticsAllowed": state})
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
             else:
-                session.delete(f"{local_url}/rest/v1/login/sessions")
-                logger.info(f"Anonymous statistics on {self.system_name} has been disabled")
+                session.delete(f"{local_url}/rest/v2/login/sessions")
                 return True
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Something went wrong. Anonymous statistics on {self.system_name} remains enabled")
+            logger.error(f"Something went wrong. Anonymous statistics on {self.system_name} remains same state")
             logger.warning(res.status_code)
             logger.warning(res.content)
             logger.error(e)
             return False
 
+    def setup_anonymous_statistics_report(self,session,current_anonymous_statistics_report_state):
+        logger.info(
+            f"{self.system_name} : Anonymous Statistics Report previous state = {current_anonymous_statistics_report_state}")
+        if current_anonymous_statistics_report_state == "Unknown":
+            logger.warning(
+                f"{self.system_name} :  Anonymous Statistics Report state = {current_anonymous_statistics_report_state} )")
+        else:
+            if self.is_user_want_to_enable_anonymous_statistics_report():
+                if self.configure_anonymous_statistics_report_on_system(session,True):
+                    current_anonymous_statistics_report_state = "ENABLED"
+                    logger.debug(
+                        f"{self.system_name} :  Anonymous Statistics Report state has been changed. State = {current_anonymous_statistics_report_state}")
+                else:
+                    print(f"{self.system_name} : Operation failed. Anonymous Statistics Report state has not been changed. State = {current_anonymous_statistics_report_state}")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Anonymous Statistics Report state has not been changed. State = {current_anonymous_statistics_report_state}")
+            else:
+                if self.configure_anonymous_statistics_report_on_system(session,False):
+                    current_anonymous_statistics_report_state = "DISABLED"
+                    logger.debug(
+                        f"{self.system_name} : Anonymous Statistics Report state has been changed. State = {current_anonymous_statistics_report_state}")
+                else:
+                    print(f"{self.system_name} : Operation failed. Anonymous Statistics Report state has not been changed. State = {current_anonymous_statistics_report_state}")
+                    logger.debug(
+                        f"{self.system_name} : Operation failed. Anonymous Statistics Report state has not been changed. State = {current_anonymous_statistics_report_state}")
+               
+        logger.info(f"{self.system_name} : Complete Anonymous Statistics operation.")
+        logger.info(f"{self.system_name} : Current Anonymous Statistics Report state = {current_anonymous_statistics_report_state}")
+        return current_anonymous_statistics_report_state
+       
     def setup_system(self):
+        
         local_url = f"https://{self.ip_address}:{self.port}"
         connect_to_cloud = False
         auto_discovery = True
         anonymous_statistics_report = True
         camera_optimization = True 
         
-
-        with requests.Session() as session:
-            self.login(session)
-            body = {
-                "name": self.system_name,
-                "settings": {},
-                "local": {
-                    "password": self.local_admin_password
+        logging.info(f"{self.system_name} : ==============")
+        try:
+            with requests.Session() as session:
+                self.login(session)
+                body = {
+                    "name": self.system_name,
+                    "settings": {},
+                    "local": {
+                        "password": self.local_admin_password
+                    }
                 }
-            }
-            session.post(f"{local_url}/rest/v1/system/setup", json=body, verify=False)
-            session.delete(f"{local_url}/rest/v1/login/sessions", verify=False)
-            logger.info(f"{self.system_name} has been setup on {local_url}")
-            
-            #Connect to cloud operation
-            if self.is_connect_to_cloud():
-                if self.connect_system_to_cloud(session):
-                    connect_to_cloud = True
-            #Configure system settings opeartion(s)
-            if self.is_auto_discovery_disabled():
-                if self.disable_auto_discovery_on_system(session):
-                    auto_discovery = False 
-     
-            if self.is_anonymous_statistics_report_allowed():
-                if self.disable_anonymous_statistics_report_on_system(session):
-                    anonymous_statistics_report = False 
-            
-            if self.is_camera_optimization_disabled():
-                if self.disable_camera_optimization_on_system(session):
-                    camera_optimization = False 
-            # Could have more opeations below, ex: 
-            # is_system_optmization_enabled(), 
-            # is_data_collection_enabled(),
-            # is_anonymous_data_collection_enabled() ... etc.
-        
-        system_setup_result = {"system_name":self.system_name, 
-                               "connect_to_cloud":connect_to_cloud, 
-                               "auto_discovery":auto_discovery,
-                               "anonymous_statistics_report":anonymous_statistics_report,
-                               "camera_optimization":camera_optimization}
-        
-        # Could have more parameter per needs/implementations, ex: 
-        # system_setup_result = {"system_name":self.system_name, 
-        #                        "connect_to_cloud":connect_to_cloud, 
-        #                        "auto_discovery":auto_discovery,
-        #                        "system_optimization:system_optimization",
-        #                        "anonymous_data_collection":anonymous_data_collection}
-        
-        return system_setup_result
-
-
-    def setup_system_test_output(self):
-        connect_to_cloud = False
-        auto_discovery = False
-        #Connect to cloud operation
-        if self.is_connect_to_cloud():
-                #if self.connect_system_to_cloud(session):
-            connect_to_cloud = True
-        #Configure system settings opeartion(s)
-        if self.is_auto_discovery_disabled():
-            auto_discovery = True 
-     
-            # Could have more opeations below, ex: 
-            # is_system_optmization_enabled(), 
-            # is_data_collection_enabled(),
-            # is_anonymous_data_collection_enabled() ... etc.
-        
-        system_setup_result = {"system_name":self.system_name, 
-                               "connect_to_cloud":connect_to_cloud, 
-                               "auto_discovery":auto_discovery,
-                               "anonymous_statistics_report":anonymous_statistics_report,
-                               "camera_optimization":camera_optimization}
-        
-        # Could have more parameter per needs/implementations, ex: 
-        # system_setup_result = {"system_name":self.system_name, 
-        #                        "connect_to_cloud":connect_to_cloud, 
-        #                        "auto_discovery":auto_discovery,
-        #                        "system_optimization:system_optimization",
-        #                        "anonymous_data_collection":anonymous_data_collection}
-        
-        return system_setup_result
-        
-
-    def __del__(self):
-        logging.debug( "System (" + self.system_name + ") Destructor called, instance removed.")
+                try: 
+                    session.post(f"{local_url}/rest/v2/system/setup", json=body, verify=False)
+                    #Get Current system settings
+                    current_settings = self.get_current_system_settings(session)
+                    session.delete(f"{local_url}/rest/v2/login/sessions", verify=False)
+                    #Connect to cloud operation
+                    connect_to_cloud = self.setup_connect_to_cloud(session,current_settings["cloudSystemID"])
+                    #Auto_discover
+                    auto_discovery = self.setup_auto_discovery(session,current_settings["autoDiscoveryEnabled"])
+                    #Camera optimization
+                    camera_optimization = self.setup_camera_optimization(session,current_settings["cameraSettingsOptimization"])
+                    #Configure Anonymous statistics report
+                    anonymous_statistics_report = self.setup_anonymous_statistics_report(session,current_settings["statisticsAllowed"])
+                    
+                    system_setup_result = {"system_name":self.system_name, 
+                                        "connect_to_cloud":connect_to_cloud, 
+                                        "auto_discovery":auto_discovery,
+                                        "anonymous_statistics_report":anonymous_statistics_report,
+                                        "camera_optimization":camera_optimization}
+                    return system_setup_result
+                except requests.exceptions.HTTPError as e:
+                    logging.error(f"{self.system_name} : Something went wrong. Operation suspended")
+                    logging.debug(e)        
+        except requests.exceptions.ConnectionError as e:
+            logging.error(f"{self.system_name} : Something went wrong. Operation suspended")
+            logging.debug(e)
