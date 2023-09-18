@@ -10,10 +10,10 @@ This scripts will serve as a foundational base to understand how to interact wit
 Configuring System Default Settings: Gain insights into setting up the default system configurations efficiently.
 Cloud Connectivity: Connect the system seamlessly either for an existing system or a fresh installation with cloud services using API calls.
 Nx Witness allows third-party developers to configure the system by using the mediaserver API.
-- Connect to Nx Cloud (Ture/False) and attach to a specific Nx Cloud Account
-- Enable the Auto Discovery (Ture/False)
-- Enable the Camera Optmization (Ture/False)
-- Enable the Anonymous statistics collection (Ture/False)
+- Connect to Nx Cloud (True/False) and attach to a specific Nx Cloud Account
+- Enable the Auto Discovery (True/False)
+- Enable the Camera Optmization (True/False)
+- Enable the Anonymous statistics collection (True/False)
 - Name the system
 - Set the local admin password.
 
@@ -25,16 +25,16 @@ Refer to [Nx Server HTTP REST API](https://support.networkoptix.com/hc/en-us/art
 To commence with script testing, adhere to the following instructions:
 
 1. Prepare System Information: Collate all the requisite system information.
-2. CSV File Setup: Incorporate your details in a CSV file, taking reference from the existing [system.csv](./system.csv) format.
+2. CSV File Setup: Incorporate your details in a CSV file, taking reference from the existing [system.csv](systems.csv) format.
 3. Script Initialization: The script is designed to autoload the system information from the mentioned file.
 4. Output the result : The summary report will tell if the system has been successfully configured. (also print the result on the console or silently done)
 
-Please find the available options by using python3 [configure_systems.py](./configure_systems.py) --help.
+Please find the available options by using python3 [configure_systems.py](configure_systems.py) --help.
 
 ## Utilizing Custom CSV File
 
 For a more tailored experience, you have the liberty to utilize your CSV file. Proceed as follows:
-1. Create a Custom CSV File: Insert the necessary information in your personalized CSV file. (Please refer to the format of sample [system.csv](./system.csv))
+1. Create a Custom CSV File: Insert the necessary information in your personalized CSV file. (Please refer to the format of sample [system.csv](systems.csv))
 2. Use -f or --file option to direct the script to read settings from your CSV file and execute corresponding operations.
 
 Notice: True = Connected/Enabled, False = Disconnected/Disabled
