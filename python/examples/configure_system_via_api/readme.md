@@ -74,15 +74,7 @@ You would be able to find the detail during the execution of this sample script,
 
 There is a output summary.[{timestamp}_result_summary.log]
 The summary report will tell if the system has been successfully configured. (For those can be login and configured, if it is failed during login, it won't be in this output file)
-Sample output : 
-====================
-* Start Time                  : 2023-01-01 00:00:00
-* System Name                 : Nx_test
-* Connect to Cloud            : DISCONNECTED(LOCAL)
-* Auto Discovery              : ENABLED
-* Anonymous Statistics Report : ENABLED
-* Camera Optimization         : DISABLED
-* Finish Time                 : 2023-01-01 00:00:10
+
 
 ## Authors
 
