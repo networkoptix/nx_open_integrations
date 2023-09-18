@@ -26,7 +26,7 @@ def get_args(argv):
                         help="Specify the file to read system list")
     parser.add_argument("-o", "--output", action='store_true', default=False,
                         help="Specify if the summary result will be stored in a file")
-    parser.add_argument("-p", "--print", action='store_true', default=True,
+    parser.add_argument("-p", "--print", action='store_true', default=False,
                         help="Display the result on terminal.")
     data = parser.parse_args(argv)
     return data
@@ -36,14 +36,18 @@ def format_output_string(setting, value):
     format_string = "* " + setting.ljust(shift_pos) + ": " + value + "\n"
     return format_string
 
-def create_output_str(output_str, result):
+def create_output_str(output_str, result, state):
     output_str = "====================\n"
     output_str += format_output_string("Start Time",TIMESTAMP_STR)
-    output_str += format_output_string("System Name",result["system_name"])
-    output_str += format_output_string("Connect to Cloud",result["connect_to_cloud"])
-    output_str += format_output_string("Auto Discovery", result["auto_discovery"])
-    output_str += format_output_string("Anonymous Statistics Report",result["anonymous_statistics_report"])
-    output_str += format_output_string("Camera Optimization",result["camera_optimization"])
+    if state:
+        output_str += format_output_string("System Name",result["system_name"])
+        output_str += format_output_string("Connect to Cloud",result["connect_to_cloud"])
+        output_str += format_output_string("Auto Discovery", result["auto_discovery"])
+        output_str += format_output_string("Anonymous Statistics Report",result["anonymous_statistics_report"])
+        output_str += format_output_string("Camera Optimization",result["camera_optimization"])
+    else:
+        err_str = f'{system_entry["system_name"]} = Openration Failed, NOT successfully done.'
+        output_str += format_output_string("System Name",err_str)
     output_str += format_output_string("Finish Time",TIMESTAMP_STR)
     return output_str
 
@@ -51,7 +55,6 @@ def output_to_file(str_to_file):
     try:
         with open(OUTPUT_FILE_PATH,'w') as file:
             file.write(str_to_file)
-
     except IOError as e:
         print("Error: Summary report can't be generated.Path:{path}".format(path=OUTPUT_FILE_PATH))
         logging.error("Error: Summary report can't be generated.Path:{path}".format(path=OUTPUT_FILE_PATH))
@@ -82,7 +85,7 @@ if __name__ == "__main__":
                 )
                 try:
                     result = system_to_be_setup.setup_system()
-                    str_for_output += create_output_str(str_for_output, result)
+                    str_for_output += create_output_str(str_for_output, result, True)
                     if is_output_to_file_required:
                         output_to_file(str_for_output)
                     if is_display_on_terminal:
@@ -90,6 +93,11 @@ if __name__ == "__main__":
                 except :
                     print(f'Openration Failed : The operation to {system_entry["system_name"]} is not successfully done.')
                     logging.error(f'Openration Failed : The operation to {system_entry["system_name"]} is not successfully done.')
+                    str_for_output += create_output_str(str_for_output, result, False)
+                    if is_output_to_file_required:
+                        output_to_file(str_for_output)
+                    if is_display_on_terminal:
+                        print(str_for_output) 
                     continue            
     except :
         print("Error: Input file specified seems not appear to exist. Path:{path}".format(path=input_file_csv))

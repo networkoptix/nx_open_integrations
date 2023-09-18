@@ -10,12 +10,12 @@ logging.basicConfig(filename="system_setup.log",
                     filemode='a',
                     format='%(asctime)s %(levelname)s %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S",
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #For checking current system settings.
 PARAMETER_SET = "cloudSystemID,autoDiscoveryEnabled,autoDiscoveryResponseEnabled,cameraSettingsOptimization,statisticsAllowed"
-HTTP_TIMEOUT = 10
+HTTP_TIMEOUT = 5
 class system:
 
     def __init__(self, ip_address, port, 
@@ -72,10 +72,9 @@ class system:
                 "autoDiscoveryResponseEnabled":"Unknown",
                 "cameraSettingsOptimization":"Unknown",
                 "statisticsAllowed":"Unknown"}
-        #print(current_system_settings)
         return current_system_settings
 
-    ######DONE
+    ######
     def is_user_want_to_connect_to_cloud(self):
         if self.connect_to_cloud == "True":
             return True
@@ -159,7 +158,7 @@ class system:
         
         return current_cloud_state
 
-    ######DONE
+    ######
     def is_user_want_to_enable_auto_discovery(self):
         if self.enable_auto_discovery == "True":
             return True
@@ -267,7 +266,7 @@ class system:
         logger.info(f"{self.system_name} : Current Camera Optimization state = {current_camera_optimization_state}")
         return current_camera_optimization_state
            
-    ######DONE
+    ######
     def is_user_want_to_enable_anonymous_statistics_report(self):
         if self.allow_anonymous_statistics_report == "True":
             return True
@@ -321,9 +320,9 @@ class system:
         logger.info(f"{self.system_name} : Complete Anonymous Statistics operation.")
         logger.info(f"{self.system_name} : Current Anonymous Statistics Report state = {current_anonymous_statistics_report_state}")
         return current_anonymous_statistics_report_state
-       
-    def setup_system(self):
-        
+
+    ######   
+    def setup_system(self):   
         local_url = f"https://{self.ip_address}:{self.port}"
         connect_to_cloud = False
         auto_discovery = True
@@ -355,11 +354,12 @@ class system:
                     #Configure Anonymous statistics report
                     anonymous_statistics_report = self.setup_anonymous_statistics_report(session,current_settings["statisticsAllowed"])
                     
-                    system_setup_result = {"system_name":self.system_name, 
-                                        "connect_to_cloud":connect_to_cloud, 
-                                        "auto_discovery":auto_discovery,
-                                        "anonymous_statistics_report":anonymous_statistics_report,
-                                        "camera_optimization":camera_optimization}
+                    system_setup_result = {
+                        "system_name":self.system_name, 
+                        "connect_to_cloud":connect_to_cloud, 
+                        "auto_discovery":auto_discovery,
+                        "anonymous_statistics_report":anonymous_statistics_report,
+                        "camera_optimization":camera_optimization}
                     return system_setup_result
                 except requests.exceptions.HTTPError as e:
                     logging.error(f"{self.system_name} : Something went wrong. Operation suspended")
