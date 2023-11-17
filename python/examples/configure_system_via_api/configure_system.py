@@ -20,7 +20,7 @@ def get_args(argv):
     parser.add_argument("-o", "--output", action='store_true', default=False,
                         help="Specify if the summary result will be stored in a file")
     parser.add_argument("-s", "--silent", action='store_true', default=False,
-                        help="Silent mode, The result will not be displayed on terminal.")
+                        help="Silent mode. The result will not be displayed on terminal.")
     data = parser.parse_args(argv)
     return data
 
@@ -57,7 +57,6 @@ def output_to_file(file_content,system_name):
 if __name__ == "__main__":
     cmd_args = get_args(sys.argv[1:])
     is_output_to_file_required = cmd_args.output
-    #is_display_on_terminal = cmd_args.silent
     string_for_output = ""
     
     try:
