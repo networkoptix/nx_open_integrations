@@ -79,6 +79,10 @@ You would be able to find the details while executing this sample script, includ
 There is a output summary file, called [{system_name}_{timestamp}_configure_result.log].
 The summary report will inform you if the system has been configured successfully.
 
+By default, the executed result will be shown on the terminal.
+If the user uses the option "-s" or "--silent", the output will not be displayed.
+
+
 ### Multiple systems 
 
 If you have to configure multiple systems at a time, you can create a wrapper by feeding different configurations files.

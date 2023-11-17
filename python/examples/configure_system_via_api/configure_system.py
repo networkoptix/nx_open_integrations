@@ -16,11 +16,11 @@ timestamp = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 def get_args(argv):
     parser = argparse.ArgumentParser("configure_system.py",formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-f", "--file", action='store', default="system_settings.conf",
-                        help="Specify the file to read system settings")
+                        help="Specify the file to read system setting from")
     parser.add_argument("-o", "--output", action='store_true', default=False,
                         help="Specify if the summary result will be stored in a file")
-    parser.add_argument("-p", "--print", action='store_true', default=False,
-                        help="Display the result on terminal.")
+    parser.add_argument("-s", "--silent", action='store_true', default=False,
+                        help="Silent mode, The result will not be displayed on terminal.")
     data = parser.parse_args(argv)
     return data
 
@@ -29,10 +29,10 @@ def format_output_string(setting, value):
     format_string = "* " + setting.ljust(shift_pos) + ": " + value + "\n"
     return format_string
 
-def create_output_string(output_string, result, state):
+def create_output_string(output_string, result, output_flag_enabled):
     output_string = "====================\n"
     output_string += format_output_string("Start Time",timestamp)
-    if state:
+    if output_flag_enabled:
         output_string += format_output_string("System Name",result["system_name"])
         output_string += format_output_string("Connect to Cloud",result["connect_to_cloud"])
         output_string += format_output_string("Auto Discovery", result["auto_discovery"])
@@ -57,7 +57,7 @@ def output_to_file(file_content,system_name):
 if __name__ == "__main__":
     cmd_args = get_args(sys.argv[1:])
     is_output_to_file_required = cmd_args.output
-    is_display_on_terminal = cmd_args.print
+    #is_display_on_terminal = cmd_args.silent
     string_for_output = ""
     
     try:
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         string_for_output += create_output_string(string_for_output, result, True)
         if is_output_to_file_required:
             output_to_file(string_for_output,result["system_name"])
-        if is_display_on_terminal:
+        if not cmd_args.silent:
             print(string_for_output)
     except Exception as e:
         logging.error(e)

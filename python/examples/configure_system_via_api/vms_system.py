@@ -15,7 +15,6 @@ logging.basicConfig(filename="configure_system.log",
                     datefmt="%Y-%m-%d %H:%M:%S",
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-http_timeout = 5
 
 @dataclass
 class VmsSystemSettings:
@@ -27,7 +26,6 @@ class VmsSystemSettings:
 
 
 class VmsSystem:
-
     def __init__(self, configuration_file):
         try:
             system_configurations = configparser.ConfigParser()
@@ -52,13 +50,17 @@ class VmsSystem:
                 cameraSettingsOptimization="False",
                 statisticsAllowed="False")
             self.session = requests.Session()
+            self.http_timeout = 5
         except Exception as e:
             logging.error(e)
             print(f'Openration Failed : The system object initialization is not successfully done.')
 
+    def set_http_timeout(self, timeout_in_seconds):
+        self.http_timeout = timeout_in_seconds
+
     def login(self, password="admin"):
         credentials = {"username": "admin", "password": password, "setCookie": True}
-        self.session.post(f"{self.local_url}/rest/v2/login/sessions", json=credentials, timeout=http_timeout, verify=False)
+        self.session.post(f"{self.local_url}/rest/v2/login/sessions", json=credentials, timeout=self.http_timeout, verify=False)
         
     def get_current_system_settings(self,current_settings):
         try:
