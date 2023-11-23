@@ -39,6 +39,12 @@ export class LayoutSettingsController {
         window.vms.self.setMinimalInterfaceMode(window.minimalInterfaceCheckbox.checked);
       }
     );
+    window.preventDefaultContextMenu.addEventListener(
+      "change",
+      () => {
+        window.vms.self.setPreventDefaultContextMenu(window.preventDefaultContextMenu.checked);
+      }
+    );
   }
 
   async changeLayoutSettings() {
