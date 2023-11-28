@@ -45,6 +45,12 @@ export class LayoutSettingsController {
         window.vms.self.setPreventDefaultContextMenu(window.preventDefaultContextMenu.checked);
       }
     );
+    window.preventDefaultContextMenu.addEventListener(
+      "contextmenu",
+      () => {
+        window.alert("Contextmenu listener triggered");
+      }
+    );
   }
 
   async changeLayoutSettings() {
