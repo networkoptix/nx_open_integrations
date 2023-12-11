@@ -55,7 +55,7 @@ class VmsSystem:
             self.http_timeout = 5
         except Exception as e:
             logging.error(e)
-            print(f'Openration Failed : The system object initialization is not successfully done.')
+            print(f'[ERROR] Openration Failed : The system object initialization is not successfully done.')
 
     def set_http_timeout(self, timeout_in_seconds):
         self.http_timeout = timeout_in_seconds
@@ -119,8 +119,8 @@ class VmsSystem:
                 return True           
         except requests.exceptions.HTTPError as e:
             logger.error(f"{self.system_name} : Something went wrong, will not be connecting to the cloud")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
             return False
 
@@ -134,17 +134,17 @@ class VmsSystem:
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
             else:
-                logger.info( f"{self.system_name}: Disconnect from {self.cloud_host} , detach from {self.cloud_account}'s account.")
+                logger.info( f"{self.system_name} : Disconnect from {self.cloud_host} , detach from {self.cloud_account}'s account.")
                 return True          
         except requests.exceptions.HTTPError as e:
             logger.error(f"{self.system_name}: Something went wrong, will be still connecting to the cloud")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
             return False
 
     def _setup_connect_to_cloud(self, current_cloud_state):
-        logger.info(f"{self.system_name} : Previous Cloud connected state = {current_cloud_state}") #Cloud System ID or None
+        logger.debug(f"{self.system_name} : Previous Cloud connected state = {current_cloud_state}") #Cloud System ID or None
         if current_cloud_state == "": 
             if self.__need_to_connect_to_cloud():
                 if self._connect_system_to_cloud():
@@ -187,13 +187,13 @@ class VmsSystem:
                 return True
         except requests.exceptions.HTTPError as e:
             logger.error(f"Something went wrong. Auto discovery on {self.system_name} remains same state")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
             return False
 
     def _setup_auto_discovery(self,current_auto_discover_state):
-        logger.info(f"{self.system_name} : Auto discovery previous state = {current_auto_discover_state}")
+        logger.debug(f"{self.system_name} : Auto discovery previous state = {current_auto_discover_state}")
         if current_auto_discover_state == "UNKNOWN":
             logger.warning(
                 f"{self.system_name} : Auto discovery current state = {current_auto_discover_state}")
@@ -239,13 +239,13 @@ class VmsSystem:
                 return True
         except requests.exceptions.HTTPError as e:
             logger.error(f"Something went wrong. System optmization on {self.system_name} remains same status")
-            logger.debug(res.status_code)
-            logger.debug(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
             return False
 
     def _setup_camera_optimization(self,current_camera_optimization_state):
-        logger.info(f"{self.system_name} : Camera optimization previous state = {current_camera_optimization_state}")
+        logger.debug(f"{self.system_name} : Camera optimization previous state = {current_camera_optimization_state}")
         if current_camera_optimization_state == "UNKNOWN":
             logger.warning(
                 f"{self.system_name} :  Camera Optimoptimizationization current state = {current_camera_optimization_state} )")
@@ -292,13 +292,13 @@ class VmsSystem:
                 return True
         except requests.exceptions.HTTPError as e:
             logger.error(f"Something went wrong. Anonymous statistics report on {self.system_name} remains same state")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
             return False
 
     def _setup_anonymous_statistics_report(self,current_anonymous_statistics_report_state):
-        logger.info(
+        logger.debug(
             f"{self.system_name} : Anonymous statistics report previous state = {current_anonymous_statistics_report_state}")
         if current_anonymous_statistics_report_state == "UNKNOWN":
             logger.warning(
@@ -333,11 +333,11 @@ class VmsSystem:
             res = self.session.patch(f"{self.local_url}/rest/v2/system/settings", json=configuration_payload, verify=False)
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
-            logger.debug(f"System Name is changed to {self.system_name}")
+            logger.info(f"System Name is changed to {self.system_name}")
         except requests.exceptions.HTTPError as e:
             logger.error(f"System Name does not set successfully, desired value = {self.system_name}")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
         
     def _initialize_system(self):
@@ -352,11 +352,11 @@ class VmsSystem:
             res = self.session.post(f"{self.local_url}/rest/v2/system/setup", json=configuration_payload, verify=False)
             if res.status_code != 200:
                 raise(requests.exceptions.HTTPError)
-            logger.debug(f"System setup is completed")
+            logger.info(f"System setup is completed")
         except requests.exceptions.HTTPError as e:
             logger.error(f"System Setup failed")
-            logger.warning(res.status_code)
-            logger.warning(res.content)
+            logger.error(res.status_code)
+            logger.error(res.content)
             logger.error(e)
 
     ######   

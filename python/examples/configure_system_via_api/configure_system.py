@@ -43,12 +43,13 @@ def output_to_file(file_content,system_name,timestamp):
         with open(output_file_path,'w') as file:
             file.write(file_content)
     except IOError as e:
-        print("Error: Summary report can't be generated.Path:{path}".format(path=output_file_path))
-        logging.error("Error: Summary report can't be generated.Path:{path}".format(path=output_file_path))
+        print(f"[ERROR] Summary report can't be generated.Path:{output_file_path}")
+        logging.error(f"Summary report can't be generated.Path:{output_file_path}")
         logging.error(e)
 
 if __name__ == "__main__":
     cmd_args = get_args(sys.argv[1:])
+    logging.debug(f"cmd_arg = {cmd_args}")
     start_time = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     string_for_output = "====================\n"
     string_for_output += format_output_string("Start Time",start_time)
