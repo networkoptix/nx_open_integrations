@@ -13,7 +13,7 @@ namespace opencv_object_detection {
 using namespace std::string_literals;
 
 using namespace cv;
-using namespace cv::tbm;
+using namespace cv::detail::tracking::tbm;
 
 using namespace nx::sdk;
 using namespace nx::sdk::analytics;
