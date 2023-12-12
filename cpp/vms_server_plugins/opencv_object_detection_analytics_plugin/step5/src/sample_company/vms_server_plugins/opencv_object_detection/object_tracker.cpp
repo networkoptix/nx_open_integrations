@@ -13,7 +13,7 @@ namespace opencv_object_detection {
 using namespace std::string_literals;
 
 using namespace cv;
-using namespace cv::tbm;
+using namespace cv::detail::tracking::tbm;
 
 using namespace nx::sdk;
 using namespace nx::sdk::analytics;
@@ -29,7 +29,7 @@ cv::Ptr<ITrackerByMatching> createTrackerByMatchingWithFastDescriptor()
     // Real forget delay is `params.forget_delay * kDetectionFramePeriod`.
     params.forget_delay = 75;
 
-    // Keep forgotten tracks for cleaning up our tracks and dropping cv::tbm tracks manually.
+    // Keep forgotten tracks for cleaning up our tracks and dropping cv::detail::tracking::tbm tracks manually.
     params.drop_forgotten_tracks = false;
 
     cv::Ptr<ITrackerByMatching> tracker = createTrackerByMatching(params);
@@ -155,7 +155,7 @@ void ObjectTracker::copyDetectionsHistoryToTrack(
     Track* track,
     const std::string& classLabel) const
 {
-    const cv::tbm::Track& cvTrack = m_tracker->tracks().at((size_t) cvTrackId);
+    const cv::detail::tracking::tbm::Track& cvTrack = m_tracker->tracks().at((size_t) cvTrackId);
     for (const TrackedObject& trackedDetection: cvTrack.objects)
     {
         if ((int64_t) trackedDetection.timestamp == frame.timestampUs)
@@ -321,7 +321,7 @@ void ObjectTracker::cleanupTracks()
         auto cvTrackId = (int64_t) pair.first;
         if (m_tracker->isTrackForgotten((size_t) cvTrackId))
         {
-            const cv::tbm::Track& cvTrack = pair.second;
+            const cv::detail::tracking::tbm::Track& cvTrack = pair.second;
             const Uuid& trackId = m_idMapper->get(cvTrack.first_object.object_id);
             m_tracks.erase(trackId);
         }

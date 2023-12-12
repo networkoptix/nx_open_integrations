@@ -48,20 +48,20 @@ struct CompositeDetectionId
 
 using ClassLabelMap = std::map<const CompositeDetectionId, std::string>;
 
-cv::tbm::TrackedObjects convertDetectionsToTrackedObjects(
+cv::detail::tracking::tbm::TrackedObjects convertDetectionsToTrackedObjects(
     const Frame& frame,
     const DetectionList& detections,
     ClassLabelMap* inOutClassLabels);
 
 std::shared_ptr<Detection> convertTrackedObjectToDetection(
     const Frame& frame,
-    const cv::tbm::TrackedObject& trackedDetection,
+    const cv::detail::tracking::tbm::TrackedObject& trackedDetection,
     const std::string& classLabel,
     IdMapper* idMapper);
 
 DetectionList convertTrackedObjectsToDetections(
     const Frame& frame,
-    const cv::tbm::TrackedObjects& trackedDetections,
+    const cv::detail::tracking::tbm::TrackedObjects& trackedDetections,
     const ClassLabelMap& classLabels,
     IdMapper* idMapper);
 
