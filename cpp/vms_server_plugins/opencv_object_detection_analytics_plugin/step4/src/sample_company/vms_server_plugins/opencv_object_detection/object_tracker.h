@@ -35,7 +35,7 @@ private:
     void cleanupIds();
 
 private:
-    const cv::Ptr<cv::tbm::ITrackerByMatching> m_tracker;
+    const cv::Ptr<cv::detail::tracking::tbm::ITrackerByMatching> m_tracker;
     const std::unique_ptr<IdMapper> m_idMapper = std::make_unique<IdMapper>();
 };
 

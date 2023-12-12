@@ -67,7 +67,7 @@ private:
     void cleanup();
 
 private:
-    const cv::Ptr<cv::tbm::ITrackerByMatching> m_tracker;
+    const cv::Ptr<cv::detail::tracking::tbm::ITrackerByMatching> m_tracker;
     const std::unique_ptr<IdMapper> m_idMapper{new IdMapper()};
     std::map</*trackId*/ const nx::sdk::Uuid, /*track*/ std::shared_ptr<Track>> m_tracks;
     std::map</*classLabel*/ const std::string, /*detectionActive*/ bool> m_detectionActive;

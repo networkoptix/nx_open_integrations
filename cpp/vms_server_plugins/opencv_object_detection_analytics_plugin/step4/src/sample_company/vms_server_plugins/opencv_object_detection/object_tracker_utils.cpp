@@ -9,7 +9,7 @@ namespace vms_server_plugins {
 namespace opencv_object_detection {
 
 using namespace cv;
-using namespace cv::tbm;
+using namespace cv::detail::tracking::tbm;
 
 using namespace nx::sdk;
 
@@ -37,7 +37,7 @@ void IdMapper::removeAllExcept(const std::set<int64_t>& idsToKeep)
 }
 
 /**
- * Convert detections from the plugin format to the format of opencv::tbm, preserving classLabels.
+ * Convert detections from the plugin format to the format of opencv::detail::tracking::tbm, preserving classLabels.
  */
 TrackedObjects convertDetectionsToTrackedObjects(
     const Frame& frame,
@@ -85,7 +85,7 @@ std::shared_ptr<Detection> convertTrackedObjectToDetection(
 }
 
 /**
- * Convert detections from opencv::tbm format to the plugin format, restoring classLabels.
+ * Convert detections from opencv::detail::tracking::tbm format to the plugin format, restoring classLabels.
  */
 DetectionList convertTrackedObjectsToDetections(
     const Frame& frame,
@@ -94,7 +94,7 @@ DetectionList convertTrackedObjectsToDetections(
     IdMapper* idMapper)
 {
     DetectionList result;
-    for (const cv::tbm::TrackedObject& trackedDetection: trackedDetections)
+    for (const cv::detail::tracking::tbm::TrackedObject& trackedDetection: trackedDetections)
     {
         const std::string classLabel = classLabels.at({
             frame.index,
