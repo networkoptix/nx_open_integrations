@@ -1,9 +1,9 @@
 ## Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-cmake_minimum_required(VERSION 3.3.2)
+cmake_minimum_required(VERSION 3.15)
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "5.0.0.35270")
+set(metadataSdkVersion "5.1.0.37133")
 set(metadataSdkDir "" CACHE PATH
     "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
 
