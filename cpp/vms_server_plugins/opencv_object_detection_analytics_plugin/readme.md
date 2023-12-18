@@ -12,14 +12,14 @@
 
 Prerequisites:
     CMake >= 3.15 
-    Conan >= 1.53
-    MetaVMS >= 5.0.0.35744
-    Metadata SDK = 5.0.0.35744
-    g++ compiler >= 9 and <=10.2
+    Conan >= 1.53 and <= 1.59
+    MetaVMS = 5.1.0.37133
+    Metadata SDK = 5.1.0.37133
+    g++ compiler >= 9 and <= 10.5
     
 The plugin has been tested in the following environments.
 
-Ubuntu 20.04, g++-9 compiler.
+Ubuntu 20.04, g++ compiler version 10.5
 Windows 10, Visual Studio 2022.
 
 ## Model files
