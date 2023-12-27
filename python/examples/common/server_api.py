@@ -2,7 +2,9 @@
 
 import logging
 import requests
-from pprint import pprint 
+import hashlib
+import base64
+from pprint import pprint
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 RESPONSE_EXPIRATION_TIMEOUT_S = 10
@@ -29,8 +31,29 @@ def request_api(url, uri, method, **kwargs):
         response = requests.request(
             method,
             new_url,
-            **kwargs
-        )
+            **kwargs)
+    if not check_status(response):
+        exit(1)
+    if response.headers.get('Content-Type') == 'application/json':
+        return response.json()
+    else:
+        return response.content
+
+
+def request_api_auth(url, uri, method, auth='', **kwargs):
+    server_url = f'{url}{uri}{auth}'
+    response = requests.request(
+        method,
+        server_url,
+        **kwargs)
+
+    # Handling Cloud relay redirects. Check for code 307
+    if response.status_code == requests.codes.temporary_redirect:
+        new_url = response.headers["Location"]
+        response = requests.request(
+            method,
+            new_url,
+            **kwargs)
     if not check_status(response):
         exit(1)
     if response.headers.get('Content-Type') == 'application/json':
@@ -98,6 +121,28 @@ def is_local_user(api_response):
         return False
     return True
 
+
+def md5(data):
+    m = hashlib.md5()
+    m.update(data.encode())
+    return m.hexdigest()
+
+
+def digest(login, password, realm, nonce, method):
+    login = login.lower()
+    dig = md5(f"{login}:{realm}:{password}")
+    method = md5(f"{method}:")
+    auth_digest = md5(f"{dig}:{nonce}:{method}")
+    auth = f"{login}:{nonce}:{auth_digest}".encode()
+    return base64.b64encode(auth)
+
+
+def create_auth(url: str, username: str, password: str):
+    response = request_api(url, '/api/getNonce', "GET", verify=False)
+    realm = response['reply']['realm']
+    nonce = response['reply']['nonce']
+    auth = str(digest(username, password, realm, nonce, "GET"), 'utf-8')
+    return f'?auth={auth}'
 
 class Session:
     url: str
