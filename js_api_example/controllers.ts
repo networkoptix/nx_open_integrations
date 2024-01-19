@@ -369,4 +369,14 @@ export class AuthController {
     const token = await window.vms.auth.cloudToken();
     window.cloudToken.value = token;
   }
+
+  async updateCloudSystemId() {
+    const value = await window.vms.auth.cloudSystemId();
+    window.cloudSystemId.value = value;
+  }
+
+  async updateCloudHost() {
+    const value = await window.vms.auth.cloudHost();
+    window.cloudHost.value = value;
+  }
 }
