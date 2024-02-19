@@ -28,6 +28,14 @@ export const removeItem = (list, itemId) => {
 }
 
 /**
+ * Removes all items from the list.
+ */
+export const clearList = (list) => {
+  for (let i = list.options.length - 1; i >= 0; --i)
+    list.remove(i);
+}
+
+/**
  * Disables specified buttons if list has no currently selected item. Otherwise enables them.
  * @param list
  * @param buttons

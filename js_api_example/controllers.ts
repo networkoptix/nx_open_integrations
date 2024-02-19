@@ -25,8 +25,8 @@ export class LayoutSettingsController {
         locked: window.lockedLayoutCheckbox.checked
       };
 
-      window.vms.tab.setLayoutProperties(properties);
-      window.vms.tab.saveLayout();
+      window.vms.tabs.current.setLayoutProperties(properties);
+      window.vms.tabs.current.saveLayout();
     });
 
     window.minLayoutSizeCheckbox.addEventListener(
@@ -54,7 +54,7 @@ export class LayoutSettingsController {
   }
 
   async changeLayoutSettings() {
-    const state = await window.vms.tab.state();
+    const state = await window.vms.tabs.current.state();
     const minSize = state.properties.minimumSize;
     window.minLayoutSizeCheckbox.checked = !!minSize;
 
@@ -102,7 +102,7 @@ export class SceneItemsController {
 
         if (!this.dialogData.itemId) return;
 
-        const itemResult = await window.vms.tab.item(this.dialogData.itemId);
+        const itemResult = await window.vms.tabs.current.item(this.dialogData.itemId);
         if (itemResult.error.code != window.vms.ErrorCode.success) return;
 
         const timestampMs =
@@ -225,7 +225,7 @@ export class SceneItemsController {
       }
 
       if (this.dialogData.itemId) {
-        const result = await window.vms.tab.setItemParams(
+        const result = await window.vms.tabs.current.setItemParams(
           this.dialogData.itemId,
           settings
         );
@@ -238,7 +238,7 @@ export class SceneItemsController {
             `Can't change item ${this.dialogData.itemId} parameters, result code is ${result.code}`
           );
       } else {
-        const result = await window.vms.tab.addItem(
+        const result = await window.vms.tabs.current.addItem(
           this.dialogData.resourceId,
           settings
         );
@@ -311,8 +311,14 @@ export class SceneItemsController {
     );
     if (!resourceId) return;
 
+    const result = await window.vms.resources.resource(resourceId)
+    if (result.error.code == window.vms.ErrorCode.success && result.resource.type == 'layout') {
+      window.vms.tabs.open(resourceId);
+      return;
+    }
+
     if (!askParams) {
-      window.vms.tab.addItem(resourceId, {});
+      window.vms.tabs.current.addItem(resourceId, {});
       return;
     }
 
@@ -330,7 +336,7 @@ export class SceneItemsController {
 
     if (!itemId) return;
 
-    const result = await window.vms.tab.item(itemId);
+    const result = await window.vms.tabs.current.item(itemId);
     if (result.error.code != window.vms.ErrorCode.success) {
       alert("Can't find specified item");
       return;
@@ -347,7 +353,7 @@ export class SceneItemsController {
       window.sceneItemsList,
       "Please select item to be removed from the scene"
     );
-    if (itemId) window.vms.tab.removeItem(itemId);
+    if (itemId) window.vms.tabs.current.removeItem(itemId);
   }
 
   syncWith() {
@@ -355,7 +361,7 @@ export class SceneItemsController {
       window.sceneItemsList,
       "Please select item to be synced with"
     );
-    if (itemId) window.vms.tab.syncWith(itemId);
+    if (itemId) window.vms.tabs.current.syncWith(itemId);
   }
 }
 
@@ -378,5 +384,34 @@ export class AuthController {
   async updateCloudHost() {
     const value = await window.vms.auth.cloudHost();
     window.cloudHost.value = value;
+  }
+}
+
+export class TabsController {
+  async open() {
+    const id = getSelectedItemId(window.tabList, "Please select a tab");
+    if (!id)
+      return;
+
+    const error = await window.vms.tabs.setCurrent(id);
+    if (error.code != vms.ErrorCode.success && !!error.description)
+      alert(error.description);
+  }
+
+  async remove() {
+    const id = getSelectedItemId(window.tabList, "Please select a tab");
+    if (!id)
+      return;
+
+    const error = await window.vms.tabs.remove(id);
+    if (error.code != vms.ErrorCode.success && !!error.description)
+      alert(error.description);
+  }
+
+  async add() {
+    const name = window.tabName.value;
+    const tab = await window.vms.tabs.add(name);
+    if (!tab)
+      alert("Could not add a tab");
   }
 }

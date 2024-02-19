@@ -3,6 +3,8 @@ import {
   addSelectionHandler,
   addOrUpdateListItem,
   removeItem,
+  clearList,
+  getSelectedItemId,
   updateItemHandler,
 } from "./helpers";
 
@@ -17,15 +19,24 @@ export const initSceneItemsUI = async (list) => {
     window.syncWithButton,
   ]);
 
-  window.vms.tab.itemAdded.connect(updateItemHandler(list));
-  window.vms.tab.itemChanged.connect(updateItemHandler(list));
-  window.vms.tab.itemRemoved.connect((itemId) => {
+  window.vms.tabs.currentTabItemAdded.connect(updateItemHandler(list));
+  window.vms.tabs.currentTabItemChanged.connect(updateItemHandler(list));
+  window.vms.tabs.currentTabItemRemoved.connect((itemId) => {
     removeItem(list, itemId);
     handleSelectionChanged();
   });
 
-  const state = await window.vms.tab.state();
-  state.items.forEach(updateItemHandler(list));
+  let updateState = async () => {
+    const state = await window.vms.tabs.current.state();
+    state.items.forEach(updateItemHandler(list));
+  };
+
+  window.vms.tabs.currentChanged.connect(() => {
+    clearList(list);
+    updateState();
+  });
+
+  updateState();
 }
 
 /**
@@ -51,4 +62,26 @@ export const initResourcesUI = async (list) => {
 
   const resources = await window.vms.resources.resources();
   resources.forEach(resourceAdded);
+}
+
+/**
+ * Handles tab list.
+ * @param {*} list
+ */
+export const initTabsUi = async (list) => {
+  const updateTab = async (tab) => {
+    const isCurrent = window.vms.tabs.current.id === tab.id);
+    const text = `${tab.name} ${isCurrent ? "(current)" : ""}`;
+    addOrUpdateListItem(list, tab.id, text);
+  };
+
+  let updateTabs = () => {
+    clearList(list)
+    window.vms.tabs.tabs.forEach(updateTab);
+  };
+
+  window.vms.tabs.tabsChanged.connect(updateTabs);
+  window.vms.tabs.currentChanged.connect(updateTabs);
+
+  updateTabs();
 }

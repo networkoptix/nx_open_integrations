@@ -27,6 +27,21 @@
         </div>
     </section>
 
+    <section id='tabsBlock'>
+        <fieldset>
+            <label for="tabList">Tabs</label>
+            <select id='tabList' size=15></select>
+        </fieldset>
+        <div>
+            <button id='openTabButton' onclick='tabsController.open()'>Open</button>
+            <button id='removeTabButton' onclick='tabsController.remove()'>Remove</button>
+        </div>
+        <fieldset>
+            <input type='text' id='tabName' value='Example' />
+            <button id='addTabButton' onclick='tabsController.add()'>Add</button>
+        </fieldset>
+    </section>
+
     <section>
         <fieldset>
             <label for="sceneItemsList">Scene</label>
@@ -40,7 +55,7 @@
                 Change parameters
             </button>
             <button id='syncWithButton' onclick='sceneItemsController.syncWith()' disabled>Sync With</button>
-            <button id='stopSyncButton' onclick='vms.tab.stopSyncPlay()'>Stop Sync</button>
+            <button id='stopSyncButton' onclick='vms.tabs.current.stopSyncPlay()'>Stop Sync</button>
             <input id='minimalInterfaceCheckbox' type='checkbox'>Minimal Interface Mode</input>
             <input id='preventDefaultContextMenu' type='checkbox'>Prevent Default Context Menu</input>
         </div>
@@ -52,7 +67,7 @@
             <button onclick='layoutSettingsController.changeLayoutSettings()'>
                 Layout Settings
             </button>
-            <button onclick='vms.tab.saveLayout()'>Save Layout</button>
+            <button onclick='vms.tabs.current.saveLayout()'>Save Layout</button>
         </fieldset>
     </section>
 
@@ -198,7 +213,7 @@
         function addCameras(count) {
             const numberCamerasToAdd = window.resourcesList.length > count ? count : window.resourcesList.length
             for (let i = 0; i < numberCamerasToAdd; i++) {
-                window.vms.tab.addItem(window.resourcesList[i].id,{})
+                window.vms.tabs.current.addItem(window.resourcesList[i].id,{})
             }
         }
     </script>
