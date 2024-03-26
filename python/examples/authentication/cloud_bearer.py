@@ -5,8 +5,8 @@ import server_api as api
 from pprint import pprint
 
 CLOUD_USER = 'cloudaccount@networkoptix.com'  # cloud account
-CLOUD_PASSWORD = 'cloudpassword'  # cloud account password
-CLOUD_SYSTEM_ID = ""  # (RFC 4122) More detail to locate your cloud system Id.
+CLOUD_PASSWORD = 'cloudaccountpassword'  # cloud account password
+CLOUD_SYSTEM_ID = 'your_own_cloud_system_id'  # (RFC 4122) More detail to locate your cloud system Id.
 # https://support.networkoptix.com/hc/en-us/articles/360026419393-What-is-Cloud-Connect-
 
 CLOUD_DOMAIN_NAME = 'nxvms.com'  # Cloud service domain name
@@ -40,7 +40,7 @@ def main():
     # Optinoal. Send a request via a loud relay to check if the token is valid on the System.
     token_info = api.request_api(
         cloud_system_url,
-        f'/rest/v1/login/sessions/{system_token}',
+        f'/rest/v2/login/sessions/{system_token}',
         'GET',
         verify=False)
     if api.is_expired(token_info):
@@ -48,13 +48,14 @@ def main():
         exit(1)
 
     system_auth_header = api.create_auth_header(system_token)
-    system_info = api.request_api(
+    user_list = api.request_api(
         cloud_system_url,
-        f'/rest/v1/servers/*/info',
+        f'/rest/v2/users',
         'GET',
         headers=system_auth_header,
-        verify=False)
-    api.print_system_info(system_info)
+        verify=False,
+        allow_redirects=False)
+    api.print_user_list(user_list)
 
     # Delete the token for the System API
     cloud_auth_header = api.create_auth_header(cloud_token)    

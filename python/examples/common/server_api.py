@@ -117,8 +117,17 @@ def print_system_info(response):
     pprint(system_info)
 
 
+def print_user_list(response):
+    if 'reply' in response:
+        user_list = response['reply']
+    else:
+        user_list = response
+    number_of_users = len(user_list)
+    print(f'\nThis system has {number_of_users} user account(s):\n')
+    pprint(user_list)
+
 def is_local_user(api_response):
-    if api_response['type'] == 'cloud':
+    if "type" in api_response.keys() and api_response['type'] == 'cloud':
         return False
     return True
 
@@ -175,7 +184,7 @@ class Session:
 
     def __init__(self, url: str, username: str, password: str):
         self.url = url
-        session = self.post('/rest/v1/login/sessions', json={
+        session = self.post('/rest/v2/login/sessions', json={
             'username': username,
             'password': password,
             'setCookie': False
@@ -186,7 +195,7 @@ class Session:
 
     def __del__(self):
         if self.token:
-            self.delete(f'/rest/v1/login/sessions/{self.token}')
+            self.delete(f'/rest/v2/login/sessions/{self.token}')
 
 
     def request(self, uri, method, **kwargs):
