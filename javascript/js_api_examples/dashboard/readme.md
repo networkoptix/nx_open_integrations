@@ -1,6 +1,8 @@
 # Demo of API available within embedded browser within desktop client
 This is an example of how to use the API's provided by the desktop client within the built in browser.
 
+Change to the `src` folder.
+
 Before running any of the scripts below please make sure to run `npm install` to install dev dependencies.
 
 ## To run locally 
