@@ -1,5 +1,6 @@
 ## Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
+import argparse
 import logging
 import requests
 import hashlib
@@ -153,6 +154,24 @@ class Session:
     class RequestException(Exception):
         pass
 
+    @staticmethod
+    def add_arguments(parser: argparse.ArgumentParser):
+        parser.add_argument(
+            '--url',
+            type=str, default='https://localhost:7001',
+            help="Site URL")
+        parser.add_argument(
+            '--username',
+            type=str, default='admin',
+            help="Authentication username")
+        parser.add_argument(
+            '--password',
+            type=str, required=True,
+            help="Authentication password")
+
+    @staticmethod
+    def from_args(args: argparse.Namespace):
+        return Session(args.url, args.username, args.password)
 
     def __init__(self, url: str, username: str, password: str):
         self.url = url
