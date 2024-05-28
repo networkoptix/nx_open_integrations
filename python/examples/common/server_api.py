@@ -159,11 +159,11 @@ class Session:
         parser.add_argument(
             '--url',
             type=str, default='https://localhost:7001',
-            help="Site URL")
+            help="Site URL. Default: https://localhost:7001")
         parser.add_argument(
             '--username',
             type=str, default='admin',
-            help="Authentication username")
+            help="Authentication username. Default: admin")
         parser.add_argument(
             '--password',
             type=str, required=True,
