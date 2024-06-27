@@ -10,10 +10,10 @@
 
 <body>
     <section id='camerasBlock'>
-        Available cameras
-        <div>
+        <fieldset>
+            <label for="resourcesList">Available cameras</label>
             <select id='resourcesList' size=15></select>
-        </div>
+        </fieldset>
 
         <div>
             <button id='addSceneItemButton' onclick='sceneItemsController.addSceneItem()'>Add</button>
@@ -23,13 +23,34 @@
                 Add with parameters
             </button>
         </div>
+        <div>
+            <button id='add8Cameras' onclick='addCameras(8)'>+8 cameras</button>
+            <button id='add16Cameras' onclick='addCameras(16)'>+16 cameras</button>
+            <button id='add32Cameras' onclick='addCameras(32)'>+32 cameras</button>
+            <button id='add64Cameras' onclick='addCameras(64)'>+64 cameras</button>
+        </div>
+    </section>
+
+    <section id='tabsBlock'>
+        <fieldset>
+            <label for="tabList">Tabs</label>
+            <select id='tabList' size=15></select>
+        </fieldset>
+        <div>
+            <button id='openTabButton' onclick='tabsController.open()'>Open</button>
+            <button id='removeTabButton' onclick='tabsController.remove()'>Remove</button>
+        </div>
+        <fieldset>
+            <input type='text' id='tabName' value='Example' />
+            <button id='addTabButton' onclick='tabsController.add()'>Add</button>
+        </fieldset>
     </section>
 
     <section>
-        Scene
-        <div>
+        <fieldset>
+            <label for="sceneItemsList">Scene</label>
             <select class='list' id='sceneItemsList' size=5></select>
-        </div>
+        </fieldset>
         <div>
             <button id='removeItemButton' onclick='sceneItemsController.removeSceneItem()' disabled>
                 Remove
@@ -38,46 +59,78 @@
                 Change parameters
             </button>
             <button id='syncWithButton' onclick='sceneItemsController.syncWith()' disabled>Sync With</button>
-            <button id='stopSyncButton' onclick='vms.tab.stopSyncPlay()'>Stop Sync</button>
+            <button id='stopSyncButton' onclick='vms.tabs.current.stopSyncPlay()'>Stop Sync</button>
+            <input id='minimalInterfaceCheckbox' type='checkbox'>Minimal Interface Mode</input>
+            <input id='preventDefaultContextMenu' type='checkbox'>Prevent Default Context Menu</input>
         </div>
     </section>
 
     <section>
-        Layout
-        <div>
+        <fieldset>
+            <label>Layout</label>
             <button onclick='layoutSettingsController.changeLayoutSettings()'>
                 Layout Settings
             </button>
-            <button onclick='vms.tab.saveLayout()'>Save Layout</button>
-        </div>
+            <button onclick='vms.tabs.current.saveLayout()'>Save Layout</button>
+        </fieldset>
+    </section>
+
+    <section id="authBlock">
+        <fieldset>
+            <label>Authentication</label>
+            <table>
+                <tr>
+                    <td>Server Token</td>
+                    <td><input type='text' id='serverToken' readonly/></td>
+                    <td><button onclick='authController.updateServerToken()'>Get token</button></td>
+                </tr>
+                <tr>
+                    <td>Cloud Token</td>
+                    <td><input type='text' id='cloudToken' readonly/></td>
+                    <td><button onclick='authController.updateCloudToken()'>Get token</button></td>
+                </tr>
+                <tr>
+                    <td>Cloud System ID</td>
+                    <td><input type='text' id='cloudSystemId' readonly/></td>
+                    <td><button onclick='authController.updateCloudSystemId()'>Get value</button></td>
+                </tr>
+                <tr>
+                    <td>Cloud host</td>
+                    <td><input type='text' id='cloudHost' readonly/></td>
+                    <td><button onclick='authController.updateCloudHost()'>Get value</button></td>
+                </tr>
+            </table>
+        </fieldset>
     </section>
 
     <dialog id=settingsDialog>
-        Parameters
+        <label>Parameters</label>
         <form method='dialog'>
-            <input id='selectedCheckbox' type='checkbox'>Selected</input><br>
-            <input id='focusedCheckbox' type='checkbox'>Focused</input><br>
-            <div>
+            <fieldset>
+                <input id='selectedCheckbox' type='checkbox'>Selected</input><br>
+                <input id='focusedCheckbox' type='checkbox'>Focused</input><br>
+            </fieldset>
+            <fieldset>
                 Geometry:
                 (<input type='number' id='xEdit' min=-10 max=10 size=3 />
                 :<input type='number' id='yEdit' min=-10 max=10 size=3 />)
                 (<input type='number' id='widthEdit' min=0 max=10 size=3 />
                 x<input type='number' id='heightEdit' min=0 max=10 size=3 />)
-            </div>
-
+            </fieldset>
 
             <div id='mediaParamsSection'>
-                <div>
-                    Speed:
+                <fieldset>
+                    <label for="speedInput" >Speed:</label>
                     <input type='number' step='0.1' min=-16 max=16 id='speedInput'></input>
-                </div>
-                <div>
-                    Time:
+                </fieldset>
+                <fieldset>
+                    <label for="dateTimeControl">Time:</label>
                     <input type='datetime-local' id='dateTimeControl' step=1 />
                     <button id='setCurrentDeviceTimeButton'>Media Time</button>
                     <button id='setNowTimeButton'>Now</button>
                     <button id='clearTimeButton'>Clear</button>
-                </div>
+                </fieldset>
+                <button id="advancedSettingsButton">Advanced</button>
             </div>
 
             <div class="dialogButtons">
@@ -87,19 +140,85 @@
         </form>
     </dialog>
 
+    <dialog id='advancedSettingsDialog'>
+        <label>Advanced parameters</label>
+        <form method='dialog'>
+            <fieldset>
+                <label>Timeline window:</label>
+                <table>
+                    <tr>
+                        <td>From</td>
+                        <td>
+                            <input type='datetime-local' id='timelineStart' step=1 />
+                            <button id='setCurrentTimelineStartButton'>Media Time</button>
+                            <button id='setNowTimelineStartButton'>Now</button>
+                            <button id='clearTimelineStartButton'>Clear</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>
+                            <input type='datetime-local' id='timelineEnd' step=1 />
+                            <button id='setCurrentTimelineEndButton'>Media Time</button>
+                            <button id='setNowTimelineEndButton'>Now</button>
+                            <button id='clearTimelineEndButton'>Clear</button>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+            <fieldset>
+                <label>Timeline selection:</label>
+                <table>
+                    <tr>
+                        <td>From</td>
+                        <td>
+                            <input type='datetime-local' id='selectionStart' step=1 />
+                            <button id='setCurrentSelectionStartButton'>Media Time</button>
+                            <button id='setNowSelectionStartButton'>Now</button>
+                            <button id='clearSelectionStartButton'>Clear</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>
+                            <input type='datetime-local' id='selectionEnd' step=1 />
+                            <button id='setCurrentSelectionEndButton'>Media Time</button>
+                            <button id='setNowSelectionEndButton'>Now</button>
+                            <button id='clearSelectionEndButton'>Clear</button>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+            <div class='dialogButtons'>
+                <button id='advancedSettingsSubmitButton'>Ok</button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id='layoutSettingsDialog'>
         <form method='dialog'>
-            Layout Settings
+            <label>Layout Settings</label>
             <section>
                 <input id='minLayoutSizeCheckbox' type='checkbox'>Minimum layout size</input>
                 <input id='minLayoutSizeWidthEdit' type='number' min=0 max=10 size=2 />
                 x
                 <input id='minLayoutSizeHeightEdit' type='number' min=0 max=10 size=2 />
             </section>
+            <section>
+                <input id='lockedLayoutCheckbox' type='checkbox'>Locked</input>
+            </section>
             <div class="dialogButtons">
                 <button id='submitLayoutSettings' type='submit'>Ok</button>
-                <button id='cancelLayoutSettings'>Cancel</button>
+                <button id='cancelLayoutSettings' onclick="document.getElementById('layoutSettingsDialog').close()" type='reset'>Cancel</button>
             </div>
         </form>
     </dialog>
+    <script>
+        function addCameras(count) {
+            const numberCamerasToAdd = window.resourcesList.length > count ? count : window.resourcesList.length
+            for (let i = 0; i < numberCamerasToAdd; i++) {
+                window.vms.tabs.current.addItem(window.resourcesList[i].id,{})
+            }
+        }
+    </script>
 </body>
