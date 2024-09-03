@@ -21,7 +21,7 @@ Configure the system configurations and allow third-party developers to change t
 - Set the local admin password.
 
 Below we provide examples and explanations for the new API available in the VMS (v5.1 and newer). 
-Refer to [Nx Server HTTP REST API](https://support.networkoptix.com/hc/en-us/articles/219573367-Nx-Server-HTTP-REST-API) for more information on APIs and on accessing API documentation.
+Refer to [Nx Server HTTP REST API](https://meta.nxvms.com/doc/developers/api-tool/main?type=1) for more information on APIs and on accessing API documentation.
 
 ## Using the sample script
 
@@ -32,7 +32,7 @@ To commence with script testing, adhere to the following instructions:
 3. Script Initialization: The script is designed to autoload the system information from the mentioned file.
 4. Output the result : The summary report will tell if a system has been successfully configured. (also print the result on the console or silently done)
 
-Please download the [configure_systems.py](configure_systems.py) file and check the available options by using the following command:
+Please see the [configure_systems.py](configure_systems.py) file and the available options by using the following command:
 
 `python3 configure_systems.py --help`.
 
@@ -53,7 +53,7 @@ Please refer to [Nx Meta Authentication](https://support.networkoptix.com/hc/en-
 ### How to connect/detach a system to Cloud through the REST API.
 
 The following API commands are used to connect a system to the Cloud : 
-- POST /api/systems/connect
+- POST /cdb/systems/bind
 - POST /rest/v2/system/cloudBind
 
 You would need to create a JSON payload for the desired system you want to connect to the Cloud.
@@ -66,7 +66,7 @@ The following API commands are used to configure the system default settings :
 - POST /rest/v2/system/setup
 - PATCH /rest/v2/system/settings
 
-You can change the script to facilitate other system configurations.
+You can change the script to facilitate other system configurations if reuqired.
 The full list of system configuration options can be retrieved from the following APIs commands:
 - /rest/v2/system/settings
 - /rest/v2/system/settings/*/manifest
@@ -91,4 +91,4 @@ If you have to configure multiple systems at a time, you can create a wrapper by
 It is also possible to configure more configurations.
 
 You may put the name of configuration in the dataclass, VmsSystemSettings.
-Then modify the script by adding the function to change configurations; also, please remeber to extend or add extra key,value pair in the configuration files.
+Then create or modify the script by adding the function to change configurations; also, please remeber to extend or add extra key,value pair in the configuration files.

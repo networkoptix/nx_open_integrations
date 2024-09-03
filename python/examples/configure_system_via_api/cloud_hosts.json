@@ -1,0 +1,22 @@
+{
+    "__comment__": [
+    "Version number is global.",
+    "This file is a list of the mapping of powered-by-Nx products and the cloud hosts URL",
+    "customization flag is used internally for Nx to build the proper environment and cloud host for each powered-by-nx"
+    ],
+    "version": "1.0",
+    "data":[
+        {
+            "Nx Witness":{
+                "customization" : "default",
+                "cloud_host" : "nxvms.com"
+            }
+        },
+        {
+            "Nx EVOS":{
+                "customization" : "metavms",
+                "cloud_host" : "meta.nxvms.com"
+            }
+        }
+    ]
+}    
