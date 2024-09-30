@@ -824,8 +824,12 @@ void TrackerByMatching::UpdateLostTracks(
 void TrackerByMatching::process(const cv::Mat &frame,
                                 const TrackedObjects &input_detections,
                                 uint64_t timestamp) {
-    if (prev_timestamp_ != std::numeric_limits<uint64_t>::max())
-        TBM_CHECK_LT(static_cast<size_t>(prev_timestamp_), static_cast<size_t>(timestamp));
+    if (prev_timestamp_ != std::numeric_limits<uint64_t>::max()) {
+        if (timestamp < prev_timestamp_) {
+            std::cout << __func__ << ": prev timestamp " << std::to_string(prev_timestamp_)
+                << " > timestamp " << std::to_string(timestamp) << std::endl;
+        }
+    }
 
     if (frame_size_ == cv::Size(0, 0)) {
         frame_size_ = frame.size();
