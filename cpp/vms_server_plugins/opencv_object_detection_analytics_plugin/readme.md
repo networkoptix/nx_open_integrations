@@ -2,6 +2,8 @@
 
 # OpenCV-based Analytics Plugin for the VMS Server (opencv_object_detection_analytics_plugin)
 
+For more detail read the guide [How to Create a Video Analytics Plugin](https://meta.nxvms.com/docs/developers/knowledgebase/200-introduction-to-creating-a-video-analytics-plugin)
+
 ## Features
 
 - Detect objects (cats, dogs, people).
@@ -12,9 +14,9 @@
 
 Prerequisites:
     CMake >= 3.15 
-    Conan >= 1.53
-    MetaVMS >= 5.0.0.35744
-    Metadata SDK = 5.0.0.35744
+    Conan < 2.0
+    (MetaVMS)[https://meta.nxvms.com/download/releases/linux] >= 5.0.0.35744
+    (Metadata SDK)[https://meta.nxvms.com/download/releases/sdk] = 5.0.0.35744 
     g++ compiler >= 9 and <=10.2
     
 The plugin has been tested in the following environments.
@@ -49,10 +51,17 @@ For example, here is how to build the step 1:
 ```
 mkdir build
 cd build
+```
+On Linux
+```
 cmake -DmetadataSdkDir=/PATH_TO_METADATA_SDK/ -DCMAKE_BUILD_TYPE=Release ../step1
 cmake --build . --config Release
 ```
-
+On Windows
+```
+cmake -Ax64 -DmetadataSdkDir=/PATH_TO_METADATA_SDK/ -DCMAKE_BUILD_TYPE=Release ../step1
+cmake --build . --config Release
+```
 ### Activating plugins
 For steps 1 and 2 simply copy the resulting library binary to the VMS "plugins" directory:
 On Linux
