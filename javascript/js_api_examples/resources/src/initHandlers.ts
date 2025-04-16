@@ -70,7 +70,7 @@ export const initResourcesUI = async (list) => {
  */
 export const initTabsUi = async (list) => {
   const updateTab = async (tab) => {
-    const isCurrent = window.vms.tabs.current.id === tab.id);
+    const isCurrent = window.vms.tabs.current.id === tab.id;
     const text = `${tab.name} ${isCurrent ? "(current)" : ""}`;
     addOrUpdateListItem(list, tab.id, text);
   };
