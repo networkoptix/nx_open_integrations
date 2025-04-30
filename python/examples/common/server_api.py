@@ -11,7 +11,7 @@ requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.
 RESPONSE_EXPIRATION_TIMEOUT_S = 10
 
 def check_status(response):
-    if response.status_code == requests.codes.ok:
+    if response.status_code == requests.codes.ok or response.status_code == 204:
         logging.debug(f"Request successful\n{response.text}")
         return True
 
