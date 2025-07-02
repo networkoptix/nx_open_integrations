@@ -1,26 +1,11 @@
 ## Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
+import csv
 import socket
 from time import sleep, time as current_time
+
 import requests
-import csv
 
-# Prompt user if they want to resolve IP addresses
-while True:
-    resolve_ip_input = input("\nDo you want to resolve IP addresses? (Y/N): ").strip().lower()
-    if resolve_ip_input in ["y", "yes"]:
-        resolve_ip = True
-        break
-    elif resolve_ip_input in ["n", "no"]:
-        resolve_ip = False
-        break
-    else:
-        print("Invalid input. Please enter Y or N.")
-
-print("\nCloud Service Checker starting...\n")
-
-# Pause for 2 seconds
-sleep(2)
 
 def save_to_csv(output_rows):
     """
@@ -33,11 +18,12 @@ def save_to_csv(output_rows):
         None
     """
     filename = f"CloudServiceCheckerResults_{int(current_time())}.csv"
-    with open(filename, 'w', newline='') as csvfile:
+    with open(filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Category", "URL", "Port", "IP (Resolved)", "Status"])
         writer.writerows(output_rows)
     print(f"Output saved to {filename}")
+
 
 class bcolors:
     """
@@ -49,10 +35,12 @@ class bcolors:
         WARNING (str): Yellow color for warning messages.
         ENDC (str): Reset color to default.
     """
-    OK = '\033[92m'
-    FAIL = '\033[91m'
-    WARNING = '\033[93m'
-    ENDC = '\033[0m'
+
+    OK = "\033[92m"
+    FAIL = "\033[91m"
+    WARNING = "\033[93m"
+    ENDC = "\033[0m"
+
 
 def isOpen(ip, port):
     """
@@ -74,6 +62,7 @@ def isOpen(ip, port):
     except:
         return False
 
+
 def resolve_ip_address(ip):
     """
     Resolve a hostname to its IP address.
@@ -88,6 +77,7 @@ def resolve_ip_address(ip):
         return socket.gethostbyname(ip)
     except socket.gaierror:
         return None
+
 
 def fetch_urls(json_url):
     """
@@ -110,23 +100,6 @@ def fetch_urls(json_url):
     except Exception:
         return []
 
-# Fetch URLs for traffic relays and mediators from updated JSON files
-traffic_relay_json_url = "https://prod-relays-and-mediators.s3.us-east-1.amazonaws.com/traffic_relays.json"
-mediator_json_url = "https://prod-relays-and-mediators.s3.us-east-1.amazonaws.com/connection_mediators.json"
-
-traffic_relay_urls = fetch_urls(traffic_relay_json_url)
-mediator_urls = fetch_urls(mediator_json_url)
-
-# Ports
-mediator_port = 3345
-h_ports = [80, 443]  # Ports for traffic relays
-
-output_rows = []  # Output rows for CSV
-closed_flag = False
-
-# Default values for retries and timeout
-retries = 3
-timeout = 1
 
 # Function to check a list of URLs for single or multiple ports
 def check_urls(urls, ports, category):
@@ -146,11 +119,11 @@ def check_urls(urls, ports, category):
     if not urls:
         print(f"No URLs to check for {category}.")
         return
-    
+
     # Ensure ports is always a list
     if isinstance(ports, int):
         ports = [ports]
-    
+
     for url in urls:
         print(f"Processing URL: {url}")
         ip = None
@@ -166,7 +139,11 @@ def check_urls(urls, ports, category):
                 if isOpen(url.replace("https://", "").replace("http://", ""), port):
                     # Successful connection
                     if resolve_ip and resolved_ip:
-                        print(bcolors.OK + f"{url}:{port} ({resolved_ip}) Available" + bcolors.ENDC)
+                        print(
+                            bcolors.OK
+                            + f"{url}:{port} ({resolved_ip}) Available"
+                            + bcolors.ENDC
+                        )
                     else:
                         print(bcolors.OK + f"{url}:{port} Available" + bcolors.ENDC)
                     output_rows.append([category, url, port, resolved_ip, "Available"])
@@ -175,77 +152,183 @@ def check_urls(urls, ports, category):
                     # Failed attempt
                     if i < retries - 1:
                         if resolve_ip and resolved_ip:
-                            print(bcolors.WARNING + f"{url}:{port} ({resolved_ip}) connection retry in 1 second" + bcolors.ENDC)
+                            print(
+                                bcolors.WARNING
+                                + f"{url}:{port} ({resolved_ip}) connection retry in 1 second"
+                                + bcolors.ENDC
+                            )
                         else:
-                            print(bcolors.WARNING + f"{url}:{port} connection retry in 1 second" + bcolors.ENDC)
+                            print(
+                                bcolors.WARNING
+                                + f"{url}:{port} connection retry in 1 second"
+                                + bcolors.ENDC
+                            )
                         sleep(1)
                     else:
                         # Final failure
                         if resolve_ip and resolved_ip:
-                            print(bcolors.FAIL + f"{url}:{port} ({resolved_ip}) Unavailable" + bcolors.ENDC)
+                            print(
+                                bcolors.FAIL
+                                + f"{url}:{port} ({resolved_ip}) Unavailable"
+                                + bcolors.ENDC
+                            )
                         else:
-                            print(bcolors.FAIL + f"{url}:{port} Unavailable" + bcolors.ENDC)
-                        output_rows.append([category, url, port, resolved_ip, "Unavailable"])
+                            print(
+                                bcolors.FAIL
+                                + f"{url}:{port} Unavailable"
+                                + bcolors.ENDC
+                            )
+                        output_rows.append(
+                            [category, url, port, resolved_ip, "Unavailable"]
+                        )
                         closed_flag = True
 
-# Sort URLs alphabetically before checking
-mediator_urls = sorted(mediator_urls) if mediator_urls else []
-traffic_relay_urls = sorted(traffic_relay_urls) if traffic_relay_urls else []
-fetching_services_urls = sorted([
-    'tools.vmsproxy.com',
-    'tools-eu.vmsproxy.com',
-    'licensing.vmsproxy.com',
-	'updates.vmsproxy.com',
-	'beta.vmsproxy.com',
-	'stats.vmsproxy.com',
-	'stats2.vmsproxy.com'
-])
-speedtest_urls = sorted(['speedtest.vmsproxy.com'])
-time_urls = sorted([
-    'time.rfc868server.com',
-    'us-west.rfc868server.com',
-    'frankfurt.rfc868server.com',
-    'singapore.rfc868server.com'
-])
 
-# Check mediator URLs first
-if mediator_urls:
-    check_urls(mediator_urls, mediator_port, category="Mediator URLs")
-else:
-    print("Skipping Mediator URLs check: No URLs fetched.")
+def check_full_urls(domains, category):
+    global closed_flag, output_rows
+    print(f"\nChecking {category}:\n")
 
-# Check traffic relay URLs second
-if traffic_relay_urls:
-    check_urls(traffic_relay_urls, h_ports, category="Traffic Relay URLs")
-else:
-    print("Skipping Traffic Relay URLs check: No URLs fetched.")
+    for d in domains:
+        urls = [d] if d.startswith("http") else [f"http://{d}", f"https://{d}"]
+        for url in urls:
+            scheme = url.split(":")[0]
+            port = 80 if scheme == "http" else 443
+            host = url.split("/")[2].split(":")[0]
+            ip = resolve_ip_address(host) if resolve_ip else ""
+            try:
+                r = requests.get(url, timeout=timeout)
+                status = (
+                    "Available" if r.status_code == 200 else f"HTTP {r.status_code}"
+                )
+                print(
+                    f"{bcolors.OK if status=='Available' else bcolors.FAIL}{url}:{port} ({ip}) {status}{bcolors.ENDC}"
+                )
+            except:
+                status = "Unavailable"
+                print(f"{bcolors.FAIL}{url}:{port} ({ip}) {status}{bcolors.ENDC}")
+                closed_flag = True
+            output_rows.append([category, url, port, ip, status])
 
-# Check hardcoded fetching_services, speedtest and time URLs last
-check_urls(fetching_services_urls, h_ports, category="Fetching Services URLs")
-check_urls(speedtest_urls, 80, category="Speedtest URLs")
-check_urls(time_urls, 37, category="Time Server URLs")
 
-# Display final message
-if closed_flag:
-    print("\nNot all cloud nodes are accessible from your device at the moment.")
-    print("We recommend verifying the status of our cloud service through the following link:")
-    print("\nhttps://networkoptix.atlassian.net/wiki/spaces/CHS/overview")
-    print("\nIf there are no reported incidents on our cloud status page,")
-    print("we recommend investigating your local network configuration, firewall settings,")
-    print("and other related factors to ensure that all FQDN addresses are reachable.")
-    print("\nIn case of any issues and questions, please share the output with our support team.")
-else:
-    print("\nWe're pleased to inform you that all cloud nodes are accessible from this device.")
-    print("\nIn case of any issues and questions, please share the output with our support team.")
+def print_support_message():
+    print(
+        "\nIn case of any issues and questions, please share the output with our support team."
+    )
 
-# Prompt the user to save the output
-while output_rows:
-    save_option = input("Do you want to save the output to a CSV file? (Y/N): ").strip().lower()
-    if save_option in ['y', 'yes']:
-        save_to_csv(output_rows)
-        break
-    elif save_option in ['n', 'no']:
-        print("Output not saved.")
-        break
+
+def print_success_message():
+    print(
+        "\nWe're pleased to inform you that all cloud nodes are accessible from this device."
+    )
+    print_support_message()
+
+
+def ask_yes_no(question: str) -> bool:
+    while True:
+        answer = input(f"{question} (Y/N): ").strip().lower()
+        if answer in ["y", "yes"]:
+            return True
+        elif answer in ["n", "no"]:
+            return False
+        else:
+            print("Invalid input. Please enter Y or N.")
+
+
+def main():
+    global resolve_ip, closed_flag, output_rows, retries, timeout
+
+    resolve_ip = ask_yes_no("Do you want to resolve IP addresses?")
+
+    print("\nCloud Service Checker starting...\n")
+    sleep(2)
+
+    # URLs
+    traffic_relay_json_url = "https://prod-relays-and-mediators.s3.us-east-1.amazonaws.com/traffic_relays.json"
+    mediator_json_url = "https://prod-relays-and-mediators.s3.us-east-1.amazonaws.com/connection_mediators.json"
+
+    traffic_relay_urls = fetch_urls(traffic_relay_json_url)
+    mediator_urls = fetch_urls(mediator_json_url)
+
+    # Ports
+    mediator_port = 3345
+    h_ports = [80, 443]
+
+    # Defaults
+    retries = 3
+    timeout = 1
+    output_rows = []
+    closed_flag = False
+
+    # Sort URLs alphabetically before checking
+    mediator_urls = sorted(mediator_urls) if mediator_urls else []
+    traffic_relay_urls = sorted(traffic_relay_urls) if traffic_relay_urls else []
+    fetching_services_urls = sorted(
+        [
+            "licensing.vmsproxy.com",
+            "updates.vmsproxy.com",
+            "beta.vmsproxy.com",
+            "stats.vmsproxy.com",
+            "stats2.vmsproxy.com",
+        ]
+    )
+    speedtest_urls = ["speedtest.vmsproxy.com"]
+    time_urls = sorted(
+        [
+            "time.rfc868server.com",
+            "us-west.rfc868server.com",
+            "frankfurt.rfc868server.com",
+            "singapore.rfc868server.com",
+        ]
+    )
+
+    # Checks
+    if mediator_urls:
+        check_urls(mediator_urls, mediator_port, category="Mediator URLs")
     else:
-        print("Invalid input. Please enter Y or N.")
+        print("Skipping Mediator URLs check: No URLs fetched.")
+
+    if traffic_relay_urls:
+        check_urls(traffic_relay_urls, h_ports, category="Traffic Relay URLs")
+    else:
+        print("Skipping Traffic Relay URLs check: No URLs fetched.")
+
+    check_full_urls(
+        [
+            "checkip.amazonaws.com",
+            "www.cloudflare.com/cdn-cgi/trace",
+            "icanhazip.com",
+            "tools.vmsproxy.com/myip",
+            "tools-eu.vmsproxy.com/myip",
+        ],
+        category="Public IP Check Services",
+    )
+
+    check_urls(fetching_services_urls, h_ports, category="Fetching Services URLs")
+    check_urls(speedtest_urls, 80, category="Speedtest URLs")
+    check_urls(time_urls, 37, category="Time Server URLs")
+
+    if closed_flag:
+        print("\nNot all cloud nodes are accessible from your device at the moment.")
+        print(
+            "We recommend verifying the status of our cloud service through the following link:"
+        )
+        print("\nhttps://networkoptix.atlassian.net/wiki/spaces/CHS/overview")
+        print("\nIf there are no reported incidents on our cloud status page,")
+        print(
+            "we recommend investigating your local network configuration, firewall settings,"
+        )
+        print(
+            "and other related factors to ensure that all FQDN addresses are reachable."
+        )
+        print_support_message()
+    else:
+        print_success_message()
+
+    if output_rows and ask_yes_no("Do you want to save the output to a CSV file?"):
+        save_to_csv(output_rows)
+    else:
+        print("Output not saved.")
+
+
+if __name__ == "__main__":
+    main()
