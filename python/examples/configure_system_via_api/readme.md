@@ -1,94 +1,129 @@
-// Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ or see the [LICENSE.md](https://github.com/networkoptix/nx_open_integrations/blob/master/license_mpl2.md) file for more details.
+// Copyright 2018-present Network Optix, Inc.
+Licensed under [MPL 2.0](https://www.mozilla.org/MPL/2.0/)
 
-# Sample scripts Usage Guide 
-## Configure the system(s) through the REST API
+# Configure System Via APIs
 
-We offer a sample script to demonstrate the functionalities realized through leveraging the REST API calls. 
-This script will serve as a starting point to understand how to interact with the system settings and cloud connectivity through the specified APIs.
+## 1. Abstract
 
-# Function Highlights
+This sample script shows how to use REST APIs for system and cloud setup.  
+It helps users understand basic configuration and cloud setup via mediaserver and CDB API calls.
 
-Configuring System Default Settings: Gain insights into setting up the default system configurations efficiently.
+## 2. File strcuture
 
-Cloud Connectivity: Connect the system seamlessly either for an existing system or a fresh installation with cloud services using API calls.
+| File Name               | Description |
+| ----------------------- | --------------------------------------------------------------- |
+| **cloud_hosts.json**    | Contains cloud host list.                                       |
+| **configure_system.py** | The main script to execute the requests.                        |
+| **system_setting.conf** | System configuration file template.                             |
+| **vms_system.py**       | Handles system-specific logic for VMS setup and initialization. |
+| **format_output.py**    | Handles the file and terminal std print out.                    |
+| **readme.md**           | This readme file.                                               |
 
-Configure the system configurations and allow third-party developers to change the settings of a VMS by using the REST API calls.
-- Connect to the Cloud (True/False) and attach to a specific Cloud Account
-- Enable/disable Auto Discovery (True/False)
-- Enable/disable Camera Optmization (True/False)
-- Enable/disable the Anonymous statistics collection (True/False)
-- Set the name the system
-- Set the local admin password.
+## 3. Function Highlights
 
-Below we provide examples and explanations for the new API available in the VMS (v5.1 and newer). 
-Refer to [Nx Server HTTP REST API](https://meta.nxvms.com/doc/developers/api-tool/main?type=1) for more information on APIs and on accessing API documentation.
+* Configuring System Default Settings: Setup the default system configurations.
+* Cloud Connectivity: Connect new or existing systems to cloud services seamlessly via the APIs.
+* Sample configurations:
+    * Connect to the Cloud and/or Organization.
+    * Enable/disable Auto Discovery.
+    * Enable/disable Camera Optmization.
+    * Enable/disable the Anonymous statistics collection.
+    * Setup the name the system
+    * Set the local admin password.
 
-## Using the sample script
+## 4. Quick Start
 
-To commence with script testing, adhere to the following instructions:
+To begin testing the script, follow these steps:
 
-1. Prepare System Information: Collect all the required system information.
-2. Configuration file setup: Incorporate the desired details in the format of "key=value", it is also suggested that refer to the [system_settings.conf](system_settings.conf) in the folder.
-3. Script Initialization: The script is designed to autoload the system information from the mentioned file.
-4. Output the result : The summary report will tell if a system has been successfully configured. (also print the result on the console or silently done)
+1. Prepare system config: Gather all required system configuration values.
+2. Set up config file: Add each item as a key=value pair.
+3. Run the script: The script will autoload the config file.
+4. Check output: A summary report will confirm if the system was configured successfully.
 
-Please see the [configure_systems.py](configure_systems.py) file and the available options by using the following command:
+See configure_systems.py for details or run:
 
-`python3 configure_systems.py --help`.
+```bash
+python3 configure_systems.py --help
+```
 
-## Create the required configuration file
+For a custom setup:
 
-For a more tailored experience, you have the ability to create your own configuration file. Proceed as follows:
-1. Insert the necessary information in your personalized configuration file in "key=value" format.(Please refer to the format of sample [system_settings.conf](system_settings.conf)).
-2. Use `-f` or `--file` option to direct the script to read the settings from your customized file and execute corresponding operations.
+1. Add the configuration pair, "key=value" to [system_settings.conf](system_settings.conf).
+2. Use the `-f` or `--file` option to load your custom configuration.
 
-**NOTE:** True = Connected/Enabled, False = Disconnected/Disabled
+## 5. Authentication
 
-### Authentication
+The VMS uses an HTTP bearer/session token authentication by default.
+We execute the API requests below with credentials of local user accounts.
+Please refer to
+[Nx Authentication](https://support.networkoptix.com/hc/en-us/articles/4410505014423-Nx-Meta-Authentication)
+for more info.
 
-The VMS uses an HTTP bearer/session token authentication by default. 
-We execute the API requests below with credentials of local user accounts. 
-Please refer to [Nx Meta Authentication](https://support.networkoptix.com/hc/en-us/articles/4410505014423-Nx-Meta-Authentication) for more information.
+## 6. How to Connect/Disconnect a System to Cloud through The REST API
 
-### How to connect/detach a system to Cloud through the REST API.
+### 6.1. Connect the system to a personal cloud account
 
-The following API commands are used to connect a system to the Cloud : 
-- POST /cdb/systems/bind
-- POST /rest/v2/system/cloudBind
+The following API commands are used to connect a system to the Cloud :
 
-You would need to create a JSON payload for the desired system you want to connect to the Cloud.
-Then you can call the cloudbind API to trigger the cloud connection.
-The same steps can be made for detaching a system from the cloud, you are asked to use the admin(owner) account to login the system to detach the system from the Cloud.
+* POST /cdb/systems/bind
+* POST /rest/v3/system/cloud/bind
 
-### How to configure the system default settings via API. 
+Create a JSON payload for the system you want to connect to the Cloud.  
+Call the `bind` API to trigger the cloud connection procedure.
 
-The following API commands are used to configure the system default settings : 
-- POST /rest/v2/system/setup
-- PATCH /rest/v2/system/settings
+### 6.2. Connect the system to an organization
 
-You can change the script to facilitate other system configurations if reuqired.
+The following API commands are used to connect a system to the Cloud and under an organization :
+
+* POST /partners/api/v3/cloud_systems/
+* POST /rest/v3/system/cloud/bind
+
+Create a JSON payload for the system you want to connect to the Cloud under an organization.  
+Call the `bind` API to trigger the cloud connection.  
+
+### 6.3. Disconnect the system from the Cloud
+
+The following API command is used to disconnect a system to the Cloud.
+
+* POST /rest/v3//system/cloud/unbind
+
+Create a JSON payload for the system you want to disconnect to the Cloud..  
+Call the `unbind` API to trigger the cloud disconnection procedure.
+
+> If it possible to use the same disconenction procedure whether the system is
+connected to a personal account or an organization.
+
+## 7. How to configure the system default settings via API
+
+The following API commands are used to configure the system default settings :
+
+* POST /rest/v3/system/setup
+* PATCH /rest/v3/system/settings
+
+You can change the script to facilitate other system configurations if reuqired.  
 The full list of system configuration options can be retrieved from the following APIs commands:
-- /rest/v2/system/settings
-- /rest/v2/system/settings/*/manifest
 
-### The output of the script
+* GET /rest/v3/system/settings
+* GET /rest/v3/system/settings/*/manifest
 
-There is a script execution log file, called [configure_system.log]. 
-You would be able to find the details while executing this sample script, including the failed/successfull requests, and the final result of the system. (whether it is setup successfully or not)
+## 8. The output of the script
 
-There is a output summary file, called [{system_name}_{timestamp}_configure_result.log].
-The summary report will inform you if the system has been configured successfully.
+The script generates a log file: `configure_system.log` with execution details.  
+It shows request results (success/fail) and whether the system was configured properly.  
 
-By default, the executed result will be shown on the terminal.
-If the user uses the option "-s" or "--silent", the output will not be displayed.
+A summary file is also created: `{system_name}_{timestamp}_configure_result.log`.  
+It reports if the system setup completed successfully.  
 
+By default, results show in the terminal.  
+Use `-s` or `--silent` to suppress terminal output.
 
-### Multiple systems 
+## 9. Multiple systems
 
-If you have to configure multiple systems at a time, you can create a wrapper by feeding different configurations files.
+To configure multiple systems, create a wrapper script.  
+The user can achieve this by feeding different configurations files for each system.
 
-### Extend the script to configure more system configurations
-It is also possible to configure more configurations.
+## 10. Extend the script to configure more system configurations
 
-You may put the name of configuration in the dataclass, VmsSystemSettings.
-Then create or modify the script by adding the function to change configurations; also, please remeber to extend or add extra key,value pair in the configuration files.
+You can configure more settings by using the `VmsSystemSettings` dataclass.  
+Add config names to the dataclass and update the script with functions to set them.  
+Remember to add key-value pairs in the config files as needed.
