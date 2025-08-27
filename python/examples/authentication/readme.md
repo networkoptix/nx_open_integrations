@@ -14,6 +14,7 @@ Each script is self-contained and uses the helper module in
 |`local_bearer.py`| Username + password → Session (Token) | On-prem or local systems | 5.1+ | Yes |
 |`cloud_bearer.py`| OAuth 2.0 via Cloud | Cloud-Connected Systems | 5.1+ | Yes |
 |`local_digest.py`| HTTP Digest on the REST API | Legacy or quick queries| 3.0+ | No |
+|`http_basic_auth_fallback.py`| Use the token as the password | Backward compatbility | 6.1+ | No |
 |`url_digest.py`  | Credentials embedded in URL | Public endpoints or simple pulls | 3.0+ | No |
 
 ---
@@ -50,6 +51,7 @@ Each script is self-contained and uses the helper module in
   permissions and expiry.
 * **HTTP Digest** – Legacy but useful for small tools or health checks. (Deprecated in
   6.1.)
+* **HTTP Basic Fallback** – Allow inserting a session token as the password for HTTP Basic scheme.
 * **URL Digest** – Convenient for embedded scripts or dashboards (use with caution).
 
 ---

@@ -5,8 +5,10 @@ import logging
 import requests
 import hashlib
 import base64
+from requests.auth import HTTPBasicAuth 
 from pprint import pprint
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
 
 RESPONSE_EXPIRATION_TIMEOUT_S = 10
 
@@ -25,7 +27,7 @@ def request_api(url, uri, method, **kwargs):
         method,
         server_url,
         **kwargs)
-
+    
     # Handling Cloud relay redirects. Check for code 307
     if response.status_code == requests.codes.temporary_redirect:
         new_url = response.headers["Location"]
@@ -55,6 +57,7 @@ def request_api_auth(url, uri, method, auth='', **kwargs):
             method,
             new_url,
             **kwargs)
+
     if not check_status(response):
         exit(1)
     if response.headers.get('Content-Type') == 'application/json':
@@ -89,6 +92,10 @@ def get_token(api_response):
     return api_response['access_token']
 
 
+def get_local_ms_token(api_response):
+    return api_response['token']
+
+
 def is_expired_cloud(api_response):
     if int(api_response['expires_in']) < RESPONSE_EXPIRATION_TIMEOUT_S:
         return True 
@@ -105,6 +112,22 @@ def create_auth_header(bearer_token):
     header = {"Authorization": f"Bearer {bearer_token}"}
     return header
 
+def create_auth_for_http_basic_fallback(username: str, password: str, url: str):
+    payload = create_auth_payload(username, password)
+    token_info = request_api(
+        url,
+        '/rest/v3/login/sessions',
+        'POST',
+        verify=False,
+        json=payload
+        )
+    '''
+    Notice : 
+    * There is no username required, only the session token in the password field.
+    * The credential should be {username, password} = {"-", "local_media_server_session_token"}
+    '''
+    auth = HTTPBasicAuth("-", get_local_ms_token(token_info))
+    return auth
 
 def print_system_info(response):
     if 'reply' in response:
