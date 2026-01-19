@@ -1,10 +1,19 @@
 ## Copyright 2019-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
 cmake_minimum_required(VERSION 3.16)
-project(openvino_object_detection_analytics_plugin)
+include(${CMAKE_CURRENT_LIST_DIR}/../common/initial_config.cmake)
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
+project(openvino_object_detection_analytics_plugin)
+set(CONAN_DISABLE_CHECK_COMPILER TRUE)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(metadataSdkDir "" CACHE PATH "Path to unpacked VMS Metadata SDK zip.")
 if(metadataSdkDir STREQUAL ""
@@ -14,15 +23,68 @@ if(metadataSdkDir STREQUAL ""
     message(FATAL_ERROR "Define metadataSdkDir cache variable to point to the unzipped SDK.")
 endif()
 
+if(WIN32)
+    if(CMAKE_BUILD_TYPE STREQUAL Debug)
+        set(CONAN_VS_RUNTIME_SETTING "compiler.runtime=MDd")
+    elseif(CMAKE_BUILD_TYPE STREQUAL Release)
+        set(CONAN_VS_RUNTIME_SETTING "compiler.runtime=MD")
+    endif()
+endif()
+
+if(UNIX)
+    set(LINUX_PROFILE_HOST "${CMAKE_CURRENT_LIST_DIR}/../common/cmake/conan_profiles/gcc.profile")
+    set(OPENCV_PACKAGE "opencv/4.10.0@_/_#381886e5d0949db615c809d7d8cc8619")
+elseif()
+    set(OPENCV_PACKAGE "opencv/4.10.0@")
+endif()
+
+set(opencv_dependencies "boost/1.83.0@")
+
+foreach(dep IN LISTS opencv_dependencies)
+    conan_cmake_install(PATH_OR_REFERENCE ${dep}
+        SETTINGS ${CONAN_VS_RUNTIME_SETTING}
+        PROFILE ${CMAKE_CURRENT_LIST_DIR}/../common/conan_profiles/${conan_profile}.profile
+        PROFILE_HOST ${LINUX_PROFILE_HOST}
+        PROFILE_BUILD default
+        GENERATOR cmake_find_package
+        REMOTE nx
+    )
+endforeach()
+
+conan_cmake_install(PATH_OR_REFERENCE ${OPENCV_PACKAGE}
+    SETTINGS ${CONAN_VS_RUNTIME_SETTING}
+    PROFILE ${CMAKE_CURRENT_LIST_DIR}/../common/conan_profiles/${conan_profile}.profile
+    PROFILE_HOST ${LINUX_PROFILE_HOST}
+    PROFILE_BUILD default
+    GENERATOR cmake_find_package
+    REMOTE nx
+)
+
 find_package(Boost REQUIRED)
+find_package(OpenCV REQUIRED core highgui imgcodecs imgproc videoio)
+
+# downloading and extrating OpenVINO package binaries
+if (UNIX)
+    set(openvino_package "openvino_linux.zip")
+    set(OPENVINO_PATH "${CMAKE_CURRENT_BINARY_DIR}/openvino_linux/linux_x64/openvino-2020.1.023")
+elseif(WIN32)
+    set(openvino_package "openvino_windows.zip")
+    set(OPENVINO_PATH "${CMAKE_CURRENT_BINARY_DIR}\\openvino_windows\\windows_x64\\openvino-2020.1.033")
+endif() 
+
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${openvino_package}")
+    message("Downloading ${openvino_package} to ${CMAKE_CURRENT_BINARY_DIR}/${openvino_package}")
+    file(DOWNLOAD
+        "${ARTIFACTORY_URL}/openvino_object_detection_analytics_plugin/${openvino_package}"
+        "${CMAKE_CURRENT_BINARY_DIR}/${openvino_package}"
+        SHOW_PROGRESS
+    )
+endif()
+
+file(ARCHIVE_EXTRACT INPUT ${CMAKE_CURRENT_BINARY_DIR}/${openvino_package} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+include("${OPENVINO_PATH}/openvino.cmake")
 find_package(InferenceEngine REQUIRED)
-find_package(OpenCV REQUIRED core imgcodecs imgproc)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(UNIX)
     # In Linux, for the plugin .so library and app, set `rpath` to "$ORIGIN" and do not set
@@ -50,7 +112,7 @@ file(GLOB_RECURSE OPENCV_TBM_SRC ${OPENCV_TBM_SRC_DIR}/*)
 
 add_library(opencv_tbm STATIC ${OPENCV_TBM_SRC})
 
-target_include_directories(opencv_tbm PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_include_directories(opencv_tbm PRIVATE ${opencv_INCLUDE_DIRS})
 
 #--------------------------------------------------------------------------------------------------
 # Define nx_kit lib, static.
@@ -100,7 +162,6 @@ set(OPENVINO_OBJECT_DETECTION_ANALYTICS_PLUGIN_LINK_LIBRARIES
     opencv_imgproc
     opencv_tbm
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9>>:stdc++fs>
-    Threads::Threads
 )
 set(OPENVINO_OBJECT_DETECTION_ANALYTICS_PLUGIN_LINK_LIBRARIES_UNIX dl)
 
@@ -127,8 +188,6 @@ target_compile_definitions(openvino_object_detection_analytics_plugin
 
 #--------------------------------------------------------------------------------------------------
 # Define openvino_object_detection_analytics_plugin_app application, depends on nx_kit and nx_sdk.
-
-find_package(OpenCV REQUIRED core highgui imgproc videoio)
 
 add_executable(openvino_object_detection_analytics_plugin_app EXCLUDE_FROM_ALL
     ${OPENVINO_OBJECT_DETECTION_ANALYTICS_PLUGIN_LIB_SRC}
@@ -162,14 +221,19 @@ set(zip_file "${CMAKE_CURRENT_BINARY_DIR}/${openvino_object_detection_analytics_
 set(openvinoDir "${InferenceEngine_INCLUDE_DIRS}/../../..")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(intelSharedLibsDir
-        "$ENV{COMMONPROGRAMFILES\(x86\)}/Intel/Shared Libraries"
-        CACHE PATH "")
-
-    set(openvino_files
-        "${openvinoDir}/opencv/bin/opencv_core420$<$<CONFIG:Debug>:d>.dll"
-        "${openvinoDir}/opencv/bin/opencv_imgcodecs420$<$<CONFIG:Debug>:d>.dll"
-        "${openvinoDir}/opencv/bin/opencv_imgproc420$<$<CONFIG:Debug>:d>.dll"
+    set(OpenCV_DLLS
+        "opencv_core"
+        "opencv_imgcodecs"
+        "opencv_imgproc"
+    )
+    set(OpenCV_VERSION ${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH})
+    set(openvino_files "")
+    foreach(dll ${OpenCV_DLLS})
+        list(APPEND openvino_files
+            "${opencv_LIB_DIRS}/../bin/${dll}${OpenCV_VERSION}$<$<CONFIG:Debug>:d>.dll"
+        )
+    endforeach()
+    list(APPEND openvino_files
         "${openvinoDir}/deployment_tools/inference_engine/bin/intel64/$<IF:$<CONFIG:Debug>,Debug,Release>/plugins.xml"
         "${openvinoDir}/deployment_tools/inference_engine/bin/intel64/$<IF:$<CONFIG:Debug>,Debug,Release>/MKLDNNPlugin$<$<CONFIG:Debug>:d>.dll"
         "${openvinoDir}/deployment_tools/ngraph/lib/ngraph$<$<CONFIG:Debug>:d>.dll"
@@ -179,16 +243,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         "${openvinoDir}/deployment_tools/inference_engine/bin/intel64/$<IF:$<CONFIG:Debug>,Debug,Release>/inference_engine$<$<CONFIG:Debug>:d>.dll"
         "${openvinoDir}/deployment_tools/inference_engine/bin/intel64/$<IF:$<CONFIG:Debug>,Debug,Release>/inference_engine_c_api$<$<CONFIG:Debug>:d>.dll"
         "${openvinoDir}/deployment_tools/inference_engine/bin/intel64/$<IF:$<CONFIG:Debug>,Debug,Release>/inference_engine_nn_builder$<$<CONFIG:Debug>:d>.dll"
-        "${intelSharedLibsDir}/redist/intel64_win/compiler/libmmd$<$<CONFIG:Debug>:d>.dll"
-        "${intelSharedLibsDir}/redist/intel64_win/compiler/svml_dispmd.dll"
+        "${openvinoDir}/redist/intel64_win/compiler/libmmd$<$<CONFIG:Debug>:d>.dll"
+        "${openvinoDir}/redist/intel64_win/compiler/svml_dispmd.dll"
     )
-
     set(fix_rpath_commands)
 else()
-    set(openvino_files
-        "${openvinoDir}/opencv/lib/libopencv_core.so.4.2"
-        "${openvinoDir}/opencv/lib/libopencv_imgcodecs.so.4.2"
-        "${openvinoDir}/opencv/lib/libopencv_imgproc.so.4.2"
+    file(GLOB openvino_files
+        ${opencv_LIB_DIRS}/libopencv_core.so.*
+        ${opencv_LIB_DIRS}/libopencv_imgcodecs.so.*
+        ${opencv_LIB_DIRS}/libopencv_imgproc.so.*
+    )
+    list(APPEND openvino_files
         "${openvinoDir}/deployment_tools/inference_engine/lib/intel64/plugins.xml"
         "${openvinoDir}/deployment_tools/inference_engine/lib/intel64/libMKLDNNPlugin.so"
         "${openvinoDir}/deployment_tools/ngraph/lib/libngraph.so"
@@ -214,13 +279,13 @@ set(model_file_names
     person-reidentification-retail-0031.xml
 )
 
-message("Downloading model files:")
 foreach(model_file_name IN LISTS model_file_names)
     set(model_file "${CMAKE_BINARY_DIR}/${model_file_name}")
     list(APPEND model_files "${model_file}")
     if(NOT EXISTS "${model_file}")
+        message("Downloading model file: ${model_file_name} to ${model_file}")
         file(DOWNLOAD
-            "https://resources.vmsproxy.com/nx_open_integrations/openvino/${model_file_name}"
+            "${ARTIFACTORY_URL}/openvino_object_detection_analytics_plugin/models/${model_file_name}"
             "${model_file}"
             SHOW_PROGRESS
         )
@@ -233,9 +298,9 @@ add_custom_command(OUTPUT "${zip_file}"
 
     COMMAND "${CMAKE_COMMAND}" -E
         copy "$<TARGET_FILE:openvino_object_detection_analytics_plugin>" "${distrib_dir}"
-        
+    
     COMMAND "${CMAKE_COMMAND}" -E copy ${openvino_files} "${distrib_dir}"
-
+    
     ${fix_rpath_commands}
 
     COMMAND "${CMAKE_COMMAND}" -E copy ${model_files} "${distrib_dir}"

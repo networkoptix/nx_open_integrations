@@ -338,7 +338,8 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
 
     const auto finishTime = high_resolution_clock::now();
     const auto duration = duration_cast<milliseconds>(finishTime - startTime);
-    NX_OUTPUT << "Frame processing duration: " << duration.count() << " ms.";
+    // Uncomment the line below for frame processing performance troubleshooting
+    //NX_OUTPUT << "Frame processing duration: " << duration.count() << " ms.";
 
     return true;
 }

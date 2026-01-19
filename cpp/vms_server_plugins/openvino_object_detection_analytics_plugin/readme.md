@@ -21,26 +21,24 @@ This example can be compiled either for Linux, or for Windows.
 
 ### Build environment
 
-- C++17 compiler; tested with GCC 8.3 and MSVC 2019.
+The build script will download the necessary toolchain and will use corresponding conan profiles.
 
+- C++17 compiler; tested with GCC 11.4.0 and MSVC 2022.
+- The latest version supported is MSVC Build Tools 14.38
 - CMake 3.16 or later
-
 - patchelf (for Linux only)
-
 - Intel OpenVINO; tested with versions:
     - Windows: 2020.1.033
     - Linux: 2020.1.023
-    
-- Nx Metadata SDK; tested with version 4.1.0.32024 which is intended for creating plugins targeted
-    for Nx Meta 4.1 (such plugin binaries will work with later Nx Meta versions)
-
-- Boost 1.66.0 or later
+- Nx Metadata SDK; tested with version 6.0.6.41837
+- Boost 1.38.0
+- conan 1.66.0
 
 ### Build steps
 
 ```
-cmake -B <build_dir> <src_dir> -DCMAKE_BUILD_TYPE=Release -DmetadataSdkDir=<unpacked_zip_dir>
-cmake --build <build_dir> --config Release --target openvino_object_detection_analytics_plugin_zip
+cmake -B <build_dir> -S <src_dir> -DCMAKE_BUILD_TYPE=Release -DmetadataSdkDir=<unpacked_zip_dir>
+cmake --build <build_dir> --config Release
 ```
 
 On success, the built plugin appears here:
