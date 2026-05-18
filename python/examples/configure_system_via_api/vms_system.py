@@ -273,7 +273,7 @@ class VmsSystem:
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get current system settings: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                logger.warning(f"Status: {e.response.status_code}, Content: {e.response.content}")
+                logger.warning(f"Status: {e.response.status_code}, Content: {e.response.text}")
             print(f"[ERROR] Can't get the current system settings for {self.system_name}.")
             
             # Populate with UNKNOWN state for critical settings if fetch fails
@@ -375,7 +375,7 @@ class VmsSystem:
         except requests.exceptions.RequestException as e:
             logger.error(f"{self.system_name}: Failed to connect system to cloud: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                logger.debug(f"Status: {e.response.status_code}, Content: {e.response.content}")
+                logger.debug(f"Status: {e.response.status_code}, Content: {e.response.text}")
             return False
 
     def _detach_system_from_cloud(self) -> bool:
@@ -396,7 +396,7 @@ class VmsSystem:
         except requests.exceptions.RequestException as e:
             logger.error(f"{self.system_name}: Failed to detach system from cloud: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                logger.debug(f"Status: {e.response.status_code}, Content: {e.response.content}")
+                logger.error(f"Status: {e.response.status_code}, Content: {e.response.text}")
             return False
 
     def _setup_connect_to_cloud(self, current_cloud_id: Optional[str]) -> str:
@@ -482,7 +482,7 @@ class VmsSystem:
             # Log specific details from the response if available
             if hasattr(e, 'response') and e.response is not None:
                 status_code = e.response.status_code 
-                content = e.response.content
+                content = e.response.text
             else :
                 status_code = "N/A"
                 content = "N/A"
@@ -614,18 +614,14 @@ class VmsSystem:
                 verify=False, 
                 timeout=self.http_timeout
             )
-            # Could have :
-            #
-            # if not the fresh system:
-            #     leave and exeucte the procedure of configuration udpate.
-            # else:
-            #    logger.info(f"{self.system_name}: System initialization call successful.")
+            res.raise_for_status()
 
         except requests.exceptions.RequestException as e:
-            logger.warning(f"{self.system_name}: System initialization call failed: {e}")
+            logger.error(f"{self.system_name}: System initialization failed: {e}")
             if hasattr(e, 'response') and e.response is not None:
-                logger.debug(f"Status: {e.response.status_code}, Content: {e.response.content}")
-        
+                logger.error(f"Status: {e.response.status_code}, Content: {e.response.text}")
+            return False
+
         # From 6.0,x onward, i.e. /rest/v3
         # it is possible to initialize the system all in one for both settings and cloud connect.
         # setup_payload = {
