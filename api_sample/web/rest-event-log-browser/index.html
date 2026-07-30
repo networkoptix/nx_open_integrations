@@ -1,0 +1,126 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nx — Event log (cloud user, browser)</title>
+    <style>
+      :root {
+        --fg: #1c1e21; --muted: #6b7280; --line: #e5e7eb; --accent: #1769ff;
+        --ok: #0a7d33; --err: #c0322b; --bg-soft: #f7f8fa;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--fg); margin: 0; padding: 2rem 1rem; background: #fff;
+      }
+      main { max-width: 880px; margin: 0 auto; }
+      h1 { font-size: 1.35rem; margin: 0 0 .25rem; }
+      p.lead { color: var(--muted); margin: 0 0 1.5rem; }
+      form, .panel {
+        display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1rem;
+        background: var(--bg-soft); border: 1px solid var(--line);
+        border-radius: 10px; padding: 1.25rem;
+      }
+      label { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; color: var(--muted); }
+      label.full { grid-column: 1 / -1; }
+      input, select { font: inherit; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+      input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+      small.hint { color: var(--muted); font-size: .72rem; font-weight: 400; }
+      button { font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: 6px; padding: .65rem 1rem; cursor: pointer; }
+      button.full { grid-column: 1 / -1; }
+      button:disabled { opacity: .55; cursor: progress; }
+      .status { margin: 1rem 0; padding: .65rem .8rem; border-radius: 6px; font-size: .9rem; min-height: 1em; }
+      .status.info { background: #eef4ff; color: #1f4fa3; }
+      .status.ok { background: #e9f7ee; color: var(--ok); }
+      .status.error { background: #fdeceb; color: var(--err); }
+      .status:empty { display: none; }
+      .panel { margin-top: 1rem; }
+      .results { margin-top: 1rem; padding: 1.25rem; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); font-size: .88rem; vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: .76rem; text-transform: uppercase; letter-spacing: .03em; }
+      td.time { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; }
+      .note { font-size: .8rem; color: var(--muted); border-left: 3px solid var(--accent); padding: .5rem .75rem; margin: 1.5rem 0 0; background: var(--bg-soft); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Event log — cloud user (browser)</h1>
+      <p class="lead">
+        Logs in to Nx Cloud and reads one site's recent events from
+        <code>/rest/v4/events/log</code>. Run <code>node server.mjs</code> first
+        (see the README). Step 1: connect. Step 2: pick a window/type and load.
+      </p>
+
+      <!-- Step 1: log in, which loads the event-type list for the dropdown -->
+      <form id="login-form" autocomplete="off">
+        <label class="full">
+          Cloud Site ID (UUID)
+          <input id="siteId" name="siteId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" required />
+          <small class="hint">The site whose events you want. Find it in the Nx client.</small>
+        </label>
+        <label>
+          Cloud email
+          <input id="user" name="user" type="email" placeholder="you@example.com" required />
+        </label>
+        <label>
+          Password
+          <input id="password" name="password" type="password" required />
+        </label>
+        <label class="full">
+          MFA code (optional)
+          <input id="mfaCode" inputmode="numeric" placeholder="2FA code, if your account uses it" />
+        </label>
+        <button id="connect-btn" class="full" type="submit">Connect &amp; load event types</button>
+      </form>
+
+      <!-- Step 2: query (hidden until connected; event-type dropdown is filled first) -->
+      <section id="query" class="panel" hidden>
+        <label>
+          Time window
+          <select id="since">
+            <option value="1h">Last 1 hour</option>
+            <option value="6h">Last 6 hours</option>
+            <option value="24h" selected>Last 24 hours</option>
+            <option value="7d">Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+        </label>
+        <label>
+          Max events
+          <input id="limit" type="number" min="1" max="1000" value="50" />
+        </label>
+        <label class="full">
+          Event type
+          <select id="eventType">
+            <option value="">All event types</option>
+          </select>
+        </label>
+        <button id="load-btn" class="full" type="button">Load events</button>
+      </section>
+
+      <div id="status" class="status"></div>
+
+      <section id="results" class="results" hidden>
+        <table>
+          <thead>
+            <tr><th>Time (UTC)</th><th>Event</th><th>Action</th><th>Resource</th></tr>
+          </thead>
+          <tbody id="event-rows"></tbody>
+        </table>
+      </section>
+
+      <p class="note">
+        Login and the event-log read go through your local proxy (browser CORS
+        rule); the proxy forwards them to Nx Cloud and your site's relay.
+        Credentials are never stored.
+      </p>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

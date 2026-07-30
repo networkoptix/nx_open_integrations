@@ -1,0 +1,31 @@
+# --- Secrets / local config ---
+.env
+*.env
+!.env.example
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# --- Node.js / TypeScript ---
+node_modules/
+package-lock.json
+npm-debug.log*
+dist/
+.parcel-cache/
+
+# --- C# / .NET ---
+bin/
+obj/
+*.user
+.vs/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.obsidian/
+*.swp

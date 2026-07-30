@@ -1,0 +1,17 @@
+{
+  "name": "nx-cdb-oauth2-list-systems",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx Cloud CDB API sample: OAuth2 login + list Systems (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "cdb-oauth2-list-systems": "./cdb_oauth2_sample.mjs"
+  },
+  "scripts": {
+    "start": "node cdb_oauth2_sample.mjs",
+    "test": "node --test test_cdb_oauth2_sample.mjs"
+  }
+}

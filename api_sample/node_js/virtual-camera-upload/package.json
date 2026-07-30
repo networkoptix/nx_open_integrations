@@ -1,0 +1,17 @@
+{
+  "name": "nx-virtual-camera-upload",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS REST API sample: create a virtual camera and upload a video file into its archive, v4 (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "virtual-camera-upload": "./virtual_camera_upload.mjs"
+  },
+  "scripts": {
+    "start": "node virtual_camera_upload.mjs",
+    "test": "node --test test_virtual_camera_upload.mjs"
+  }
+}

@@ -1,0 +1,242 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nx — Set an event rule's schedule (browser)</title>
+    <style>
+      :root {
+        --fg: #1c1e21;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --accent: #1769ff;
+        --ok: #0a7d33;
+        --err: #c0322b;
+        --bg-soft: #f7f8fa;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--fg);
+        margin: 0;
+        padding: 2rem 1rem;
+        background: #fff;
+      }
+      main { max-width: 820px; margin: 0 auto; }
+      h1 { font-size: 1.35rem; margin: 0 0 .25rem; }
+      h2 { font-size: 1.05rem; margin: 2rem 0 .75rem; }
+      p.lead { color: var(--muted); margin: 0 0 1.5rem; }
+      .modes { display: flex; gap: .5rem; margin: 0 0 1rem; }
+      .modes label {
+        flex: 1; display: flex; align-items: center; gap: .4rem;
+        border: 1px solid var(--line); border-radius: 8px; padding: .55rem .7rem;
+        font-size: .85rem; color: var(--fg); cursor: pointer; background: #fff;
+      }
+      .modes input { accent-color: var(--accent); }
+      form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .9rem 1rem;
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1.25rem;
+      }
+      label { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; color: var(--muted); }
+      label.full { grid-column: 1 / -1; }
+      label[hidden] { display: none; }
+      input, select {
+        font: inherit;
+        padding: .5rem .6rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+      }
+      input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+      small.hint { color: var(--muted); font-size: .72rem; font-weight: 400; }
+      .actions { grid-column: 1 / -1; display: flex; gap: .6rem; flex-wrap: wrap; }
+      button {
+        font: inherit;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        border: 0;
+        border-radius: 6px;
+        padding: .65rem 1rem;
+        cursor: pointer;
+      }
+      button.secondary { background: #fff; color: var(--fg); border: 1px solid var(--line); }
+      button:disabled { opacity: .55; cursor: progress; }
+      .status { margin: 1rem 0; padding: .65rem .8rem; border-radius: 6px; font-size: .9rem; min-height: 1em; }
+      .status.info { background: #eef4ff; color: #1f4fa3; }
+      .status.ok { background: #e9f7ee; color: var(--ok); }
+      .status.error { background: #fdeceb; color: var(--err); }
+      .status:empty { display: none; }
+      .panel[hidden] { display: none; }
+      table { width: 100%; border-collapse: collapse; font-size: .85rem; margin: .5rem 0; }
+      th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; }
+      tr.selected td { background: #eef4ff; }
+      td.pick input { accent-color: var(--accent); }
+      .controls {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: .9rem 1rem; background: var(--bg-soft); border: 1px solid var(--line);
+        border-radius: 10px; padding: 1.25rem;
+      }
+      .controls .actions { grid-column: 1 / -1; }
+      .field-label { display: block; font-size: .82rem; color: var(--muted); margin: 0 0 .4rem; }
+      .days { display: flex; flex-wrap: wrap; gap: .4rem .5rem; }
+      .days .day {
+        flex-direction: row; align-items: center; gap: .35rem;
+        border: 1px solid var(--line); border-radius: 999px; padding: .35rem .7rem;
+        font-size: .85rem; color: var(--fg); cursor: pointer; background: #fff; user-select: none;
+      }
+      .days .day input { accent-color: var(--accent); }
+      .quick { display: flex; flex-wrap: wrap; gap: .4rem; margin: .55rem 0 0; }
+      .chip {
+        font-size: .78rem; font-weight: 600; color: var(--accent);
+        background: #fff; border: 1px solid var(--accent); border-radius: 999px;
+        padding: .3rem .7rem; cursor: pointer;
+      }
+      .allday-field { justify-content: flex-end; }
+      .allday { display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--fg); }
+      .allday input { accent-color: var(--accent); }
+      .note { font-size: .8rem; color: var(--muted); border-left: 3px solid var(--accent); padding: .5rem .75rem; margin: 1.5rem 0 0; background: var(--bg-soft); }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Set an event rule's schedule (browser)</h1>
+      <p class="lead">
+        Logs in (directly to a server, or via a cloud account), lists the site's
+        event rules over <code>GET /rest/v4/events/rules</code>, and sets the
+        <strong>schedule</strong> on one or more selected rules with a
+        <code>PATCH /rest/v4/events/rules/{id}</code> per rule — entirely in the
+        browser. The v4 schedule is a structured array of
+        <code>{dayOfWeek, startTime, endTime}</code> tasks; an empty array means
+        "always enabled". All calls go through a local same-origin proxy.
+      </p>
+
+      <div class="modes">
+        <label>
+          <input type="radio" name="mode" value="direct" checked />
+          Direct to Media Server
+        </label>
+        <label>
+          <input type="radio" name="mode" value="cloud" />
+          Pull via Cloud Relay
+        </label>
+      </div>
+
+      <form id="login-form" autocomplete="off">
+        <label class="full" id="field-serverAddress">
+          Server address
+          <input id="serverAddress" name="serverAddress" placeholder="https://192.168.1.10:7001" required />
+          <small class="hint">Your server's IP/host and port, including the scheme — e.g. <code>https://192.168.1.10:7001</code>. A self-signed certificate is fine.</small>
+        </label>
+
+        <label class="full" id="field-siteId" hidden>
+          Cloud Site ID (UUID)
+          <input id="siteId" name="siteId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          <small class="hint">The site whose rules you want. Find it in the Nx client.</small>
+        </label>
+
+        <label>
+          <span id="user-label">Local server username</span>
+          <input id="user" name="user" placeholder="admin" required />
+          <small class="hint" id="user-hint">A LOCAL server account (not a cloud account).</small>
+        </label>
+        <label>
+          <span id="password-label">Local server password</span>
+          <input id="password" name="password" type="password" required />
+        </label>
+
+        <label class="full" id="field-mfa" hidden>
+          MFA code (optional)
+          <input id="mfaCode" name="mfaCode" inputmode="numeric" placeholder="6-digit 2FA code, only if your account uses it" />
+        </label>
+
+        <div class="actions">
+          <button id="list" type="submit">Log in &amp; list rules</button>
+        </div>
+      </form>
+
+      <div id="status" class="status"></div>
+
+      <section class="panel" id="rules-panel" hidden>
+        <h2>Event rules</h2>
+        <table id="rules-table">
+          <thead>
+            <tr>
+              <th class="pick"><input type="checkbox" id="select-all" title="Select all rules" /></th>
+              <th>ID</th>
+              <th>Enabled</th>
+              <th>Comment</th>
+              <th>Schedule</th>
+            </tr>
+          </thead>
+          <tbody id="rules-body"></tbody>
+        </table>
+
+        <h2>Set the schedule on the selected rules</h2>
+        <div class="controls">
+          <div class="full">
+            <span class="field-label">Days</span>
+            <div class="days" id="days">
+              <label class="day"><input type="checkbox" class="day-box" value="1" />Mon</label>
+              <label class="day"><input type="checkbox" class="day-box" value="2" />Tue</label>
+              <label class="day"><input type="checkbox" class="day-box" value="3" />Wed</label>
+              <label class="day"><input type="checkbox" class="day-box" value="4" />Thu</label>
+              <label class="day"><input type="checkbox" class="day-box" value="5" />Fri</label>
+              <label class="day"><input type="checkbox" class="day-box" value="6" />Sat</label>
+              <label class="day"><input type="checkbox" class="day-box" value="7" />Sun</label>
+            </div>
+            <div class="quick">
+              <button type="button" class="chip" data-days="weekdays">Weekdays</button>
+              <button type="button" class="chip" data-days="weekend">Weekend</button>
+              <button type="button" class="chip" data-days="all">Every day</button>
+              <button type="button" class="chip" data-days="clear">Clear</button>
+            </div>
+            <small class="hint">Tick any combination of days. Use the buttons for quick fills.</small>
+          </div>
+          <label>
+            Start hour
+            <input id="startHour" name="startHour" type="number" min="0" max="24" step="1" value="9" />
+            <small class="hint">Whole hour 0–24.</small>
+          </label>
+          <label>
+            End hour
+            <input id="endHour" name="endHour" type="number" min="0" max="24" step="1" value="18" />
+            <small class="hint">Must be greater than the start hour.</small>
+          </label>
+          <label class="allday-field">
+            <span>&nbsp;</span>
+            <span class="allday"><input type="checkbox" id="allDay" /> All day (00:00–24:00)</span>
+          </label>
+          <div class="actions">
+            <button id="apply" type="button">Set schedule on selected rules</button>
+          </div>
+        </div>
+        <small class="hint">
+          Pick the <strong>days</strong> and the <strong>time window</strong>, tick
+          one or more rules above, then click
+          <strong>Set schedule on selected rules</strong>. Each selected rule gets
+          its own <code>PATCH /rest/v4/events/rules/{id}</code> with one task per
+          chosen day. (No days at all means the schedule can't be built — to make a
+          rule "always enabled," that's a separate empty-schedule case.)
+        </small>
+      </section>
+
+      <p class="note">
+        Credentials and the bearer token are sent only to your local proxy, which
+        forwards each call same-origin to the server or the site relay (re-attaching
+        the bearer and re-sending the PATCH body across the relay's 307). This page
+        is a sample, not a production login.
+      </p>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

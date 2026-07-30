@@ -1,0 +1,14 @@
+{
+  "name": "nx-rest-list-cameras-local-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: local server login + list one site's cameras over /rest/v4, with a zero-dependency dev proxy for CORS and self-signed TLS.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_server_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

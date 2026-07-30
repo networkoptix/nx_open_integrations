@@ -1,0 +1,17 @@
+{
+  "name": "nx-media-http-stream",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS sample: save a video clip from a camera to a file (direct or cloud relay), v4 (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "media-http-stream": "./media_http_stream.mjs"
+  },
+  "scripts": {
+    "start": "node media_http_stream.mjs",
+    "test": "node --test test_media_http_stream.mjs"
+  }
+}

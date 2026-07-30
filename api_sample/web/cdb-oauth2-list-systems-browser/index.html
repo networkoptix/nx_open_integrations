@@ -1,0 +1,127 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nx — List Sites (cloud login, browser)</title>
+    <style>
+      :root {
+        --fg: #1c1e21;
+        --muted: #6b7280;
+        --line: #e5e7eb;
+        --accent: #1769ff;
+        --ok: #0a7d33;
+        --err: #c0322b;
+        --bg-soft: #f7f8fa;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: var(--fg);
+        margin: 0;
+        padding: 2rem 1rem;
+        background: #fff;
+      }
+      main { max-width: 760px; margin: 0 auto; }
+      h1 { font-size: 1.35rem; margin: 0 0 .25rem; }
+      p.lead { color: var(--muted); margin: 0 0 1.5rem; }
+      form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .9rem 1rem;
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1.25rem;
+      }
+      label { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; color: var(--muted); }
+      label.full { grid-column: 1 / -1; }
+      input, select {
+        font: inherit;
+        padding: .5rem .6rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+      }
+      input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+      small.hint { color: var(--muted); font-size: .72rem; font-weight: 400; }
+      button {
+        grid-column: 1 / -1;
+        font: inherit;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        border: 0;
+        border-radius: 6px;
+        padding: .65rem 1rem;
+        cursor: pointer;
+      }
+      button:disabled { opacity: .55; cursor: progress; }
+      .status { margin: 1rem 0; padding: .65rem .8rem; border-radius: 6px; font-size: .9rem; min-height: 1em; }
+      .status.info { background: #eef4ff; color: #1f4fa3; }
+      .status.ok { background: #e9f7ee; color: var(--ok); }
+      .status.error { background: #fdeceb; color: var(--err); }
+      .status:empty { display: none; }
+      label.picker { display: flex; flex-direction: column; gap: .3rem; font-size: .82rem; color: var(--muted); margin: .5rem 0 1rem; }
+      table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+      th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); font-size: .9rem; }
+      th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+      td[data-status="online"] { color: var(--ok); }
+      td[data-status="offline"], td[data-status="unauthorized"] { color: var(--err); }
+      .note { font-size: .8rem; color: var(--muted); border-left: 3px solid var(--accent); padding: .5rem .75rem; margin: 1.5rem 0 0; background: var(--bg-soft); }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>List Sites — cloud login (browser)</h1>
+      <p class="lead">
+        Logs in to Nx Cloud and lists the Sites registered to your account over
+        <code>/cdb/systems</code> — entirely in the browser. Just enter your
+        cloud login below.
+      </p>
+
+      <form id="login-form" autocomplete="off">
+        <label>
+          Cloud email
+          <input id="user" name="user" type="email" placeholder="you@example.com" required />
+        </label>
+        <label>
+          Password
+          <input id="password" name="password" type="password" required />
+        </label>
+
+        <label class="full">
+          MFA code (optional)
+          <input id="mfaCode" name="mfaCode" inputmode="numeric" placeholder="6-digit 2FA code, only if your account uses it" />
+        </label>
+
+        <button id="submit" type="submit">List Sites</button>
+      </form>
+
+      <div id="status" class="status"></div>
+
+      <section id="results" hidden>
+        <label class="picker">
+          Your Sites
+          <select id="site-picker"></select>
+        </label>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Status</th><th>Version</th><th>ID</th></tr>
+          </thead>
+          <tbody id="site-rows"></tbody>
+        </table>
+      </section>
+
+      <p class="note">
+        Credentials are sent only to your local proxy (which forwards them to
+        Nx Cloud) and are never stored. This page is a sample, not a production
+        login.
+      </p>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

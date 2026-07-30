@@ -1,0 +1,14 @@
+{
+  "name": "nx-rest-list-cameras-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: cloud-user login + list a system's cameras over /rest/v4, with a zero-dependency dev proxy for CORS.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_cloud_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

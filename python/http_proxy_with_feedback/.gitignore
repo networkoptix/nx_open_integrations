@@ -1,6 +1,0 @@
-distr/
-build/
-*.exe
-*.log
-*.pyc
-*.spec

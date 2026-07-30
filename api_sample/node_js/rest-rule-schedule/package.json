@@ -1,0 +1,17 @@
+{
+  "name": "nx-rest-rule-schedule",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS sample: set an event rule's schedule on the v4 API (direct or cloud relay) (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rest-rule-schedule": "./rest_rule_schedule.mjs"
+  },
+  "scripts": {
+    "start": "node rest_rule_schedule.mjs",
+    "test": "node --test test_rest_rule_schedule.mjs"
+  }
+}

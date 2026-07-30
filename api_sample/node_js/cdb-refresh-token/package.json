@@ -1,0 +1,17 @@
+{
+  "name": "nx-cdb-refresh-token",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx Cloud CDB API sample: keep a token session alive with refresh tokens (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "cdb-refresh-token": "./cdb_refresh_token.mjs"
+  },
+  "scripts": {
+    "start": "node cdb_refresh_token.mjs",
+    "test": "node --test test_cdb_refresh_token.mjs"
+  }
+}

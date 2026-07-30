@@ -1,0 +1,14 @@
+{
+  "name": "nx-rule-schedule-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: list event rules and set a rule's SCHEDULE over /rest/v4/events/rules (GET) + /rest/v4/events/rules/{id} (PATCH), in BOTH auth modes (direct VMS server, cloud account via relay), with a zero-dependency dev proxy that forwards the method + JSON body + bearer and re-attaches them across the relay 307.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_rule_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

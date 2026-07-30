@@ -1,0 +1,14 @@
+{
+  "name": "nx-media-http-stream",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: play a live/archive Nx camera stream in an HTML5 <video> over /rest/v4 media.webm, in BOTH auth modes (direct VMS server, cloud account via relay), with a zero-dependency dev proxy that converts the <video> auth token into a bearer header and streams the body.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_media_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

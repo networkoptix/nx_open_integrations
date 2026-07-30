@@ -1,0 +1,14 @@
+{
+  "name": "nx-virtual-camera-upload-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: create a virtual camera on one Nx VMS server and upload a video file as footage over /rest/v4, with a vendored MD5 and a zero-dependency dev proxy for CORS and self-signed TLS.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_md5.mjs test_nx_virtual_camera_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

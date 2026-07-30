@@ -1,0 +1,7 @@
+# .NET build output
+bin/
+obj/
+
+# Local restore / tooling
+*.user
+.vs/

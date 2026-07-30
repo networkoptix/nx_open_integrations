@@ -1,0 +1,17 @@
+{
+  "name": "nx-rest-list-cameras-cloud-user",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS sample: list a site's cameras with a cloud account via the relay, v4 (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rest-list-cameras-cloud-user": "./rest_cloud_sample.mjs"
+  },
+  "scripts": {
+    "start": "node rest_cloud_sample.mjs",
+    "test": "node --test test_rest_cloud_sample.mjs"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "nx-rest-event-log",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS REST API sample: read a system's event log via the relay, v4 (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rest-event-log": "./rest_event_log.mjs"
+  },
+  "scripts": {
+    "start": "node rest_event_log.mjs",
+    "test": "node --test test_rest_event_log.mjs"
+  }
+}

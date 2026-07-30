@@ -1,0 +1,17 @@
+{
+  "name": "nx-rest-list-cameras",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS REST API sample: log in to one server and list its cameras, v4 (Node.js port).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rest-list-cameras": "./rest_list_cameras.mjs"
+  },
+  "scripts": {
+    "start": "node rest_list_cameras.mjs",
+    "test": "node --test test_rest_list_cameras.mjs"
+  }
+}

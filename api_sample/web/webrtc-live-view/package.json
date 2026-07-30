@@ -1,0 +1,14 @@
+{
+  "name": "nx-webrtc-live-view-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: cloud login + list cameras + live WebRTC video via @networkoptix/webrtc-stream-manager, with a zero-dependency dev proxy for the HTTP (CORS) calls.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_cloud_client.mjs test_proxy.mjs test_webrtc_view.mjs",
+    "serve": "node server.mjs"
+  }
+}
