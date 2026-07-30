@@ -75,8 +75,8 @@ class FakeSession:
         self.calls.append(("post", url, json, headers))
         return self._pop("post")
 
-    def get(self, url, timeout=None, verify=None, allow_redirects=None):
-        self.calls.append(("get", url, None, None))
+    def get(self, url, headers=None, timeout=None, verify=None, allow_redirects=None):
+        self.calls.append(("get", url, None, headers))
         return self._pop("get")
 
     def patch(self, url, json=None, timeout=None, verify=None, allow_redirects=None):
@@ -116,7 +116,8 @@ def _write_config(tmp_path, **overrides):
         },
     }
     for section, keys in overrides.items():
-        values[section].update(keys)
+        # setdefault so overrides can introduce whole new sections, e.g. [hive].
+        values.setdefault(section, {}).update(keys)
 
     parser = configparser.ConfigParser()
     for section, keys in values.items():
@@ -225,6 +226,30 @@ def test_init_defaults_to_its_own_isolated_session(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# [hive] parsing -- which servers, if any, this one absorbs
+# ---------------------------------------------------------------------------
+
+def test_init_without_hive_section_has_no_merge_targets(make_vms):
+    # A follower or a plain standalone server: configures itself, absorbs nothing.
+    assert make_vms().merge_targets == []
+
+
+def test_init_parses_hive_merge_list(make_vms):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001, 10.0.0.3:7001"})
+    assert vms.merge_targets == ["10.0.0.2:7001", "10.0.0.3:7001"]
+
+
+def test_init_hive_merge_list_ignores_blank_entries(make_vms):
+    # Trailing commas are easy to leave behind when editing the list by hand.
+    vms = make_vms(hive={"merge": "10.0.0.2:7001,,  ,10.0.0.3:7001,"})
+    assert vms.merge_targets == ["10.0.0.2:7001", "10.0.0.3:7001"]
+
+
+def test_init_empty_hive_merge_value_has_no_merge_targets(make_vms):
+    assert make_vms(hive={"merge": ""}).merge_targets == []
+
+
+# ---------------------------------------------------------------------------
 # login() / token helpers
 # ---------------------------------------------------------------------------
 
@@ -235,7 +260,7 @@ def test_login_local_success(make_vms):
     header = vms.login("admin", "adminpw")
 
     assert header == {"Authorization": "Bearer localtok"}
-    assert vms.session.calls[-1][1] == "https://127.0.0.1:7001/rest/v3/login/sessions"
+    assert vms.session.calls[-1][1] == "https://127.0.0.1:7001/rest/v4/login/sessions"
 
 
 def test_login_local_failure_returns_empty_header(make_vms):
@@ -262,6 +287,38 @@ def test_login_cloud_failure_returns_empty_header(make_vms):
     assert vms.login("user@example.com", "wrong", "cloud") == {}
 
 
+def test_get_remote_access_token_targets_the_other_server(make_vms):
+    vms = make_vms()
+    vms.session = FakeSession(post=[FakeResponse(200, {"token": "remotetok"})])
+
+    token = vms._get_remote_access_token_via_ms("admin", "adminpw", "10.0.0.2", 7001)
+
+    assert token == "remotetok"
+    assert vms.session.calls[-1][1] == "https://10.0.0.2:7001/rest/v4/login/sessions"
+
+
+def test_get_remote_access_token_does_not_repoint_this_system(make_vms):
+    # This object describes the local server. Logging in to a follower must not
+    # leave it believing it *is* that follower.
+    vms = make_vms()
+    vms.session = FakeSession(post=[FakeResponse(200, {"token": "remotetok"})])
+
+    vms._get_remote_access_token_via_ms("admin", "adminpw", "10.0.0.2", 7001)
+
+    assert vms.ip_address == "127.0.0.1"
+    assert vms.port == "7001"
+    assert vms.local_url == "https://127.0.0.1:7001"
+
+
+def test_get_remote_access_token_failure_returns_none(make_vms):
+    # Expected while a follower is still setting itself up, so this must be a
+    # quiet None rather than an exception.
+    vms = make_vms()
+    vms.session = FakeSession(post=[FakeResponse(401, text="not ready")])
+
+    assert vms._get_remote_access_token_via_ms("admin", "adminpw", "10.0.0.2", 7001) is None
+
+
 # ---------------------------------------------------------------------------
 # get_current_system_settings()
 # ---------------------------------------------------------------------------
@@ -269,15 +326,15 @@ def test_login_cloud_failure_returns_empty_header(make_vms):
 def test_get_current_system_settings_merges_api_response(make_vms):
     vms = make_vms()
     vms.session = FakeSession(get=[FakeResponse(200, {
-        "systemName": "RenamedSystem",
-        "cloudSystemID": "sys-123",
+        "siteName": "RenamedSystem",
+        "cloudId": "sys-123",
         "autoDiscoveryEnabled": False,
     })])
 
     settings = vms.get_current_system_settings()
 
-    assert settings["systemName"] == "RenamedSystem"
-    assert settings["cloudSystemID"] == "sys-123"
+    assert settings["siteName"] == "RenamedSystem"
+    assert settings["cloudId"] == "sys-123"
     assert settings["autoDiscoveryEnabled"] is False
     # Untouched keys keep the constructor's defaults.
     assert settings["cameraSettingsOptimization"] is True
@@ -289,9 +346,133 @@ def test_get_current_system_settings_failure_reports_unknown(make_vms, capsys):
 
     settings = vms.get_current_system_settings()
 
-    assert settings["cloudSystemID"] == sample.STATE_UNKNOWN
+    assert settings["cloudId"] == sample.STATE_UNKNOWN
     assert settings["autoDiscoveryEnabled"] == sample.STATE_UNKNOWN
     assert "[ERROR]" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# merge_sites() / get_merge_status()
+# ---------------------------------------------------------------------------
+
+def test_merge_sites_posts_remote_endpoint_and_token(make_vms):
+    vms = make_vms()
+    vms.session = FakeSession(post=[
+        FakeResponse(200, {"token": "remotetok"}),  # login to the follower
+        FakeResponse(200, {"token": "localtok"}),   # login to ourselves
+        FakeResponse(200, {}),                      # the merge itself
+    ])
+
+    assert vms.merge_sites("10.0.0.2", 7001) is True
+
+    merge_call = vms.session.calls[-1]
+    assert merge_call[1] == "https://127.0.0.1:7001/rest/v4/site/merge"
+    assert merge_call[2] == {
+        "remoteEndpoint": "10.0.0.2:7001",
+        "remoteSessionToken": "remotetok",
+    }
+    # The merge is authorized as the local admin, not with the follower's token.
+    assert merge_call[3] == {"Authorization": "Bearer localtok"}
+
+
+def test_merge_sites_mints_the_remote_token_before_merging(make_vms):
+    # v4 requires a token minted immediately beforehand, so the follower login
+    # must be the first call, not a token cached from earlier.
+    vms = make_vms()
+    vms.session = FakeSession(post=[
+        FakeResponse(200, {"token": "remotetok"}),
+        FakeResponse(200, {"token": "localtok"}),
+        FakeResponse(200, {}),
+    ])
+
+    vms.merge_sites("10.0.0.2", 7001)
+
+    urls = [call[1] for call in vms.session.calls]
+    assert urls == [
+        "https://10.0.0.2:7001/rest/v4/login/sessions",
+        "https://127.0.0.1:7001/rest/v4/login/sessions",
+        "https://127.0.0.1:7001/rest/v4/site/merge",
+    ]
+
+
+def test_merge_sites_without_remote_token_does_not_merge(make_vms, capsys):
+    vms = make_vms()
+    vms.session = FakeSession(post=[FakeResponse(401, text="not ready")])
+
+    assert vms.merge_sites("10.0.0.2", 7001) is False
+    assert len(vms.session.calls) == 1  # never attempted the merge
+    assert "[ERROR]" in capsys.readouterr().out
+
+
+def test_merge_sites_without_local_login_does_not_merge(make_vms, capsys):
+    vms = make_vms()
+    vms.session = FakeSession(post=[
+        FakeResponse(200, {"token": "remotetok"}),  # follower login works
+        FakeResponse(401, text="bad password"),     # our own login does not
+    ])
+
+    assert vms.merge_sites("10.0.0.2", 7001) is False
+    assert len(vms.session.calls) == 2  # never attempted the merge
+    assert "[ERROR]" in capsys.readouterr().out
+
+
+def test_merge_sites_reports_failure_without_leaking_the_token(make_vms, capsys):
+    vms = make_vms()
+    vms.session = FakeSession(post=[
+        FakeResponse(200, {"token": "remotetok"}),
+        FakeResponse(200, {"token": "localtok"}),
+        FakeResponse(500, text="merge refused"),
+    ])
+
+    assert vms.merge_sites("10.0.0.2", 7001) is False
+
+    output = capsys.readouterr().out
+    assert "10.0.0.2:7001" in output      # the endpoint is useful for diagnosis
+    assert "remotetok" not in output      # a live session token is not
+
+
+def test_get_merge_status_reports_in_progress(make_vms):
+    vms = make_vms()
+    vms.session = FakeSession(
+        post=[FakeResponse(200, {"token": "localtok"})],
+        get=[FakeResponse(200, {"mergeInProgress": True})],
+    )
+
+    assert vms.get_merge_status() is True
+    assert vms.session.calls[-1][1] == "https://127.0.0.1:7001/rest/v4/site/merge"
+
+
+def test_get_merge_status_reports_finished(make_vms):
+    vms = make_vms()
+    vms.session = FakeSession(
+        post=[FakeResponse(200, {"token": "localtok"})],
+        get=[FakeResponse(200, {"mergeInProgress": False})],
+    )
+
+    assert vms.get_merge_status() is False
+
+
+def test_get_merge_status_absent_key_reads_as_finished(make_vms):
+    vms = make_vms()
+    vms.session = FakeSession(
+        post=[FakeResponse(200, {"token": "localtok"})],
+        get=[FakeResponse(200, {})],
+    )
+
+    assert vms.get_merge_status() is False
+
+
+def test_get_merge_status_failure_reads_as_finished(make_vms, capsys):
+    # Reporting "finished" on error is what stops the poll loop in setup_system()
+    # from spinning until its timeout against an unreachable server.
+    vms = make_vms()
+    vms.session = FakeSession(
+        post=[FakeResponse(200, {"token": "localtok"})],
+        get=[FakeResponse(500, text="boom")],
+    )
+
+    assert vms.get_merge_status() is False
+    assert "Failed to get merge status" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------
@@ -314,9 +495,9 @@ def test_connect_system_to_cloud_personal_account(make_vms):
     assert "organization" not in bind_call[2]
 
     local_bind_call = vms.session.calls[3]
-    assert local_bind_call[1] == "https://127.0.0.1:7001/rest/v3/system/cloud/bind"
+    assert local_bind_call[1] == "https://127.0.0.1:7001/rest/v4/cloud/bind"
     assert local_bind_call[2] == {
-        "systemId": "sys-1", "authKey": "key-1", "owner": "user@example.com",
+        "siteId": "sys-1", "authKey": "key-1", "owner": "user@example.com",
     }
 
 
@@ -335,7 +516,7 @@ def test_connect_system_to_cloud_organization(make_vms):
     assert vms._connect_system_to_cloud() is True
 
     bind_call = vms.session.calls[1]
-    assert bind_call[1] == "https://meta.nxvms.com/partners/api/v3/cloud_systems/"
+    assert bind_call[1] == "https://meta.nxvms.com/partners/api/v4/cloud_systems/"
     assert bind_call[2]["organization"] == "org-42"
 
     local_bind_call = vms.session.calls[3]
@@ -356,7 +537,7 @@ def test_detach_system_from_cloud_success(make_vms):
 
     assert vms._detach_system_from_cloud() is True
     call = vms.session.calls[-1]
-    assert call[1] == "https://127.0.0.1:7001/rest/v3/system/cloud/unbind"
+    assert call[1] == "https://127.0.0.1:7001/rest/v4/cloud/unbind"
     assert call[2] == {"password": "adminpw", "userAgent": "3rd_party_tool"}
 
 
@@ -448,7 +629,7 @@ def test_update_system_settings_success(make_vms):
 
     assert vms._update_system_settings({"autoDiscoveryEnabled": True}) is True
     call = vms.session.calls[-1]
-    assert call[1] == "https://127.0.0.1:7001/rest/v3/system/settings"
+    assert call[1] == "https://127.0.0.1:7001/rest/v4/site/settings"
     assert call[2] == {"autoDiscoveryEnabled": True}
 
 
@@ -590,8 +771,8 @@ def test_setup_system_full_flow(make_vms, monkeypatch):
     monkeypatch.setattr(vms, "_initialize_system", lambda: True)
     monkeypatch.setattr(vms, "_logout_current_session", lambda: None)
     monkeypatch.setattr(vms, "get_current_system_settings", lambda: {
-        "systemName": "TestSystem",
-        "cloudSystemID": "",
+        "siteName": "TestSystem",
+        "cloudId": "",
         "autoDiscoveryEnabled": False,
         "cameraSettingsOptimization": False,
         "statisticsAllowed": False,
@@ -607,3 +788,146 @@ def test_setup_system_full_flow(make_vms, monkeypatch):
     assert result["auto_discovery"] == sample.STATE_ENABLED
     assert result["camera_optimization"] == sample.STATE_ENABLED
     assert result["anonymous_statistics_report"] == sample.STATE_ENABLED
+
+
+# ---------------------------------------------------------------------------
+# setup_system() -- the hive layer on top of _configure_self()
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def hive(monkeypatch):
+    """Stub out _configure_self, the clock, and record merge/readiness activity.
+
+    Returns a factory: hive(vms) -> a record of what setup_system() drove.
+    """
+    monkeypatch.setattr(sample.time, "sleep", lambda seconds: None)
+
+    def install(vms, *, ready=True, merge_ok=True, in_progress=0):
+        record = {"configured": 0, "merged": [], "token_requests": [], "status_polls": 0}
+
+        def fake_configure_self():
+            record["configured"] += 1
+            return {"system_name": vms.system_name}
+
+        def fake_remote_token(username, password, ip, port):
+            record["token_requests"].append(f"{ip}:{port}")
+            return "remotetok" if ready else None
+
+        def fake_merge_sites(ip, port):
+            record["merged"].append(f"{ip}:{port}")
+            return merge_ok
+
+        def fake_merge_status():
+            record["status_polls"] += 1
+            return record["status_polls"] <= in_progress
+
+        monkeypatch.setattr(vms, "_configure_self", fake_configure_self)
+        monkeypatch.setattr(vms, "_get_remote_access_token_via_ms", fake_remote_token)
+        monkeypatch.setattr(vms, "merge_sites", fake_merge_sites)
+        monkeypatch.setattr(vms, "get_merge_status", fake_merge_status)
+        return record
+
+    return install
+
+
+def test_setup_system_without_hive_configures_only_itself(make_vms, hive):
+    vms = make_vms()
+    record = hive(vms)
+
+    result = vms.setup_system()
+
+    assert record["configured"] == 1
+    assert record["merged"] == []          # nothing to absorb
+    assert result["system_name"] == "TestSystem"
+
+
+def test_setup_system_seed_merges_every_follower_in_order(make_vms, hive):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001, 10.0.0.3:7001"})
+    record = hive(vms)
+
+    vms.setup_system()
+
+    assert record["configured"] == 1
+    assert record["merged"] == ["10.0.0.2:7001", "10.0.0.3:7001"]
+
+
+def test_setup_system_returns_its_own_configuration_result(make_vms, hive):
+    # The return value describes this server, not the merges.
+    vms = make_vms(hive={"merge": "10.0.0.2:7001"})
+    hive(vms)
+
+    assert vms.setup_system() == {"system_name": "TestSystem"}
+
+
+def test_setup_system_waits_for_a_follower_before_merging(make_vms, hive):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001"})
+    record = hive(vms)
+
+    vms.setup_system()
+
+    # A token request doubles as the readiness probe, so one must precede the merge.
+    assert record["token_requests"][0] == "10.0.0.2:7001"
+    assert record["merged"] == ["10.0.0.2:7001"]
+
+
+def test_setup_system_skips_a_follower_that_never_becomes_reachable(make_vms, hive):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001"})
+    record = hive(vms, ready=False)
+
+    vms.setup_system()
+
+    assert record["merged"] == []          # gave up rather than merging blind
+    assert record["configured"] == 1       # our own setup still counted
+
+
+def test_setup_system_unreachable_follower_does_not_block_the_others(make_vms, hive,
+                                                                    monkeypatch):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001, 10.0.0.3:7001"})
+    record = hive(vms)
+
+    # Only the first follower is unreachable.
+    def selective_token(username, password, ip, port):
+        record["token_requests"].append(f"{ip}:{port}")
+        return None if ip == "10.0.0.2" else "remotetok"
+
+    monkeypatch.setattr(vms, "_get_remote_access_token_via_ms", selective_token)
+
+    vms.setup_system()
+
+    assert record["merged"] == ["10.0.0.3:7001"]
+
+
+def test_setup_system_failed_merge_does_not_block_the_others(make_vms, hive, monkeypatch):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001, 10.0.0.3:7001"})
+    record = hive(vms)
+
+    def selective_merge(ip, port):
+        record["merged"].append(f"{ip}:{port}")
+        return ip != "10.0.0.2"
+
+    monkeypatch.setattr(vms, "merge_sites", selective_merge)
+
+    vms.setup_system()
+
+    # Both were attempted, and the failure was not polled for completion.
+    assert record["merged"] == ["10.0.0.2:7001", "10.0.0.3:7001"]
+    assert record["status_polls"] == 1
+
+
+def test_setup_system_polls_until_the_merge_finishes(make_vms, hive):
+    vms = make_vms(hive={"merge": "10.0.0.2:7001"})
+    record = hive(vms, in_progress=3)
+
+    vms.setup_system()
+
+    assert record["status_polls"] == 4  # three "in progress", then done
+
+
+def test_setup_system_raises_the_timeout_for_merge_work(make_vms, hive):
+    # The 5s default is too tight for merge/login round trips.
+    vms = make_vms(hive={"merge": "10.0.0.2:7001"})
+    hive(vms)
+
+    vms.setup_system()
+
+    assert vms.http_timeout == 30

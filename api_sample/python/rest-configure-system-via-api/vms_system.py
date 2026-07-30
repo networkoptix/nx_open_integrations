@@ -12,6 +12,7 @@ import configparser
 import json
 import logging
 import requests
+import time
 import urllib3
 from dataclasses import dataclass, asdict
 from typing import Dict, Any, List, Optional, Callable, Union
@@ -37,15 +38,16 @@ STATE_CONNECTED = "CONNECTED"
 STATE_DISCONNECTED_LOCAL = "DISCONNECTED(LOCAL)"
 
 # --- API Path Constants ---
-API_V3_BASE = "/rest/v3"
-LOGIN_SESSIONS_PATH = f"{API_V3_BASE}/login/sessions"
-SYSTEM_SETTINGS_PATH = f"{API_V3_BASE}/system/settings"
-SYSTEM_CLOUD_BIND_PATH = f"{API_V3_BASE}/system/cloud/bind"
-SYSTEM_CLOUD_UNBIND_PATH = f"{API_V3_BASE}/system/cloud/unbind"
-SYSTEM_SETUP_PATH = f"{API_V3_BASE}/system/setup"
+API_V4_BASE = "/rest/v4"
+LOGIN_SESSIONS_PATH = f"{API_V4_BASE}/login/sessions"
+SYSTEM_SETTINGS_PATH = f"{API_V4_BASE}/site/settings"
+SYSTEM_CLOUD_BIND_PATH = f"{API_V4_BASE}/cloud/bind"
+SYSTEM_CLOUD_UNBIND_PATH = f"{API_V4_BASE}/cloud/unbind"
+SYSTEM_SETUP_PATH = f"{API_V4_BASE}/site/setup"
+MERGE_SITES_PATH = f"{API_V4_BASE}/site/merge"
 
 CDB_OAUTH_TOKEN_PATH = "/cdb/oauth2/token"
-PARTNERS_API_V3_CLOUD_SYSTEMS_PATH = "/partners/api/v3/cloud_systems/"
+PARTNERS_API_V4_CLOUD_SYSTEMS_PATH = "/partners/api/v4/cloud_systems/"
 CDB_SYSTEMS_BIND_PATH = "/cdb/systems/bind"
 
 
@@ -53,8 +55,8 @@ CDB_SYSTEMS_BIND_PATH = "/cdb/systems/bind"
 class VmsSystemSettings:
     """Dataclass to hold VMS system settings."""
     customization: str
-    systemName: str
-    cloudSystemID: str  # Can be empty, actual ID.
+    siteName: str
+    cloudId: str  # Can be empty, actual ID.
     organizationId: str # Ensure this is correctly populated if used.
     cloud_host: str
     autoDiscoveryEnabled: bool = False
@@ -98,6 +100,14 @@ class VmsSystem:
             self.local_admin_password: str = server_config["local_admin_password"]
             self.local_url: str = f"https://{self.ip_address}:{self.port}"
 
+            # Optional hive role: the seed carries [hive] merge = a comma-separated
+            # list of follower endpoints to absorb. Followers have no [hive] section
+            # and just configure themselves.
+            self.merge_targets: List[str] = []
+            if system_configuration.has_option("hive", "merge"):
+                raw = system_configuration["hive"]["merge"]
+                self.merge_targets = [t.strip() for t in raw.split(",") if t.strip()]
+
             # Product and cloud settings
             system_settings_config = system_configuration["system_settings"]
             self.product_name: str = system_settings_config["product"]
@@ -138,8 +148,8 @@ class VmsSystem:
 
             self.system_settings = VmsSystemSettings(
                 customization=self.customization,
-                systemName=self.system_name,
-                cloudSystemID="",  # Will be updated by get_current_system_settings
+                siteName=self.system_name,
+                cloudId="",  # Will be updated by get_current_system_settings
                 organizationId=self.organizationId,
                 cloud_host=self.cloud_host,
                 autoDiscoveryEnabled=True,
@@ -196,6 +206,31 @@ class VmsSystem:
             return res.json().get("token")
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get MS access token for {username}: {e}")
+            return None
+    
+    def _get_remote_access_token_via_ms(self, username: str, password: str, ip: str, port: int) -> Optional[str]:
+        """Log in to *another* server and return its session token.
+
+        Builds the URL from the arguments rather than assigning them to
+        self.ip_address/self.port: this object represents the local server, and
+        repointing it at a follower would leave it describing the wrong host.
+        """
+        credentials = {"username": username, "password": password, "setCookie": True}
+        try:
+            res = self.session.post(
+                f"https://{ip}:{port}{LOGIN_SESSIONS_PATH}",
+                json=credentials,
+                timeout=self.http_timeout,
+                verify=False, # Ignore SSL certificate verification (due to self-signed)
+                allow_redirects=True
+            )
+            res.raise_for_status()
+            return res.json().get("token")
+        except requests.exceptions.RequestException as e:
+            # Debug, not error: setup_system() polls this to wait for a follower to
+            # finish its own setup, so failures are the expected state until that
+            # server is ready.
+            logger.debug(f"No token from {ip}:{port} for {username} yet: {e}")
             return None
 
     def _get_access_token_via_cdb(self, username: str, password: str) -> Optional[str]:
@@ -283,14 +318,77 @@ class VmsSystem:
 
             # Populate with UNKNOWN state for critical settings if fetch fails
             current_settings.update({
-                "systemName": self.system_name,
-                "cloudSystemID": STATE_UNKNOWN, # cloudSystemID might be "" or actual ID
+                "siteName": self.system_name,
+                "cloudId": STATE_UNKNOWN, # cloudId might be "" or actual ID
                 "autoDiscoveryEnabled": STATE_UNKNOWN,
                 "autoDiscoveryResponseEnabled" : STATE_UNKNOWN,
                 "cameraSettingsOptimization": STATE_UNKNOWN,
                 "statisticsAllowed": STATE_UNKNOWN
             })
         return current_settings
+
+    # Using the v4 api, merge the given server into the current system.
+    def merge_sites(self, ip: str, port: int) -> bool:
+        
+        remoteSessionToken = self._get_remote_access_token_via_ms("admin", self.local_admin_password, ip, port)
+        if not remoteSessionToken:
+            print(f"[ERROR] No session token from {ip}:{port}. Can't merge into "
+                  f"{self.system_name}.")
+            return False
+
+        login_auth_header = self.login("admin", self.local_admin_password)
+        if not login_auth_header:
+            print(f"[ERROR] Local login failed. Can't merge {ip}:{port} into "
+                  f"{self.system_name}.")
+            return False
+
+        payload = {
+                    "remoteEndpoint": f"{ip}:{port}",
+                    "remoteSessionToken": remoteSessionToken,
+        }
+        
+        try:
+            rest = self.session.post(
+                f"{self.local_url}{MERGE_SITES_PATH}",
+                headers=login_auth_header,
+                json=payload,
+                timeout=self.http_timeout,
+                verify=False,
+                allow_redirects=True
+            )
+            rest.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response is not None:
+                status_code = e.response.status_code 
+                content = e.response.text
+            else :
+                status_code = "N/A"
+                content = "N/A"
+            # Report the endpoint, never the payload: it carries a live session token.
+            print(
+                f"Failed to merge {ip}:{port} into {self.system_name}. "
+                f"Error: {e}. Status: {status_code}. Response: {content}"
+            )
+            return False
+        
+        return True
+    
+    def get_merge_status(self) -> bool:
+        try:
+            rest = self.session.get(
+                f"{self.local_url}{MERGE_SITES_PATH}",
+                headers=self.login("admin", self.local_admin_password),
+                timeout=self.http_timeout,
+                verify=False,
+                allow_redirects=True
+            )
+            rest.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to get merge status for {self.system_name}: {e}")
+            return False
+        
+        # Return status of mergeInProgress or False by default
+        return rest.json().get("mergeInProgress", False)
 
     def _should_connect_to_organization(self) -> bool:
         return self.connect_to_organization
@@ -324,7 +422,7 @@ class VmsSystem:
                     "customization": self.customization,
                     "organization": self.system_settings.organizationId
                 }
-                endpoint = f"{self.cloud_url}{PARTNERS_API_V3_CLOUD_SYSTEMS_PATH}"
+                endpoint = f"{self.cloud_url}{PARTNERS_API_V4_CLOUD_SYSTEMS_PATH}"
             else:
                 logger.info(
                     f"{self.system_name}: Connecting system to cloud account "
@@ -345,7 +443,7 @@ class VmsSystem:
 
             data = res_cloud_bind.json()
             cloud_info = {
-                "systemId": data.get("id"),
+                "siteId": data.get("id"),
                 "authKey": data.get("authKey"),
                 "owner": self.cloud_account
             }
@@ -573,7 +671,7 @@ class VmsSystem:
     def _set_system_name(self) -> bool:
         """Sets the system name on the VMS."""
         logger.info(f"{self.system_name}: Attempting to set system name to '{self.system_name}'.")
-        if self._update_system_settings({"systemName": self.system_name}):
+        if self._update_system_settings({"siteName": self.system_name}):
             logger.info(f"System name successfully changed to '{self.system_name}'.")
             return True
         else:
@@ -581,7 +679,7 @@ class VmsSystem:
             try:
                 res = self.session.patch(
                     f"{self.local_url}{SYSTEM_SETTINGS_PATH}",
-                    json={"systemName": self.system_name},
+                    json={"siteName": self.system_name},
                     verify=False, timeout=self.http_timeout
                 )
                 res.raise_for_status()
@@ -631,7 +729,7 @@ class VmsSystem:
             logger.warning(f"{self.system_name}: Failed to logout current session: {e}")
             # No action requried. Session might be invalid or already closed.
 
-    def setup_system(self) -> Dict[str, Any]:
+    def _configure_self(self) -> Dict[str, Any]:
         """
         Orchestrates the complete setup of the VMS system based on configuration.
 
@@ -672,18 +770,18 @@ class VmsSystem:
 
         # Cloud connection
         cloud_connect_status = self._setup_connect_to_cloud(
-            current_system_settings.get("cloudSystemID")
+            current_system_settings.get("cloudId")
         )
 
         # System name
-        if current_system_settings.get("systemName") != self.system_name and \
-           current_system_settings.get("systemName") != STATE_UNKNOWN:
+        if current_system_settings.get("siteName") != self.system_name and \
+           current_system_settings.get("siteName") != STATE_UNKNOWN:
             logger.info(
-                f"{self.system_name}: Current name '{current_system_settings.get('systemName')}' "
+                f"{self.system_name}: Current name '{current_system_settings.get('siteName')}' "
                 f"differs from desired '{self.system_name}'. Attempting update."
             )
             self._set_system_name()
-        elif current_system_settings.get("systemName") == STATE_UNKNOWN:
+        elif current_system_settings.get("siteName") == STATE_UNKNOWN:
              logger.info(f"{self.system_name}: System name is UNKNOWN."
                          f"Attempting to set to '{self.system_name}'."
             )
@@ -724,3 +822,51 @@ class VmsSystem:
             "anonymous_statistics_report": anonymous_statistics_report_status,
             "camera_optimization": camera_optimization_status
         }
+
+    def setup_system(self) -> Dict[str, Any]:
+        """Configure this server and, if it is the hive seed, absorb every follower.
+
+        The seed is the only server with ``[hive] merge = <follower endpoints>``. It
+        configures itself, then merges each follower into its site one at a time.
+        Followers have no merge list and just configure themselves. Merging
+        sequentially from a single server avoids the corruption that concurrent
+        merges into one site cause. Best-effort: a follower that never comes up is
+        skipped rather than failing the whole hive.
+        """
+        result = self._configure_self()
+        if not self.merge_targets:
+            return result  # follower or standalone: nothing to absorb
+
+        self.set_http_timeout(30)  # merge/login are slow, especially under emulation
+        for target in self.merge_targets:
+            host, _, port_str = target.rpartition(":")
+            port = int(port_str)
+
+            # A follower only grants a token with the shared admin password once it
+            # has finished its own setup, so a token fetch doubles as a readiness check.
+            ready = False
+            for _ in range(60):  # ~5 min, then skip rather than hang startup
+                if self._get_remote_access_token_via_ms(
+                        "admin", self.local_admin_password, host, port):
+                    ready = True
+                    break
+                time.sleep(5)
+            if not ready:
+                logger.error(f"{self.system_name}: follower {target} never became "
+                             "reachable; skipping.")
+                continue
+
+            if not self.merge_sites(host, port):
+                logger.error(f"{self.system_name}: merge of follower {target} failed.")
+                continue
+
+            timeout = 300
+            while timeout > 0 and self.get_merge_status():
+                time.sleep(5)
+                timeout -= 5
+            if timeout <= 0:
+                logger.warning(f"{self.system_name}: merge of follower {target} still "
+                               "in progress after timeout; continuing without confirmation.")
+            else:
+                logger.info(f"{self.system_name}: merged follower {target}.")
+        return result
