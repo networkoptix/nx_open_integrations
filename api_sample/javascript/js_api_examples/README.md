@@ -1,22 +1,24 @@
-# JS API Examples — Nx Desktop Client embedded browser
+# JS API Examples — Integrations in Nx Witness Desktop Client embedded browser
 
-These two demos are **not** part of the REST / Cloud CDB sample catalog in
-[`../../README.md`](../../README.md). They cover a different, unrelated API
-surface: the **JavaScript API the Nx Witness Desktop Client exposes to pages
-loaded in its built-in browser** (client-side scripting inside the desktop
-app, not HTTP calls to a server or the cloud).
+The Nx Witness JavaScript API lets developers integrate web apps through the built-in **Integrations** resource. 
+Developers can build a web-based application as an Integration and use the API to trigger actions on the 
+Desktop Client, creating an integrated experience for users inside the Desktop Client.
 
-Reference: [Nx Meta Knowledgebase — Introduction to the JavaScript API](https://meta.nxvms.com/docs/developers/knowledgebase/325-introduction-to-the-javascript-api)
+Reference: [The In-Client JavaScript API](https://support.networkoptix.com/hc/en-us/articles/32919459274519-The-In-Client-JavaScript-API)
 
 ## Folders
 
 | Folder | What it shows |
 |---|---|
+| [`hello_world`](hello_world) | The smallest possible example: static HTML/CSS, no build step, just `vmsApiInit` and reading the current tab name. Start here. |
+| [`first_integration`](first_integration) | The first integration extended from hello-world sample. Demonstrate the resource interaction features. |
 | [`dashboard`](dashboard) | A dashboard-style page built against the Desktop Client JS API. |
 | [`resources`](resources) | A general-purpose test/reference page for the same API, with a prebuilt `compiled_client_api_test_page.html`. |
 
-Each folder is a small [Parcel](https://parceljs.org/)-based TypeScript/HTML/CSS
-project — see each folder's own `readme.md` for its `npm install` / `npm start`
-/ `npm run build` steps. They're independent of the Node/Python/TypeScript/C#/
-web samples elsewhere in this repo (different runtime, different API, no
-shared config or `.env`).
+## Samples
+
+1. `hello_world` has no build step at all — serve its `src/index.html` directly with any HTTP server, then open it as an Integration in the Desktop Client. 
+It's a warm-up sample that introduces API object initialization.
+
+2. `first_integration`, `dashboard` and `resources` are [Parcel](https://parceljs.org/)-based TypeScript/HTML/CSS projects. 
+See the `readme.md` in each folder for details, including the `npm install` / `npm start` / `npm run build` steps.

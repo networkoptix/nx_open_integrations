@@ -1,0 +1,19 @@
+{
+  "name": "nx-witness-jsapi-first-integration",
+  "version": "1.0.0",
+  "description": "First integration for the Nx Witness In-Client JavaScript API.",
+  "type": "module",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "rm -rf dist && parcel build",
+    "serve": "serve dist"
+  },
+  "author": "Network Optix Inc.",
+  "license": "MPL-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "parcel": "^2.0.1",
+    "serve": "^14.2.1"
+  }
+}

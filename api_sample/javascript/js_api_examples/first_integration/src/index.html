@@ -1,0 +1,49 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In-Client JavaScript API — First Integration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css">
+<script type="module" src="index.ts"></script>
+</head>
+<body>
+
+  <div id="banner" class="viewfinder">
+    <div class="status" id="statusPillBanner"><span class="dot"></span>JS API Object Initialization Required</div>
+
+    <p class="eyebrow">Setup required</p>
+    <h1>Add this page as an Integration.</h1>
+
+    <ol class="steps">
+      <li>Open Main Menu → Add</li>
+      <li>Choose Integrations…</li>
+    </ol>
+
+    <img class="frame-img" src="./img/integration_inclient_js_api.png" alt="Steps to add this page as an integration in Desktop Client">
+  </div>
+
+  <div id="app" class="viewfinder" style="display:none">
+    <div class="status is-live" id="statusPillApp"><span class="dot"></span>JS API Object Initialized completely!</div>
+
+    <h1>Congratulations!</h1>
+    <p id="hello"></p>
+
+    <p class="info-note">
+      Resources are fetched using the account you are currently using with a valid session token, which may grant access to resources
+      across multiple sites if you have the permission and access not just the current login site. This is expected, as some cross-site features
+      (e.g. cloud layouts) require such behavior.
+    </p>
+
+    <h3 class="section-title">Cameras <span class="count" id="cameraCount">(0)</span></h3>
+    <p class="hint">Click a camera to add it to the current layout.</p>
+    <ul id="cameraList"></ul>
+    <button type="button" id="showAllToggle">Show all cameras ↓</button>
+  </div>
+
+</body>
+</html>

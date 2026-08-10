@@ -1,0 +1,58 @@
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In-Client JavaScript API — Hello World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <div id="banner" class="viewfinder">
+    <div class="status" id="statusPillBanner"><span class="dot"></span>JS API Object Initialization Required</div>
+
+    <p class="eyebrow">Setup required</p>
+    <h1>Add this page as an Integration.</h1>
+
+    <ol class="steps">
+      <li>Open Main Menu → Add</li>
+      <li>Choose Integrations…</li>
+    </ol>
+
+    <img class="frame-img" src="./img/integration_inclient_js_api.png" alt="Steps to add this page as an integration in Desktop Client">
+  </div>
+
+  <div id="app" class="viewfinder" style="display:none">
+    <div class="status is-live" id="statusPillApp"><span class="dot"></span>JS API Object Initialized completely!</div>
+
+    <h1>Congratulations!</h1>
+ 
+    <p id="hello"></p>
+  </div>
+
+  <script>
+
+    function showApp(isConnected) {
+      document.getElementById("banner").style.display = isConnected ? "none" : "block";
+      document.getElementById("app").style.display = isConnected ? "block" : "none";
+    }
+
+    if (!window.isVmsApiEnabled) {
+      window.onload = () => showApp(false);
+    }
+
+    window.vmsApiInit = async () => {
+      showApp(true);
+
+      const helloEl = document.getElementById("hello");
+      helloEl.innerHTML = `This Integration is now running inside tab <span>${window.vms.tab.name}</span>.`;
+
+    };
+  </script>
+
+</body>
+</html>

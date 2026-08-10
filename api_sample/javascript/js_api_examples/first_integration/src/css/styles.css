@@ -1,0 +1,296 @@
+/* Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ */
+
+:root{
+  --bg: #0a0d10;
+  --panel: #10151a;
+  --panel-raised: #151b21;
+  --border: #212a30;
+  --text: #dbe4e7;
+  --text-dim: #74868d;
+  --accent: #2f8fff;
+  --accent-dim: rgba(47, 143, 255, 0.14);
+  --warn: #ff5c5c;
+  --warn-dim: rgba(255, 92, 92, 0.14);
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  height: 100%;
+}
+
+body{
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% -10%, rgba(47,143,255,0.08), transparent 45%),
+    radial-gradient(circle at 90% 110%, rgba(47,143,255,0.05), transparent 40%);
+  color: var(--text);
+  font-family: var(--sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* ---- status pill ---- */
+.status{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-raised);
+  margin-bottom: 2rem;
+  flex-shrink: 0;
+}
+.status .dot{
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 0 var(--warn-dim);
+  animation: pulse 1.8s infinite;
+}
+.status.is-live{ color: var(--accent); }
+.status.is-live .dot{
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent-dim);
+}
+@keyframes pulse{
+  0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  70%  { box-shadow: 0 0 0 6px transparent; opacity: 0.75; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+
+/* ---- viewfinder frame: the signature element ---- */
+.viewfinder{
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  height: calc(100vh - 4rem);
+  max-height: 1920px;
+  padding: clamp(2rem, 4vw, 4rem) clamp(2rem, 5vw, 5rem);
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.viewfinder::-webkit-scrollbar{
+  display: none;
+}
+
+h1{
+  font-family: var(--mono);
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0 0 1.75rem;
+  max-width: 46ch;
+}
+
+.eyebrow{
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.9rem;
+}
+
+ol.steps{
+  list-style: none;
+  counter-reset: step;
+  margin: 1.75rem 0 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+ol.steps li{
+  counter-increment: step;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+ol.steps li::before{
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.frame-img{
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  margin-top: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  filter: saturate(0.9);
+}
+
+p{
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0 0 1.75rem;
+}
+p#hello{ color: var(--text); }
+p#hello span{ color: var(--accent); font-family: var(--mono); }
+
+h3.section-title{
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 2.25rem 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+h3.section-title::after{
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.count{
+  color: var(--accent);
+}
+
+.hint{
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  margin: -0.5rem 0 1rem;
+}
+
+.info-note{
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  background: var(--accent-dim);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  margin: 0 0 1rem;
+}
+.info-note::before{
+  content: "ⓘ";
+  color: var(--accent);
+  font-family: var(--mono);
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+ul#cameraList{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+ul#cameraList:empty{
+  padding: 1.5rem;
+  background: var(--panel-raised);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 1.05rem;
+}
+ul#cameraList:empty::before{
+  content: "no resources found yet.";
+}
+ul#cameraList li{
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--panel-raised);
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  color: var(--text);
+  cursor: pointer;
+  animation: fade-in 0.25s ease;
+}
+ul#cameraList li:hover,
+ul#cameraList li:focus-visible{
+  background: var(--accent-dim);
+}
+ul#cameraList li .tag{
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  background: var(--accent-dim);
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ---- pagination: rows past the first 10 stay hidden until expanded ---- */
+ul#cameraList li.extra{
+  display: none;
+}
+ul#cameraList.expanded li.extra{
+  display: flex;
+}
+
+#showAllToggle{
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  padding: 0.6rem 0;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: fit-content;
+}
+#showAllToggle:hover{
+  text-decoration: underline;
+}
+
+@keyframes fade-in{
+  from{ opacity: 0; transform: translateY(2px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .status .dot{ animation: none; }
+  ul#cameraList li{ animation: none; }
+}
+
+:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
