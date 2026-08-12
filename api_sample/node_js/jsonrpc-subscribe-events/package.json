@@ -1,0 +1,20 @@
+{
+  "name": "nx-jsonrpc-subscribe-events",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS JSON-RPC sample: subscribe to the live event log over WebSocket (Node.js).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "jsonrpc-subscribe-events": "./jsonrpc_subscribe_events.mjs"
+  },
+  "scripts": {
+    "start": "node jsonrpc_subscribe_events.mjs",
+    "test": "node --test test_jsonrpc_subscribe_events.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}

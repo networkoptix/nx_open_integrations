@@ -1,0 +1,13 @@
+{
+  "name": "jsonrpc-subscribe-events-cloud-user",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Nx VMS JSON-RPC sample: subscribe to the live event log over WebSocket via the Cloud relay, using a site-scoped cloud token.",
+  "scripts": {
+    "test": "node --test test_jsonrpc_subscribe_events_cloud_user.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}

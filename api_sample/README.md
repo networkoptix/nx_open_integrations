@@ -31,6 +31,8 @@ most also have a **browser** or **C#** version.
 | Pull a camera's **HTTP media stream** (live or archive) — CLIs save a clip to a file, the browser plays it in `<video>` | **media-http-stream** | [py](python/media-http-stream) | [node](node_js/media-http-stream) | [ts](typescript/media-http-stream) | [web](web/media-http-stream) | [c#](csharp/media-http-stream) | Server **or** cloud bearer (v4, `media.{format}`) |
 | Set an event rule's **schedule** (`GET` rules + `PATCH` one) | **rest-rule-schedule** | [py](python/rest-rule-schedule) | [node](node_js/rest-rule-schedule) | [ts](typescript/rest-rule-schedule) | [web](web/rest-rule-schedule-browser) | [c#](csharp/rest-rule-schedule) | Server **or** cloud bearer (v4, `events/rules`) |
 | Upload footage to a **virtual camera** | **virtual-camera-upload** | [py](python/virtual-camera-upload) | [node](node_js/virtual-camera-upload) | [ts](typescript/virtual-camera-upload) | [web](web/virtual-camera-upload-browser) | [c#](csharp/virtual-camera-upload) | Server **or** cloud bearer (v4, `devices/*/footage`) |
+| Get **live-pushed** events instead of polling | **jsonrpc-subscribe-events** | — | [node](node_js/jsonrpc-subscribe-events) | — | — | — | Server bearer (v4, JSON-RPC WebSocket) |
+| Get **live-pushed** events instead of polling, using my **cloud** account | **jsonrpc-subscribe-events-cloud-user** | — | [node](node_js/jsonrpc-subscribe-events-cloud-user) | — | — | — | Cloud token scoped by `cloudSystemId` (v4, JSON-RPC WebSocket via relay) |
 
 ## 2. Suggested learning path
 
@@ -44,6 +46,10 @@ Each sample builds on the one before it. New here? Go top to bottom:
    **scoped** token.
 6. **rest-event-log** — the most complete sample: scoped token, relay **307**
    handling, and v4 query/response parsing.
+7. **jsonrpc-subscribe-events-cloud-user** — combine steps 5 and 6 with the
+   live push feed from `jsonrpc-subscribe-events`: a scoped cloud token, the
+   relay hand-off resolved *before* the WebSocket handshake, then the same
+   subscribe/unsubscribe flow.
 
 ## 3. Catalog at a glance
 
@@ -61,6 +67,8 @@ Each sample builds on the one before it. New here? Go top to bottom:
 | `media-http-stream` | REST `/rest/v4` | Pull `media.{format}`, both auth modes — CLIs (py/node/ts/c#) save a clip to a file, browser plays it in `<video>` | ●●●● Advanced |
 | `rest-rule-schedule` | REST `/rest/v4` | `GET events/rules` + `PATCH events/rules/{id}` to set a rule's v4 structured schedule (Weekdays/Weekend/24x7 presets), both auth modes | ●●●● Advanced |
 | `virtual-camera-upload` | REST `/rest/v4` | Create a virtual camera and upload footage to it, both auth modes | ●●●● Advanced |
+| `jsonrpc-subscribe-events` | JSON-RPC (WebSocket) | Authenticate a WebSocket with `setSession`, subscribe to the live event log, receive pushed `update` notifications | ●●● Intermediate |
+| `jsonrpc-subscribe-events-cloud-user` | JSON-RPC (WebSocket) | Same as above but using scoped cloud token, and cloud relay. | ●●●● Advanced |
 
 ---
 
@@ -80,8 +88,8 @@ the `scope` you request decides the token's reach:
 - **`scope=cloudSystemId=<id>`** → a token scoped to one site, required to call
   that site's API (its cameras, its event log, …).
 
-`cdb-oauth2-list-systems` uses the no-scope token; `rest-list-cameras-cloud-user`
-and `rest-event-log` use the scoped token.
+`cdb-oauth2-list-systems` uses the no-scope token; `rest-list-cameras-cloud-user`,
+`rest-event-log`, and `jsonrpc-subscribe-events-cloud-user` use the scoped token.
 
 ## 5. The Nx APIs
 
@@ -90,6 +98,7 @@ and `rest-event-log` use the scoped token.
 | **Cloud CDB API** | The cloud database: accounts and the **Sites** registered to them. | https://nxvms.com/cdb/docs/api/v1/swagger/index.html |
 | **REST Server API (v4)** | A single VMS server/site: devices (cameras), media, events. | https://meta.nxvms.com/doc/developers/api-tool/main?type=1 |
 | **WebRTC Stream Manager** | Browser-side live video streaming (npm package). | https://www.npmjs.com/package/@networkoptix/webrtc-stream-manager |
+| **JSON-RPC (`/jsonrpc`)** | Every `rest.v4.*` REST method, callable as JSON-RPC 2.0 over HTTP (one-shot) or WebSocket (adds live `subscribe`/`unsubscribe` push notifications). | Same reference as REST Server API — see the "JSON-RPC" section |
 
 ## 6. Getting started
 
