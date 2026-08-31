@@ -1,31 +1,48 @@
+# ---------------------------------------------------------------------------
+# Nx API samples — the single ignore list for everything under api_sample/.
+# Patterns have no leading slash, so they match at ANY depth below this file.
+# Add new rules here rather than in per-folder .gitignore files.
+# ---------------------------------------------------------------------------
+
 # --- Secrets / local config ---
 .env
 *.env
 !.env.example
 
+# --- OS cruft ---
+.DS_Store
+._*
+Thumbs.db
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+.vs/
+.obsidian/
+*.swp
+
 # --- Python ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
 .venv/
 venv/
-__pycache__/
-*.pyc
-.pytest_cache/
 *.egg-info/
+.coverage
+.mypy_cache/
 
-# --- Node.js / TypeScript ---
+# --- Node.js / TypeScript / browser ---
 node_modules/
-package-lock.json
-npm-debug.log*
 dist/
 .parcel-cache/
+npm-debug.log*
+*.tsbuildinfo
+# This project deliberately does NOT commit npm lockfiles (samples are zero-dep).
+package-lock.json
 
 # --- C# / .NET ---
 bin/
 obj/
 *.user
-.vs/
-
-# --- OS / editor cruft ---
-.DS_Store
-Thumbs.db
-.obsidian/
-*.swp
+*.suo
+TestResults/
