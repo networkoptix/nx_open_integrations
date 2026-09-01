@@ -92,8 +92,24 @@ export interface LoginRequest {
   setCookie: false;
 }
 
+/**
+ * The session created by POST /rest/v4/login/sessions — and also what
+ * GET /rest/v4/login/sessions/{token} returns for an existing one.
+ *
+ * The v4 spec marks all five fields required, but only `token` is required
+ * here so that samples which parse a minimal fixture stay unaffected.
+ * rest-get-token reads the rest: `expiresInS` is the token's remaining life.
+ */
 export interface LoginResponse {
   token: string;
+  /** Session id (uuid). */
+  id?: string;
+  /** The account the session belongs to. */
+  username?: string;
+  /** Seconds since the session was created. */
+  ageS?: number;
+  /** Seconds until the session expires. */
+  expiresInS?: number;
   [key: string]: unknown;
 }
 

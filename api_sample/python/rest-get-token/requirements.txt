@@ -1,0 +1,5 @@
+# Runtime dependency: the HTTP client used by the sample.
+requests>=2.28
+
+# Dev/test dependency: the test runner. Not needed to run the sample itself.
+pytest>=7.0

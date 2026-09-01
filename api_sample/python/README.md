@@ -15,14 +15,13 @@ latest **`/rest/v4`** API.
 | [`cdb-get-token`](cdb-get-token) | One login call → a bearer token | Cloud CDB | 8 |
 | [`cdb-oauth2-list-systems`](cdb-oauth2-list-systems) | Login + list Sites, 2FA, token scope | Cloud CDB | 12 |
 | [`cdb-refresh-token`](cdb-refresh-token) | Proactive + reactive refresh, rotation, disk persistence | Cloud CDB | 13 |
+| [`rest-get-token`](rest-get-token) | Mediaserver login session: get a token, use it, revoke it | REST v4 | 23 |
 | [`rest-list-cameras`](rest-list-cameras) | Local-user login + list devices + logout | REST v4 | 10 |
 | [`rest-list-cameras-cloud-user`](rest-list-cameras-cloud-user) | Scoped cloud token + site access via the relay | REST v4 | 10 |
 | [`rest-event-log`](rest-event-log) | Scoped token, manual 307, v4 time window + parsing | REST v4 | 22 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 36 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 30 |
-
-New to these? Read them top to bottom — that's the difficulty order.
 
 ## Run any sample
 
@@ -42,12 +41,10 @@ pytest -v                                             # offline; no account or n
   mocked responses (no account, no network).
 - `argparse` flags follow **CLI > env var > `.env`** precedence; credentials are
   never hard-coded.
-- `--insecure` disables TLS verification for lab/self-signed certs.
+- `--insecure` disables TLS verification for lab/self-signed certs. With it,
+  samples also call `urllib3.disable_warnings(InsecureRequestWarning)` — an
+  insecure request is what you just asked for, so the per-request warning only
+  buries the sample's own output. Don't carry that call into production code:
+  there the warning is the point. (The Node and TypeScript ports filter Node's
+  equivalent `NODE_TLS_REJECT_UNAUTHORIZED` warning; .NET emits none.)
 - `--env-file` points at a shared `.env` (copy `../../.env.example`).
-
-## Relation to the Node samples
-
-Every folder here has a matching [`../node_js`](../node_js) port with identical
-behavior and matching offline tests, so you can compare the two languages side
-by side. The main surface difference: Python uses `--env-file`, while Node uses
-`--dotenv` (Node 20.6+ reserves `--env-file` as a built-in).

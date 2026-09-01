@@ -28,6 +28,7 @@ in one place and type-checked across all six samples.
 | [`cdb-get-token`](cdb-get-token) | One login call → a bearer token | Cloud CDB | 14 |
 | [`cdb-oauth2-list-systems`](cdb-oauth2-list-systems) | Login + `GET /cdb/systems` (your Sites), 2FA, token scope | Cloud CDB | 12 |
 | [`cdb-refresh-token`](cdb-refresh-token) | Refresh without re-sending the password; rotation + on-disk persistence | Cloud CDB | 13 |
+| [`rest-get-token`](rest-get-token) | Mediaserver login session: get a token, use it, revoke it | REST v4 | 24 |
 | [`rest-list-cameras`](rest-list-cameras) | Local-user login direct to one server + `GET /rest/v4/devices` | REST v4 | 10 |
 | [`rest-list-cameras-cloud-user`](rest-list-cameras-cloud-user) | Scoped cloud token + site access via the relay (manual 307 + bearer) | REST v4 | 10 |
 | [`rest-event-log`](rest-event-log) | Scoped token + relay 307 + event window/parsing + `--list-event-types` manifest | REST v4 | 30 |

@@ -1,0 +1,14 @@
+{
+  "name": "nx-rest-get-token-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: get a bearer token from one mediaserver over /rest/v4, use it, release it and prove it is dead, with a zero-dependency dev proxy for CORS and self-signed TLS.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_login_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

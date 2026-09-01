@@ -27,13 +27,14 @@ side-by-side runtime juggling is needed — the samples target the current LTS.
 
 ## Samples
 
-Full parity with the Python set — all nine samples.
+Full parity with the Python set — all ten samples.
 
 | Folder | What it shows | API | Tests |
 |---|---|---|---|
 | [`cdb-get-token`](cdb-get-token) | One login call → a bearer token | Cloud CDB | 14 |
 | [`cdb-oauth2-list-systems`](cdb-oauth2-list-systems) | OAuth2 login + `GET /cdb/systems` (list your Sites), 2FA, token scope | Cloud CDB | 23 |
 | [`cdb-refresh-token`](cdb-refresh-token) | Reuse a session without re-sending the password: proactive + reactive refresh, rotation, disk persistence | Cloud CDB | 21 |
+| [`rest-get-token`](rest-get-token) | Mediaserver login session: get a token, use it, revoke it | REST v4 | 33 |
 | [`rest-list-cameras`](rest-list-cameras) | Local-user login direct to one VMS server + `GET /rest/v4/devices` + logout | REST v4 | 15 |
 | [`rest-list-cameras-cloud-user`](rest-list-cameras-cloud-user) | Scoped cloud token + site access via the relay (manual 307 + bearer) | REST v4 | 15 |
 | [`rest-event-log`](rest-event-log) | Scoped token + relay 307 + event-log time window/parsing + event-type manifest | REST v4 | 32 |

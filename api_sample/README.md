@@ -21,6 +21,7 @@ most also have a **browser** or **C#** version.
 
 | I want to… | Sample | Python | Node.js | TypeScript | Browser | C# | Auth |
 |---|---|---|---|---|---|---|---|
+| Get a bearer token from a **mediaserver** (smallest server-auth example) | **rest-get-token** | [py](python/rest-get-token) | [node](node_js/rest-get-token) | [ts](typescript/rest-get-token) | [web](web/rest-get-token-browser) | [c#](csharp/rest-get-token) | Server bearer (v4) |
 | Just get a bearer token (smallest auth example) | **cdb-get-token** | [py](python/cdb-get-token) | [node](node_js/cdb-get-token) | [ts](typescript/cdb-get-token) | [web](web/cdb-get-token-browser) | [c#](csharp/cdb-get-token) | OAuth2 bearer |
 | Reuse a login without re-sending the password | **cdb-refresh-token** | [py](python/cdb-refresh-token) | [node](node_js/cdb-refresh-token) | [ts](typescript/cdb-refresh-token) | [web](web/cdb-refresh-token-browser) | [c#](csharp/cdb-refresh-token) | OAuth2 refresh |
 | Confirm my cloud login + see my Sites | **cdb-oauth2-list-systems** | [py](python/cdb-oauth2-list-systems) | [node](node_js/cdb-oauth2-list-systems) | [ts](typescript/cdb-oauth2-list-systems) | [web](web/cdb-oauth2-list-systems-browser) | [c#](csharp/cdb-oauth2-list-systems) | OAuth2 bearer |
@@ -41,12 +42,15 @@ Each sample builds on the one before it. New here? Go top to bottom:
 1. **cdb-get-token** — authenticate and nothing else. Understand the bearer token.
 2. **cdb-oauth2-list-systems** — use that token for a real call; see your Sites.
 3. **cdb-refresh-token** — keep a session alive without re-sending the password.
-4. **rest-list-cameras** — leave the cloud; talk to one VMS server directly (v4).
-5. **rest-list-cameras-cloud-user** — reach a site through the cloud relay with a
+4. **rest-get-token** — leave the cloud: get a token from a mediaserver, use it,
+   revoke it. The server-side counterpart of #1.
+5. **rest-list-cameras** — the same login, now put to work: talk to one VMS
+   server directly (v4).
+6. **rest-list-cameras-cloud-user** — reach a site through the cloud relay with a
    **scoped** token.
-6. **rest-event-log** — the most complete sample: scoped token, relay **307**
+7. **rest-event-log** — the most complete sample: scoped token, relay **307**
    handling, and v4 query/response parsing.
-7. **jsonrpc-subscribe-events-cloud-user** — combine steps 5 and 6 with the
+8. **jsonrpc-subscribe-events-cloud-user** — combine steps 6 and 7 with the
    live push feed from `jsonrpc-subscribe-events`: a scoped cloud token, the
    relay hand-off resolved *before* the WebSocket handshake, then the same
    subscribe/unsubscribe flow.
@@ -55,6 +59,8 @@ Each sample builds on the one before it. New here? Go top to bottom:
 
 | Sample | API | What it shows | Difficulty |
 |---|---|---|---|
+| `rest-get-token` | REST `/rest/v4` | The mediaserver login session end to end: `POST login/sessions` → use the token on `GET login/sessions/current` → `DELETE` to revoke it → show it is rejected. All five languages | ● Starter |
+| `rest-get-token-browser` | REST `/rest/v4` | The same four steps in the browser, as a timeline — plus why a page needs the dev proxy at all | ●● Easy |
 | `cdb-get-token` | Cloud CDB | One login call → a bearer token | ● Starter |
 | `cdb-oauth2-list-systems` | Cloud CDB | Login + `GET /cdb/systems`, 2FA, token scope | ●● Easy |
 | `cdb-refresh-token` | Cloud CDB | Proactive + reactive refresh, rotation, disk persistence | ●●● Intermediate |
