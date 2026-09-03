@@ -1,10 +1,14 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 // Offline tests for the virtual-camera-upload sample. No account, no network: the
 // HTTP layer is a fake handler that records each request and returns scripted
-// responses, so we can prove the create -> lock -> create-upload -> chunk PUTs ->
-// status -> release flow. There is NO consume call. durationMs is OPTIONAL: sent
-// only when the caller supplies a positive value; otherwise the server derives
-// the clip's duration from the uploaded file's own metadata.
+// responses, so we can prove the create -> create-upload -> chunk PUTs -> upload
+// status -> lock -> consume -> extend(poll) -> release flow.
+//
+// The bytes go up BEFORE any lock; the lock only covers the import (consume).
+// A failure once the upload exists cancels it (DELETE .../uploads/{uploadId})
+// before releasing a lock, if one was held. durationMs is OPTIONAL: sent only
+// when the caller supplies a positive value; otherwise the server derives the
+// clip's duration from the uploaded file's own metadata.
 
 using System.Net;
 using System.Security.Cryptography;
@@ -20,15 +24,29 @@ internal sealed record Call(string Method, string Url, string? Auth, byte[] Body
 }
 
 /// <summary>Records every request; returns a scripted response per call index. If
-/// the queue runs dry it reuses the last response (handy for the many chunk PUTs).</summary>
+/// the queue runs dry it reuses the last one (handy for the many chunk PUTs and
+/// the repeated extend polls).
+///
+/// The scripted responses are captured as templates (status + body + media type)
+/// and a FRESH HttpResponseMessage is built for each call, because the client
+/// disposes every response it reads — replaying the same instance twice would
+/// throw.</summary>
 internal sealed class RecordingHandler : HttpMessageHandler
 {
-    private readonly IReadOnlyList<HttpResponseMessage> _responses;
+    private readonly List<(HttpStatusCode Code, string Body, string? MediaType)> _templates = new();
     private int _index;
     public List<Call> Calls { get; } = new();
 
     public RecordingHandler(params HttpResponseMessage[] responses)
-        => _responses = responses;
+    {
+        foreach (HttpResponseMessage response in responses)
+        {
+            // StringContent reads complete synchronously, so this never blocks.
+            string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            _templates.Add((response.StatusCode, body, response.Content.Headers.ContentType?.MediaType));
+            response.Dispose();
+        }
+    }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
@@ -44,10 +62,23 @@ internal sealed class RecordingHandler : HttpMessageHandler
             ContentType = request.Content?.Headers.ContentType?.MediaType,
         });
 
-        int i = _index < _responses.Count ? _index : _responses.Count - 1;
+        if (_templates.Count == 0)
+        {
+            return Fresh(HttpStatusCode.OK, "{}", "application/json");
+        }
+        int i = _index < _templates.Count ? _index : _templates.Count - 1;
         _index++;
-        return _responses.Count == 0 ? Responses.Ok("{}") : _responses[i];
+        var template = _templates[i];
+        return Fresh(template.Code, template.Body, template.MediaType);
     }
+
+    private static HttpResponseMessage Fresh(HttpStatusCode code, string body, string? mediaType)
+        => new(code)
+        {
+            Content = mediaType is null
+                ? new StringContent(body)
+                : new StringContent(body, Encoding.UTF8, mediaType),
+        };
 }
 
 internal static class Responses
@@ -57,6 +88,23 @@ internal static class Responses
 
     public static HttpResponseMessage Status(HttpStatusCode code, string body = "")
         => new(code) { Content = new StringContent(body) };
+}
+
+/// <summary>A controllable stand-in for the clock and the delay used by
+/// WaitForConsumeAsync, so the poll loop can be tested without any real waiting.</summary>
+internal sealed class FakeClock
+{
+    public double Now { get; private set; }
+    public List<double> Delays { get; } = new();
+
+    public double Seconds() => Now;
+
+    public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        Delays.Add(delay.TotalSeconds);
+        Now += delay.TotalSeconds;
+        return Task.CompletedTask;
+    }
 }
 
 internal static class TestHelpers
@@ -296,6 +344,26 @@ public class ParseLockTokenTests
         => Assert.Throws<ApiException>(() => NxVirtualCameraClient.ParseLockToken("{\"nope\":1}"));
 }
 
+public class ParseLockProgressTests
+{
+    [Fact]
+    public void ReadsLockInfoProgress()
+        => Assert.Equal(42, NxVirtualCameraClient.ParseLockProgress(
+            "{\"id\":\"d1\",\"lockInfo\":{\"token\":\"t\",\"progress\":42}}"));
+
+    [Fact]
+    public void MissingUsesDefault()
+    {
+        Assert.Equal(7, NxVirtualCameraClient.ParseLockProgress("{\"id\":\"d1\"}", defaultValue: 7));
+        Assert.Equal(0, NxVirtualCameraClient.ParseLockProgress("{}"));
+    }
+
+    [Fact]
+    public void NonNumericUsesDefault()
+        => Assert.Equal(5, NxVirtualCameraClient.ParseLockProgress(
+            "{\"lockInfo\":{\"progress\":\"not-a-number\"}}", defaultValue: 5));
+}
+
 public class ParseUploadItemTests
 {
     [Fact]
@@ -334,6 +402,26 @@ public class ParseUploadItemTests
     }
 }
 
+public class ParseUploadProgressTests
+{
+    [Fact]
+    public void ReadsField()
+        => Assert.Equal(63, NxVirtualCameraClient.ParseUploadProgress("{\"uploadProgressPercent\":63}"));
+
+    [Fact]
+    public void MissingDefaultsTo100()
+    {
+        // Chunk PUTs are synchronous, so no field present after a clean upload
+        // loop is treated as "done", not "unknown".
+        Assert.Equal(100, NxVirtualCameraClient.ParseUploadProgress("{}"));
+    }
+
+    [Fact]
+    public void NonNumericUsesDefault()
+        => Assert.Equal(11, NxVirtualCameraClient.ParseUploadProgress(
+            "{\"uploadProgressPercent\":\"oops\"}", defaultValue: 11));
+}
+
 // ---------------------------------------------------------------------------
 // Client: login
 // ---------------------------------------------------------------------------
@@ -364,6 +452,68 @@ public class LoginTests
 }
 
 // ---------------------------------------------------------------------------
+// WaitForConsumeAsync (the extend-poll loop)
+// ---------------------------------------------------------------------------
+
+public class WaitForConsumeTests
+{
+    [Fact]
+    public async Task PollsUntil100()
+    {
+        var handler = new RecordingHandler(
+            Responses.Ok("{\"lockInfo\":{\"progress\":30}}"),
+            Responses.Ok("{\"lockInfo\":{\"progress\":70}}"),
+            Responses.Ok("{\"lockInfo\":{\"progress\":100}}"));
+        var client = TestHelpers.MakeClient(handler);
+        var clock = new FakeClock();
+        var seen = new List<string>();
+
+        int progress = await Orchestrator.WaitForConsumeAsync(
+            client, "{dev-1}", "lock-1", ttlMs: 60000,
+            pollIntervalSeconds: 2, consumeTimeoutSeconds: 300,
+            delayAsync: clock.DelayAsync, clockSeconds: clock.Seconds,
+            onProgress: seen.Add);
+
+        Assert.Equal(100, progress);
+        Assert.Equal(3, handler.Calls.Count);
+        Assert.All(handler.Calls, c => Assert.Equal("PATCH", c.Method));
+        Assert.All(handler.Calls,
+            c => Assert.Equal(TestHelpers.Host + "/rest/v4/devices/{dev-1}/virtual/extend", c.Url));
+        Assert.All(handler.Calls, c => Assert.Contains("\"ttlMs\":60000", c.Body));
+        Assert.All(handler.Calls, c => Assert.Contains("\"token\":\"lock-1\"", c.Body));
+        Assert.Equal(new[] { 2.0, 2.0, 2.0 }, clock.Delays);
+        Assert.Equal(
+            new[] { "Consume progress: 30%", "Consume progress: 70%", "Consume progress: 100%" },
+            seen);
+    }
+
+    [Fact]
+    public async Task TimesOut()
+    {
+        // Progress never moves past 40, so the deadline is what ends the loop.
+        var handler = new RecordingHandler(Responses.Ok("{\"lockInfo\":{\"progress\":40}}"));
+        var client = TestHelpers.MakeClient(handler);
+        var clock = new FakeClock();
+
+        ApiException ex = await Assert.ThrowsAsync<ApiException>(
+            () => Orchestrator.WaitForConsumeAsync(
+                client, "{dev-1}", "lock-1", ttlMs: 60000,
+                pollIntervalSeconds: 2, consumeTimeoutSeconds: 5,
+                delayAsync: clock.DelayAsync, clockSeconds: clock.Seconds));
+
+        Assert.Contains("Consume did not reach 100%", ex.Message);
+        Assert.Contains("last progress: 40%", ex.Message);
+        // The fake clock only advances when the loop "sleeps": a 5s budget at a 2s
+        // interval fits three polls (t=2, 4, 6) before the deadline check trips.
+        Assert.Equal(3, handler.Calls.Count);
+        Assert.All(handler.Calls, c => Assert.EndsWith("/virtual/extend", c.Url));
+        Assert.Equal(new[] { 2.0, 2.0, 2.0 }, clock.Delays);
+        // No lock is released here: WaitForConsumeAsync only polls.
+        Assert.DoesNotContain(handler.Calls, c => c.Url.EndsWith("/virtual/release"));
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Full happy-path orchestration: exact call sequence
 // ---------------------------------------------------------------------------
 
@@ -381,48 +531,54 @@ public class OrchestrationTests
         try
         {
             // Scripted responses in the exact order the client issues requests:
-            // POST create -> PATCH lock -> POST create-upload -> PUT x3 -> GET status -> PATCH release.
+            // POST create -> POST create-upload -> PUT x3 -> GET status ->
+            // PATCH lock -> PATCH consume -> PATCH extend -> PATCH release.
             var handler = new RecordingHandler(
-                Responses.Ok("{\"id\":\"{dev-1}\"}"),                                  // create virtual
-                Responses.Ok("{\"lockInfo\":{\"token\":\"lock-1\"}}"),                 // lock
-                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mkv\",\"chunkSizeB\":100}]}"), // create upload
-                Responses.Ok("{}"),                                                    // PUT chunk 0
-                Responses.Ok("{}"),                                                    // PUT chunk 1
-                Responses.Ok("{}"),                                                    // PUT chunk 2
-                Responses.Ok("{\"status\":\"consuming\"}"),                            // GET status
-                Responses.Ok("{}"));                                                   // PATCH release
+                Responses.Ok("{\"id\":\"{dev-1}\"}"),                                          // create virtual
+                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mkv\",\"chunkSizeB\":100}]}"),  // create upload
+                Responses.Ok("{}"),                                                            // PUT chunk 0
+                Responses.Ok("{}"),                                                            // PUT chunk 1
+                Responses.Ok("{}"),                                                            // PUT chunk 2
+                Responses.Ok("{\"uploadProgressPercent\":100}"),                               // GET upload status
+                Responses.Ok("{\"lockInfo\":{\"token\":\"lock-1\"}}"),                         // lock
+                Responses.Ok("{\"lockInfo\":{\"token\":\"lock-1\"}}"),                         // consume
+                Responses.Ok("{\"lockInfo\":{\"progress\":100}}"),                             // extend (poll)
+                Responses.Ok("{}"));                                                           // release
 
             var client = TestHelpers.MakeClient(handler);
+            var clock = new FakeClock();
 
             UploadResult result = await Orchestrator.UploadVideoAsync(
                 client, path, name: "Cam", startTimeMs: 1700000000000,
-                ttlMs: 300000, requestedChunkSize: 1048576, durationMs: 30000);
+                ttlMs: 300000, requestedChunkSize: 1048576, durationMs: 30000,
+                pollIntervalSeconds: 2, consumeTimeoutSeconds: 300,
+                delayAsync: clock.DelayAsync, clockSeconds: clock.Seconds);
 
-            // The uploadId echoed by the server happens to be "clip.mkv" here.
+            // The uploadId echoed by the server happens to be "clip.mkv" here; it is
+            // NOT the local file's name (that is clip-<guid>.mkv).
             string baseUrl = TestHelpers.Host + "/rest/v4/devices";
             var methodsUrls = handler.Calls.Select(c => (c.Method, c.Url)).ToList();
-            // No deprecated /virtual/consume call: status is read from the uploads
-            // endpoint and the import auto-starts on completion.
             Assert.Equal(new (string, string)[]
             {
                 ("POST", baseUrl + "/*/virtual"),
-                ("PATCH", baseUrl + "/{dev-1}/virtual/lock"),
                 ("POST", baseUrl + "/{dev-1}/virtual/uploads"),
                 ("PUT", baseUrl + "/{dev-1}/virtual/uploads/clip.mkv?chunk=0"),
                 ("PUT", baseUrl + "/{dev-1}/virtual/uploads/clip.mkv?chunk=1"),
                 ("PUT", baseUrl + "/{dev-1}/virtual/uploads/clip.mkv?chunk=2"),
                 ("GET", baseUrl + "/{dev-1}/virtual/uploads/clip.mkv"),
+                ("PATCH", baseUrl + "/{dev-1}/virtual/lock"),
+                ("PATCH", baseUrl + "/{dev-1}/virtual/consume"),
+                ("PATCH", baseUrl + "/{dev-1}/virtual/extend"),
                 ("PATCH", baseUrl + "/{dev-1}/virtual/release"),
             }, methodsUrls);
 
-            // No consume URL anywhere.
-            Assert.DoesNotContain(handler.Calls, c => c.Url.Contains("/virtual/consume"));
+            // Nothing was cancelled on a clean run.
+            Assert.DoesNotContain(handler.Calls, c => c.Method == "DELETE");
 
             // Bodies on the way through.
             Assert.Contains("\"name\":\"Cam\"", handler.Calls[0].Body);
-            Assert.Contains("\"ttlMs\":300000", handler.Calls[1].Body);
 
-            string createUploadBody = handler.Calls[2].Body;
+            string createUploadBody = handler.Calls[1].Body;
             // filename is the real file's basename (clip-<guid>.mkv); "clip.mkv" is
             // only the server-echoed uploadId, which lives in the PUT/GET URLs.
             Assert.Contains("\"filename\":\"" + Path.GetFileName(path) + "\"", createUploadBody);
@@ -437,15 +593,29 @@ public class OrchestrationTests
             Assert.Equal(new[] { 100, 100, 50 }, puts.Select(p => p.BodyBytes.Length));
             Assert.All(puts, p => Assert.Equal("application/octet-stream", p.ContentType));
 
-            // Release body carries the lock token.
-            Assert.Contains("\"token\":\"lock-1\"", handler.Calls[7].Body);
+            // lock / consume / extend / release bodies.
+            Assert.Contains("\"ttlMs\":300000", handler.Calls[6].Body);
+
+            string consumeBody = handler.Calls[7].Body;
+            Assert.Contains("\"token\":\"lock-1\"", consumeBody);
+            Assert.Contains("\"uploadId\":\"clip.mkv\"", consumeBody);
+            Assert.Contains("\"startTimeMs\":1700000000000", consumeBody);
+
+            string extendBody = handler.Calls[8].Body;
+            Assert.Contains("\"ttlMs\":300000", extendBody);
+            Assert.Contains("\"token\":\"lock-1\"", extendBody);
+
+            Assert.Contains("\"token\":\"lock-1\"", handler.Calls[9].Body);
 
             // Bearer attached to every authenticated call.
             Assert.All(handler.Calls, c => Assert.Equal("Bearer tok", c.Auth));
 
             Assert.Equal("{dev-1}", result.DeviceId);
+            Assert.Equal("clip.mkv", result.UploadId);
             Assert.Equal(3, result.ChunkCount);
             Assert.Equal(100, result.ChunkSizeB);
+            Assert.Equal(250L, result.SizeB);
+            Assert.Equal(100, result.ConsumeProgress);
         }
         finally
         {
@@ -463,21 +633,25 @@ public class OrchestrationTests
         try
         {
             var handler = new RecordingHandler(
-                Responses.Ok("{\"token\":\"L\"}"),                          // lock (top-level token)
-                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mp4\"}]}"),  // create upload
+                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mp4\"}]}"),  // create upload (FIRST call)
                 Responses.Ok("{}"),                                          // PUT chunk 0
-                Responses.Ok("{}"),                                          // GET status
-                Responses.Ok("{}"));                                         // PATCH release
+                Responses.Ok("{\"uploadProgressPercent\":100}"),             // GET upload status
+                Responses.Ok("{\"token\":\"L\"}"),                           // lock (top-level token)
+                Responses.Ok("{}"),                                          // consume
+                Responses.Ok("{\"lockInfo\":{\"progress\":100}}"),           // extend
+                Responses.Ok("{}"));                                         // release
 
             var client = TestHelpers.MakeClient(handler);
+            var clock = new FakeClock();
 
             await Orchestrator.UploadVideoAsync(
                 client, path, name: "ignored", startTimeMs: 1, ttlMs: 1000,
-                requestedChunkSize: 1024, deviceId: "{existing}");
+                requestedChunkSize: 1024, deviceId: "{existing}",
+                delayAsync: clock.DelayAsync, clockSeconds: clock.Seconds);
 
             string baseUrl = TestHelpers.Host + "/rest/v4/devices";
-            // No create-virtual POST; first call is the lock.
-            Assert.Equal(("PATCH", baseUrl + "/{existing}/virtual/lock"),
+            // No create-virtual POST; the first call is the create-upload POST.
+            Assert.Equal(("POST", baseUrl + "/{existing}/virtual/uploads"),
                 (handler.Calls[0].Method, handler.Calls[0].Url));
             Assert.DoesNotContain(handler.Calls, c => c.Url == baseUrl + "/*/virtual");
         }
@@ -496,8 +670,105 @@ public class OrchestrationTests
     }
 
     [Fact]
-    public async Task ReleaseCalledEvenWhenAStepFails()
+    public async Task FailureBeforeLockCancelsUploadAndSkipsRelease()
     {
+        // The upload-status GET fails before any lock is acquired: cancel the
+        // upload, but there is no lock token yet so nothing may be released.
+        byte[] data = Enumerable.Repeat((byte)'z', 10).ToArray();
+        string path = Path.Combine(Path.GetTempPath(), $"clip-{Guid.NewGuid():N}.mkv");
+        File.WriteAllBytes(path, data);
+
+        try
+        {
+            var handler = new RecordingHandler(
+                Responses.Ok("{\"id\":\"{dev-9}\"}"),                                 // create virtual
+                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mkv\"}]}"),            // create upload
+                Responses.Ok("{}"),                                                   // PUT chunk 0
+                Responses.Status(HttpStatusCode.InternalServerError, "status boom"),  // GET status FAILS
+                Responses.Ok("{}"));                                                  // DELETE cancel
+
+            var client = TestHelpers.MakeClient(handler);
+
+            await Assert.ThrowsAsync<ApiException>(() => Orchestrator.UploadVideoAsync(
+                client, path, name: "Cam", startTimeMs: 1, ttlMs: 1000, requestedChunkSize: 1024));
+
+            // lock / consume / extend / release were never reached.
+            Assert.DoesNotContain(handler.Calls, c => c.Method == "PATCH");
+
+            var deletes = handler.Calls.Where(c => c.Method == "DELETE").ToList();
+            Assert.Single(deletes);
+            Assert.Equal(TestHelpers.Host + "/rest/v4/devices/{dev-9}/virtual/uploads/clip.mkv",
+                deletes[0].Url);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task ConsumeFailureCancelsUploadAndStillReleases()
+    {
+        // Consume never reaches 100% and times out after the lock was acquired:
+        // expect exactly one cancel-upload DELETE and exactly one release, with
+        // the DELETE first.
+        byte[] data = Enumerable.Repeat((byte)'z', 10).ToArray();
+        string path = Path.Combine(Path.GetTempPath(), $"clip-{Guid.NewGuid():N}.mkv");
+        File.WriteAllBytes(path, data);
+
+        try
+        {
+            // Every response after `consume` is a 200 with a stuck-at-10% body: the
+            // handler reuses the last template once the script runs out, which
+            // covers however many extend polls fit in the timeout, plus the DELETE
+            // and the release (both ignore the body, they only need a 2xx).
+            var handler = new RecordingHandler(
+                Responses.Ok("{\"id\":\"{dev-9}\"}"),                       // create virtual
+                Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mkv\"}]}"),  // create upload
+                Responses.Ok("{}"),                                          // PUT chunk 0
+                Responses.Ok("{\"uploadProgressPercent\":100}"),             // GET upload status
+                Responses.Ok("{\"lockInfo\":{\"token\":\"lock-9\"}}"),       // lock OK
+                Responses.Ok("{}"),                                          // consume OK
+                Responses.Ok("{\"lockInfo\":{\"progress\":10}}"));           // extend: stuck at 10%
+
+            var client = TestHelpers.MakeClient(handler);
+            var clock = new FakeClock();
+
+            await Assert.ThrowsAsync<ApiException>(() => Orchestrator.UploadVideoAsync(
+                client, path, name: "Cam", startTimeMs: 1, ttlMs: 1000,
+                requestedChunkSize: 1024,
+                pollIntervalSeconds: 2, consumeTimeoutSeconds: 5,
+                delayAsync: clock.DelayAsync, clockSeconds: clock.Seconds));
+
+            string baseUrl = TestHelpers.Host + "/rest/v4/devices";
+
+            var deletes = handler.Calls.Where(c => c.Method == "DELETE").ToList();
+            Assert.Single(deletes);
+            Assert.Equal(baseUrl + "/{dev-9}/virtual/uploads/clip.mkv", deletes[0].Url);
+
+            var releases = handler.Calls
+                .Where(c => c.Method == "PATCH" && c.Url.EndsWith("/virtual/release"))
+                .ToList();
+            Assert.Single(releases);
+            Assert.Contains("\"token\":\"lock-9\"", releases[0].Body);
+
+            // The cancel happens BEFORE the release.
+            int deleteIndex = handler.Calls.IndexOf(deletes[0]);
+            int releaseIndex = handler.Calls.IndexOf(releases[0]);
+            Assert.True(deleteIndex >= 0 && deleteIndex < releaseIndex,
+                $"expected the DELETE (index {deleteIndex}) before the release (index {releaseIndex}).");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task IncompleteUploadStatusThrowsBeforeLocking()
+    {
+        // The server reports the raw upload itself is not fully received: fail fast
+        // instead of locking and consuming a partial file.
         byte[] data = Enumerable.Repeat((byte)'z', 10).ToArray();
         string path = Path.Combine(Path.GetTempPath(), $"clip-{Guid.NewGuid():N}.mkv");
         File.WriteAllBytes(path, data);
@@ -506,24 +777,21 @@ public class OrchestrationTests
         {
             var handler = new RecordingHandler(
                 Responses.Ok("{\"id\":\"{dev-9}\"}"),                       // create virtual
-                Responses.Ok("{\"lockInfo\":{\"token\":\"lock-9\"}}"),      // lock OK
                 Responses.Ok("{\"items\":[{\"uploadId\":\"clip.mkv\"}]}"),  // create upload
                 Responses.Ok("{}"),                                          // PUT chunk 0
-                Responses.Status(HttpStatusCode.InternalServerError, "status boom"), // GET status FAILS
-                Responses.Ok("{}"));                                         // PATCH release still runs
+                Responses.Ok("{\"uploadProgressPercent\":42}"),              // GET status: only 42%
+                Responses.Ok("{}"));                                         // DELETE cancel
 
             var client = TestHelpers.MakeClient(handler);
 
-            await Assert.ThrowsAsync<ApiException>(() => Orchestrator.UploadVideoAsync(
-                client, path, name: "Cam", startTimeMs: 1, ttlMs: 1000, requestedChunkSize: 1024));
+            ApiException ex = await Assert.ThrowsAsync<ApiException>(
+                () => Orchestrator.UploadVideoAsync(
+                    client, path, name: "Cam", startTimeMs: 1, ttlMs: 1000,
+                    requestedChunkSize: 1024));
 
-            string baseUrl = TestHelpers.Host + "/rest/v4/devices";
-            var releaseCalls = handler.Calls
-                .Where(c => c.Method == "PATCH" && c.Url.EndsWith("/release"))
-                .ToList();
-            Assert.Single(releaseCalls);
-            Assert.Equal(baseUrl + "/{dev-9}/virtual/release", releaseCalls[0].Url);
-            Assert.Contains("\"token\":\"lock-9\"", releaseCalls[0].Body);
+            Assert.Contains("uploadProgressPercent=42", ex.Message);
+            Assert.DoesNotContain(handler.Calls, c => c.Method == "PATCH");
+            Assert.Single(handler.Calls.Where(c => c.Method == "DELETE"));
         }
         finally
         {
@@ -602,7 +870,26 @@ public class ConfigTests
         Assert.Equal("https://srv:7001", a.Host);
         Assert.True(a.Insecure);
         Assert.True(a.Debug);
+        // Not given -> left null so the defaults in Program.cs apply.
+        Assert.Null(a.PollInterval);
+        Assert.Null(a.ConsumeTimeout);
     }
+
+    [Fact]
+    public void ParsesPollIntervalAndConsumeTimeout()
+    {
+        var a = Config.ParseArgs(new[]
+        {
+            "--file", "clip.mkv", "--poll-interval", "0.5", "--consume-timeout=600",
+        });
+        Assert.Equal(0.5, a.PollInterval);
+        Assert.Equal(600.0, a.ConsumeTimeout);
+    }
+
+    [Fact]
+    public void NonNumericPollIntervalThrows()
+        => Assert.Throws<ArgumentException>(
+            () => Config.ParseArgs(new[] { "--poll-interval", "soon" }));
 
     [Fact]
     public void UnknownArgThrows()

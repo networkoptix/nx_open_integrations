@@ -21,7 +21,21 @@ latest **`/rest/v4`** API.
 | [`rest-event-log`](rest-event-log) | Scoped token, manual 307, v4 time window + parsing | REST v4 | 22 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 36 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
-| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 30 |
+| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 42 |
+
+New to these? Read them top to bottom — that's the difficulty order.
+
+## Other Python samples (outside the shared catalog)
+
+These two have no port in the other languages yet, so they are not in the table
+above.
+
+- [`rest-configure-system-via-api`](rest-configure-system-via-api) — first-time
+  setup for one VMS server/site: set its name and local admin password, and
+  optionally connect it to the Cloud.
+- [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) — drive a PTZ
+  (Pan-Tilt-Zoom) camera on one server/site, local or cloud-relayed: report the
+  camera's PTZ capabilities, then issue the requested command.
 
 ## Run any sample
 

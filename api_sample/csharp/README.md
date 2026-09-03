@@ -17,14 +17,6 @@ If `dotnet` is missing, install the latest SDK (`brew install dotnet` on macOS, 
 download from https://dotnet.microsoft.com/download). No roll-forward or
 side-by-side runtime juggling is needed — the samples target the current LTS.
 
-> **Heads-up on verification:** these C# samples were authored in an
-> environment **without the .NET SDK**, so `dotnet build` / `dotnet test` were
-> not run there. `cdb-get-token` and `rest-list-cameras-cloud-user` build clean
-> on .NET 10 locally; the other four are newly ported and await a local
-> `dotnet test`. The code follows standard .NET patterns and the tests use only
-> xUnit + a fake `HttpMessageHandler` — run `dotnet test` locally to confirm
-> green. (The Python and Node samples in this repo *were* run green.)
-
 ## Samples
 
 Full parity with the Python set — all ten samples.
@@ -40,7 +32,7 @@ Full parity with the Python set — all ten samples.
 | [`rest-event-log`](rest-event-log) | Scoped token + relay 307 + event-log time window/parsing + event-type manifest | REST v4 | 32 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 30 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
-| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 40 |
+| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 52 |
 
 ## Project layout (per sample)
 
@@ -76,9 +68,3 @@ dotnet test                                    # offline; no account or network
   manually with the bearer re-attached** (.NET drops `Authorization` on a
   cross-host redirect, so `AllowAutoRedirect = false`).
 - `--insecure` disables TLS verification for lab/self-signed certs.
-
-## Relation to the other languages
-
-Each folder mirrors the matching [`../python`](../python) and [`../node_js`](../node_js)
-sample with the same behavior and matching offline tests. C# uses `--env-file`
-(like Python; Node uses `--dotenv`).

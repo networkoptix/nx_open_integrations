@@ -6,44 +6,43 @@ its archive as recorded footage. A virtual camera has no real RTSP source; you
 push it pre-recorded media and the server ingests it as if it had been captured
 at the given time.
 
-Python sample on the latest /rest/v4 API. Uses `requests` and reads the file in
-chunks, so a large clip is never slurped into memory all at once.
-
-Auth is DIRECT to ONE server with a LOCAL server account, exactly like
-../rest-list-cameras:
-  NX_SERVER_HOST / NX_SERVER_USER / NX_SERVER_PASSWORD
-
 THE VIRTUAL-CAMERA UPLOAD FLOW (from docs/v4_api_spec.json):
 
   1. Log in:    POST   {server}/rest/v4/login/sessions  {username, password}
                   -> {"token": ...}
   2. Create:    POST   {server}/rest/v4/devices/*/virtual  {"name": ...}
                   -> the new device (read its "id")          [skip with --device-id]
-  3. Lock:      PATCH  {server}/rest/v4/devices/{id}/virtual/lock  {"ttlMs": ...}
-                  -> token at lockInfo.token ({id, lockInfo:{token, ...}})
-  4. Create upload: POST {server}/rest/v4/devices/{id}/virtual/uploads
-                  {"items": [{filename, sizeB, md5, startTimeMs, chunkSizeB}]}
-                  -> per-item info incl. the chunkSizeB the server wants
-                  (startTimeMs is declared HERE, not at a consume step)
-  5. Upload bytes:  PUT  {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
+
+  -- Upload the file to the server (no lock needed for this part) --
+  3. Create upload: POST {server}/rest/v4/devices/{id}/virtual/uploads
+                  {"items": [{filename, sizeB, md5, startTimeMs, durationMs,
+                              chunkSizeB}]}
+                  -> per-item info incl. the chunkSizeB the server wants and the
+                  server-assigned uploadId
+  4. Upload bytes:  PUT  {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
                   raw chunk bytes, Content-Type: application/octet-stream
-  6. Status:    GET    {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
-                  -> the import auto-starts once all chunks arrive; this reports it
-                  (PATCH .../virtual/consume is DEPRECATED -- not used)
-  7. Release:   PATCH  {server}/rest/v4/devices/{id}/virtual/release  {"token": <lock>}
+  5. Status:    GET    {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
+                  -> confirms uploadProgressPercent reached 100 (all bytes received)
+
+  -- Import the uploaded file into the virtual camera's archive --
+  6. Lock:      PATCH  {server}/rest/v4/devices/{id}/virtual/lock  {"ttlMs": ...}
+                  -> token at lockInfo.token ({id, lockInfo:{token, ...}})
+  7. Consume:   PATCH  {server}/rest/v4/devices/{id}/virtual/consume
+                  {"token": <lock>, "uploadId": ..., "startTimeMs": ...}
+                  -> starts importing the already-uploaded file as camera footage
+  8. Poll:      PATCH  {server}/rest/v4/devices/{id}/virtual/extend
+                  {"token": <lock>, "ttlMs": ...}
+                  -> renews the lock AND reports lockInfo.progress (0-100); call
+                  this repeatedly until progress reaches 100
+  9. Release:   PATCH  {server}/rest/v4/devices/{id}/virtual/release  {"token": <lock>}
                   (always run, even on error, so the lock is freed)
   + Log out:    DELETE {server}/rest/v4/login/sessions/<token>
 
-The `/*/` in step 2 is the current-server wildcard -- it is part of the path, not
-a placeholder. The uploadId used in steps 5/6 is the server-returned uploadId, or
-the file's name if none is echoed.
+  On any failure after the upload exists, we best-effort cancel it first:
+  DELETE {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId} (valid while
+  the upload is "uploading or consuming") -- so a failed run does not leave an
+  orphaned upload/consume in progress on the server.
 
-Connecting to the server:
-  --server-host is the server, e.g. https://192.168.1.10:7001 (https + port).
-  Local servers usually present a self-signed certificate, so for a lab server
-  you will typically need --insecure.
-
-Reference: https://meta.nxvms.com/doc/developers/api-tool/main?type=1
 """
 
 import argparse
@@ -53,6 +52,7 @@ import hashlib
 import os
 import re
 import sys
+import time
 
 import requests
 
@@ -65,6 +65,10 @@ DEFAULT_TTL_S = 300
 DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1 MiB
 # Size of the reads used while hashing the file (bytes).
 HASH_READ_SIZE = 1024 * 1024
+# How often to poll `.../virtual/extend` while waiting for consume to finish,
+# and how long to wait before giving up.
+DEFAULT_POLL_INTERVAL_S = 2
+DEFAULT_CONSUME_TIMEOUT_S = 300
 
 
 # ---------------------------------------------------------------------------
@@ -153,10 +157,11 @@ def build_items_payload(filename, size_b, md5_b64, start_time_ms, chunk_size_b,
                         duration_ms=None):
     """Build the {"items": [...]} body for the create-upload request.
 
-    startTimeMs is declared HERE (at create-upload), not at a separate consume
-    step: the modern v4 flow drops the deprecated `.../virtual/consume` call and
-    starts the import automatically once all chunks reach `.../virtual/uploads/
-    {uploadId}`.
+    startTimeMs and durationMs are required by the create-upload schema even
+    though startTimeMs is ALSO passed again at the consume step below: the
+    create-upload call reserves the archive period for this file, and consume
+    is what actually triggers the import of the already-uploaded bytes into
+    that period.
 
     durationMs is OPTIONAL: when known, the server uses it to reserve the
     archive period; when omitted, the server tries to derive the duration from
@@ -201,10 +206,10 @@ def parse_device_id(data):
 
 
 def parse_lock_token(data):
-    """Pull the lock token from a lock response, defensively.
+    """Pull the lock token from a lock/consume/extend response, defensively.
 
-    The v4 lock reply is shaped { "id": ..., "lockInfo": { "token": ..., ... } },
-    so the token lives under "lockInfo". Older/edge shapes may put it at the top
+    The v4 reply is shaped { "id": ..., "lockInfo": { "token": ..., ... } }, so
+    the token lives under "lockInfo". Older/edge shapes may put it at the top
     level, so we check both.
     """
     data = _unwrap(data)
@@ -216,6 +221,21 @@ def parse_lock_token(data):
         if token:
             return token
     raise ApiError("Lock response did not contain a token.")
+
+
+def parse_lock_progress(data, default=0):
+    """Pull lockInfo.progress (consume progress, 0-100) from a lock/consume/
+    extend response, defensively. Missing/unrecognised shapes -> `default`.
+    """
+    data = _unwrap(data)
+    if isinstance(data, dict):
+        lock_info = data.get("lockInfo")
+        if isinstance(lock_info, dict) and lock_info.get("progress") is not None:
+            try:
+                return int(lock_info["progress"])
+            except (TypeError, ValueError):
+                return default
+    return default
 
 
 def parse_upload_item(data, requested_chunk_size, fallback_upload_id):
@@ -246,6 +266,22 @@ def parse_upload_item(data, requested_chunk_size, fallback_upload_id):
     if chunk_size_b <= 0:
         chunk_size_b = requested_chunk_size
     return upload_id, chunk_size_b
+
+
+def parse_upload_progress(data, default=100):
+    """Pull uploadProgressPercent from an upload-status reply, defensively.
+
+    Missing/unrecognised shapes default to 100: chunk PUTs are synchronous, so
+    by the time all chunks have been sent without error the upload is complete
+    even if this particular server reply omits the field.
+    """
+    data = _unwrap(data)
+    if isinstance(data, dict) and data.get("uploadProgressPercent") is not None:
+        try:
+            return int(data["uploadProgressPercent"])
+        except (TypeError, ValueError):
+            return default
+    return default
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +385,14 @@ class NxVirtualCameraClient:
             raise ApiError(f"Could not reach {url}: {exc}") from exc
         return self._check(response, what)
 
+    def _delete(self, url, what):
+        try:
+            response = self.session.delete(
+                url, headers=self._auth_header(), timeout=self.timeout)
+        except requests.exceptions.RequestException as exc:
+            raise ApiError(f"Could not reach {url}: {exc}") from exc
+        return self._check(response, what)
+
     # -- 1. login / logout ---------------------------------------------------
 
     def login(self):
@@ -377,7 +421,7 @@ class NxVirtualCameraClient:
         finally:
             self.token = None
 
-    # -- 2. create virtual device -------------------------------------------
+    # -- 2. create virtual device --------------------------------------------
 
     def create_virtual_device(self, name):
         """POST {server}/rest/v4/devices/*/virtual {"name": ...} -> device id.
@@ -388,15 +432,7 @@ class NxVirtualCameraClient:
         data = self._post(url, {"name": name}, "Create virtual device")
         return parse_device_id(data)
 
-    # -- 3. lock -------------------------------------------------------------
-
-    def lock_device(self, device_id, ttl_ms):
-        """PATCH .../virtual/lock {"ttlMs": ...} -> the lock token."""
-        url = f"{self.host}{API}/devices/{device_id}/virtual/lock"
-        data = self._patch(url, {"ttlMs": ttl_ms}, "Lock virtual device")
-        return parse_lock_token(data)
-
-    # -- 4. create upload ----------------------------------------------------
+    # -- 3. create upload ----------------------------------------------------
 
     def create_upload(self, device_id, filename, size_b, md5_b64,
                       start_time_ms, requested_chunk_size, duration_ms=None):
@@ -408,7 +444,7 @@ class NxVirtualCameraClient:
         data = self._post(url, body, "Create upload")
         return parse_upload_item(data, requested_chunk_size, filename)
 
-    # -- 5. upload one chunk -------------------------------------------------
+    # -- 4. upload one chunk -------------------------------------------------
 
     def upload_chunk(self, device_id, upload_id, index, data_bytes):
         """PUT raw chunk bytes at ?chunk=<index> with octet-stream content type."""
@@ -431,16 +467,11 @@ class NxVirtualCameraClient:
                 f"{response.text[:200]}")
         return response
 
-    # -- 6. upload status ----------------------------------------------------
+    # -- 5. upload status ----------------------------------------------------
 
     def upload_status(self, device_id, upload_id):
-        """GET .../virtual/uploads/{uploadId} -> the upload/consume status.
-
-        There is NO separate consume call: `PATCH .../virtual/consume` is
-        deprecated. Completing the chunk PUTs to `.../virtual/uploads/{uploadId}`
-        starts the import automatically (using the startTimeMs given at create).
-        This GET (the recommended path-form status endpoint) reports progress.
-        """
+        """GET .../virtual/uploads/{uploadId} -> the raw upload progress
+        (uploadProgressPercent), confirming all chunk bytes were received."""
         from urllib.parse import quote
         url = (f"{self.host}{API}/devices/{device_id}/virtual/uploads/"
                f"{quote(str(upload_id), safe='')}")
@@ -459,7 +490,45 @@ class NxVirtualCameraClient:
         except ValueError:
             return {}
 
-    # -- 7. release ----------------------------------------------------------
+    def cancel_upload(self, device_id, upload_id):
+        """DELETE .../virtual/uploads/{uploadId} -- best-effort cleanup, valid
+        while the upload is in an uploading or consuming state."""
+        from urllib.parse import quote
+        url = (f"{self.host}{API}/devices/{device_id}/virtual/uploads/"
+               f"{quote(str(upload_id), safe='')}")
+        self._delete(url, "Cancel upload")
+
+    # -- 6. lock -------------------------------------------------------------
+
+    def lock_device(self, device_id, ttl_ms):
+        """PATCH .../virtual/lock {"ttlMs": ...} -> the lock token."""
+        url = f"{self.host}{API}/devices/{device_id}/virtual/lock"
+        data = self._patch(url, {"ttlMs": ttl_ms}, "Lock virtual device")
+        return parse_lock_token(data)
+
+    # -- 7. consume ----------------------------------------------------------
+
+    def consume(self, device_id, lock_token, upload_id, start_time_ms):
+        """PATCH .../virtual/consume {token, uploadId, startTimeMs} -> starts
+        importing the already-uploaded file as camera footage."""
+        url = f"{self.host}{API}/devices/{device_id}/virtual/consume"
+        body = {
+            "token": lock_token,
+            "uploadId": upload_id,
+            "startTimeMs": start_time_ms,
+        }
+        return self._patch(url, body, "Start consume")
+
+    # -- 8. extend (poll progress + renew lock) ------------------------------
+
+    def extend(self, device_id, lock_token, ttl_ms):
+        """PATCH .../virtual/extend {ttlMs, token} -> renews the lock and
+        reports lockInfo.progress (0-100), the consume progress."""
+        url = f"{self.host}{API}/devices/{device_id}/virtual/extend"
+        body = {"ttlMs": ttl_ms, "token": lock_token}
+        return self._patch(url, body, "Extend lock")
+
+    # -- 9. release ----------------------------------------------------------
 
     def release(self, device_id, lock_token):
         """PATCH .../virtual/release {"token": ...} -> free the lock."""
@@ -468,22 +537,49 @@ class NxVirtualCameraClient:
 
 
 # ---------------------------------------------------------------------------
-# Orchestration (steps 2-7) -- separated so it is easy to test end-to-end.
+# Orchestration -- separated so it is easy to test end-to-end.
 # ---------------------------------------------------------------------------
+
+def wait_for_consume(client, device_id, lock_token, ttl_ms, poll_interval_s,
+                     timeout_s, sleep_fn=time.sleep, time_fn=time.monotonic,
+                     on_progress=None):
+    """Poll `.../virtual/extend` until lockInfo.progress reaches 100.
+
+    Each extend call both renews the lock (so it cannot expire mid-import) and
+    reports progress. Raises ApiError if `timeout_s` elapses first.
+    """
+    deadline = time_fn() + timeout_s
+    progress = 0
+    while progress < 100:
+        if time_fn() >= deadline:
+            raise ApiError(
+                f"Consume did not reach 100% within {timeout_s}s "
+                f"(last progress: {progress}%).")
+        sleep_fn(poll_interval_s)
+        data = client.extend(device_id, lock_token, ttl_ms)
+        progress = parse_lock_progress(data, default=progress)
+        if on_progress:
+            on_progress(f"Consume progress: {progress}%")
+    return progress
+
 
 def upload_video(client, file_path, name, start_time_ms, ttl_ms,
                  requested_chunk_size, duration_ms=None, device_id=None,
+                 poll_interval_s=DEFAULT_POLL_INTERVAL_S,
+                 consume_timeout_s=DEFAULT_CONSUME_TIMEOUT_S,
+                 sleep_fn=time.sleep, time_fn=time.monotonic,
                  on_progress=None):
-    """Run the full create -> lock -> create-upload -> chunk PUTs -> status ->
-    release sequence.
+    """Run the full flow: create -> create-upload -> chunk PUTs -> upload
+    status -> lock -> consume -> extend(poll) -> release.
 
-    There is NO explicit consume step: `PATCH .../virtual/consume` is deprecated,
-    and the import starts automatically once all chunks reach the
-    `.../virtual/uploads/{uploadId}` endpoint (footage placement comes from the
-    startTimeMs given at create-upload). We GET that endpoint to report status.
+    The file is uploaded to the server BEFORE the device is locked (create-
+    upload takes no lock/token). Locking, consuming, and polling only happen
+    once the raw bytes are confirmed fully received. On any failure once the
+    upload exists, the upload is best-effort cancelled (DELETE .../uploads/
+    {uploadId}) before the lock (if acquired) is released, so a failed run
+    does not leave an orphaned upload/consume on the server.
 
-    Returns a dict summarising what happened. The lock is always released in a
-    finally block, even if a step fails.
+    Returns a dict summarising what happened.
     """
     def note(message):
         if on_progress:
@@ -499,26 +595,47 @@ def upload_video(client, file_path, name, start_time_ms, ttl_ms,
     else:
         note(f"Using existing virtual device {device_id}")
 
-    lock_token = client.lock_device(device_id, ttl_ms)
-    note("Lock acquired")
-    status = None
-    try:
-        upload_id, server_chunk_size = client.create_upload(
-            device_id, filename, size_b, md5_b64, start_time_ms,
-            requested_chunk_size, duration_ms)
+    upload_id, server_chunk_size = client.create_upload(
+        device_id, filename, size_b, md5_b64, start_time_ms,
+        requested_chunk_size, duration_ms)
 
+    lock_token = None
+    try:
         chunk_count = 0
         for index, data_bytes in iter_file_chunks(file_path, server_chunk_size):
             client.upload_chunk(device_id, upload_id, index, data_bytes)
             chunk_count += 1
         note(f"{chunk_count} chunk(s) uploaded ({server_chunk_size} B each)")
 
-        # No consume call (deprecated): the import auto-starts on completion.
-        status = client.upload_status(device_id, upload_id)
-        note(f"Upload complete; server is importing footage at {start_time_ms}ms")
+        upload_progress = parse_upload_progress(
+            client.upload_status(device_id, upload_id))
+        if upload_progress < 100:
+            raise ApiError(
+                f"Upload did not complete: server reports "
+                f"uploadProgressPercent={upload_progress}.")
+        note("Upload confirmed complete")
+
+        lock_token = client.lock_device(device_id, ttl_ms)
+        note("Lock acquired")
+
+        client.consume(device_id, lock_token, upload_id, start_time_ms)
+        note("Consume started")
+
+        progress = wait_for_consume(
+            client, device_id, lock_token, ttl_ms, poll_interval_s,
+            consume_timeout_s, sleep_fn=sleep_fn, time_fn=time_fn,
+            on_progress=note)
+    except Exception:
+        try:
+            client.cancel_upload(device_id, upload_id)
+            note("Cancelled upload after failure")
+        except Exception:
+            pass  # best-effort cleanup; do not mask the original error
+        raise
     finally:
-        client.release(device_id, lock_token)
-        note("Released")
+        if lock_token is not None:
+            client.release(device_id, lock_token)
+            note("Released")
 
     return {
         "device_id": device_id,
@@ -527,7 +644,7 @@ def upload_video(client, file_path, name, start_time_ms, ttl_ms,
         "chunk_size_b": server_chunk_size,
         "size_b": size_b,
         "start_time_ms": start_time_ms,
-        "status": status,
+        "consume_progress": progress,
     }
 
 
@@ -554,6 +671,12 @@ def build_arg_parser():
                         help=f"Lock TTL in seconds (default {DEFAULT_TTL_S})")
     parser.add_argument("--chunk-size", default=None, type=int,
                         help=f"Requested chunk size in bytes (default {DEFAULT_CHUNK_SIZE})")
+    parser.add_argument("--poll-interval", default=None, type=float,
+                        help="Seconds between extend polls while consume runs "
+                             f"(default {DEFAULT_POLL_INTERVAL_S})")
+    parser.add_argument("--consume-timeout", default=None, type=float,
+                        help="Max seconds to wait for consume to reach 100% "
+                             f"before giving up (default {DEFAULT_CONSUME_TIMEOUT_S})")
     parser.add_argument("--server-host", default=None,
                         help="Server URL, e.g. https://192.168.1.10:7001")
     parser.add_argument("--user", default=None, help="Local server username")
@@ -595,6 +718,18 @@ def main(argv=None):
         print("--duration-ms must be a positive number of milliseconds.", file=sys.stderr)
         return 2
 
+    poll_interval_s = (DEFAULT_POLL_INTERVAL_S if args.poll_interval is None
+                       else args.poll_interval)
+    if poll_interval_s <= 0:
+        print("--poll-interval must be a positive number of seconds.", file=sys.stderr)
+        return 2
+
+    consume_timeout_s = (DEFAULT_CONSUME_TIMEOUT_S if args.consume_timeout is None
+                         else args.consume_timeout)
+    if consume_timeout_s <= 0:
+        print("--consume-timeout must be a positive number of seconds.", file=sys.stderr)
+        return 2
+
     client = NxVirtualCameraClient(
         host=config["host"], user=config["user"], password=config["password"],
         verify_tls=not args.insecure,
@@ -606,6 +741,7 @@ def main(argv=None):
         result = upload_video(
             client, args.file, args.name, start_time_ms, ttl_ms,
             chunk_size, duration_ms=args.duration_ms, device_id=args.device_id,
+            poll_interval_s=poll_interval_s, consume_timeout_s=consume_timeout_s,
             on_progress=lambda m: print(f"  {m}"))
         print(f"Done. Uploaded {result['size_b']} bytes to device "
               f"{result['device_id']} as archive starting {start_time_ms}ms.")

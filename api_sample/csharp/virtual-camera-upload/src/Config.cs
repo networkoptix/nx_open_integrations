@@ -14,6 +14,8 @@ public sealed class CliArgs
     public long? DurationMs { get; set; }       // milliseconds (clip length; optional)
     public long? Ttl { get; set; }              // seconds
     public int? ChunkSize { get; set; }         // bytes
+    public double? PollInterval { get; set; }   // seconds between extend polls
+    public double? ConsumeTimeout { get; set; } // seconds to wait for consume to finish
     public string? Host { get; set; }
     public string? User { get; set; }
     public string? Password { get; set; }
@@ -59,6 +61,8 @@ public static class Config
         ["--duration-ms"] = (a, v) => a.DurationMs = ParseLong("--duration-ms", v),
         ["--ttl"] = (a, v) => a.Ttl = ParseLong("--ttl", v),
         ["--chunk-size"] = (a, v) => a.ChunkSize = ParseInt("--chunk-size", v),
+        ["--poll-interval"] = (a, v) => a.PollInterval = ParseDouble("--poll-interval", v),
+        ["--consume-timeout"] = (a, v) => a.ConsumeTimeout = ParseDouble("--consume-timeout", v),
         ["--server-host"] = (a, v) => a.Host = v,
         ["--user"] = (a, v) => a.User = v,
         ["--password"] = (a, v) => a.Password = v,
@@ -128,5 +132,18 @@ public static class Config
     {
         if (int.TryParse(value, out int n)) return n;
         throw new ArgumentException($"{flag} must be an integer, got \"{value}\".");
+    }
+
+    private static double ParseDouble(string flag, string value)
+    {
+        if (double.TryParse(
+                value,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out double n))
+        {
+            return n;
+        }
+        throw new ArgumentException($"{flag} must be a number, got \"{value}\".");
     }
 }

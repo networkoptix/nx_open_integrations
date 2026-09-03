@@ -16,8 +16,9 @@ behavior and matching offline tests, plus **browser** (front-end JavaScript) and
 ## 1. Find your sample
 
 Pick the row that matches what you're trying to do, then open the folder for
-your language. Every sample has Python, Node.js, **and** TypeScript versions;
-most also have a **browser** or **C#** version.
+your language. Most samples have Python, Node.js, **and** TypeScript versions;
+many also have a **browser** or **C#** version. A dash (—) in a column means
+that language has no version of that sample.
 
 | I want to… | Sample | Python | Node.js | TypeScript | Browser | C# | Auth |
 |---|---|---|---|---|---|---|---|

@@ -7,8 +7,12 @@
  * Node 22 strips the TypeScript types and runs the file directly — there is no
  * build step. These tests inject a fake fetch (the FetchImpl seam), write small
  * temp files for the hashing/chunking paths, and assert the exact request
- * sequence. They confirm the CORRECTED v4 flow: NO deprecated `consume` call,
- * and `durationMs` in the create-upload item only when the caller supplies it.
+ * sequence. They confirm the corrected v4 flow: the file is uploaded BEFORE any
+ * lock, then lock -> consume -> extend(poll) -> release drives the import, and a
+ * failure after the upload exists cancels it (DELETE) before releasing.
+ *
+ * A fake clock stands in for sleeping, so the extend-poll loop never really
+ * waits.
  */
 
 import assert from "node:assert/strict";
@@ -21,13 +25,16 @@ import test from "node:test";
 import {
   NxVirtualCameraClient,
   uploadVideo,
+  waitForConsume,
   parseStartTimeMs,
   fileMd5Base64,
   chunkPlan,
   buildItemsPayload,
   parseDeviceId,
   parseLockToken,
+  parseLockProgress,
   parseUploadItem,
+  parseUploadProgress,
   resolveConfig,
   AuthError,
   ApiError,
@@ -79,7 +86,7 @@ type RecordingFetch = FetchImpl & { calls: RecordedCall[] };
 /**
  * A fake fetch that records the ordered sequence of calls and serves queued
  * responses per verb. When a queue has more than one entry it pops; with one
- * entry it reuses that response (handy for many PUTs).
+ * entry it reuses that response (handy for many PUTs or many extend polls).
  */
 function recordingFetch(queues: QueuedResponses = {}): RecordingFetch {
   const calls: RecordedCall[] = [];
@@ -136,6 +143,27 @@ function tmpFile(name: string, data: Buffer | string): string {
   const p = path.join(dir, name);
   fs.writeFileSync(p, data);
   return p;
+}
+
+/**
+ * A controllable stand-in for the clock/sleep pair, so waitForConsume can be
+ * tested without any real waiting. Times are in seconds.
+ */
+class FakeClock {
+  now: number;
+  sleeps: number[];
+
+  constructor(start = 0) {
+    this.now = start;
+    this.sleeps = [];
+  }
+
+  nowFn = (): number => this.now;
+
+  sleepFn = async (seconds: number): Promise<void> => {
+    this.sleeps.push(seconds);
+    this.now += seconds;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +291,21 @@ test("parseLockToken missing token raises", () => {
   assert.throws(() => parseLockToken({ nope: 1 }), ApiError);
 });
 
+test("parseLockProgress reads lockInfo.progress", () => {
+  assert.equal(parseLockProgress({ id: "d1", lockInfo: { token: "t", progress: 42 } }), 42);
+  assert.equal(parseLockProgress({ reply: { lockInfo: { progress: 100 } } }), 100);
+});
+
+test("parseLockProgress missing uses the default", () => {
+  assert.equal(parseLockProgress({ id: "d1" }, 7), 7);
+  assert.equal(parseLockProgress({}, 0), 0);
+  assert.equal(parseLockProgress({ lockInfo: { token: "t" } }, 3), 3);
+});
+
+test("parseLockProgress non-numeric uses the default", () => {
+  assert.equal(parseLockProgress({ lockInfo: { progress: "not-a-number" } }, 5), 5);
+});
+
 test("parseUploadItem uses server chunkSizeB and uploadId", () => {
   const info = parseUploadItem(
     { items: [{ uploadId: "clip.mkv", chunkSizeB: 4096 }] },
@@ -290,6 +333,21 @@ test("parseUploadItem ignores a garbage chunk size", () => {
   assert.equal(info.chunkSizeB, 999);
 });
 
+test("parseUploadProgress reads uploadProgressPercent", () => {
+  assert.equal(parseUploadProgress({ uploadProgressPercent: 63 }), 63);
+});
+
+test("parseUploadProgress missing defaults to 100", () => {
+  // Chunk PUTs are synchronous, so no field present after a clean upload loop
+  // is treated as "done", not "unknown".
+  assert.equal(parseUploadProgress({}), 100);
+  assert.equal(parseUploadProgress({}, 11), 100);
+});
+
+test("parseUploadProgress non-numeric uses the default", () => {
+  assert.equal(parseUploadProgress({ uploadProgressPercent: "oops" }, 11), 11);
+});
+
 // ---------------------------------------------------------------------------
 // login
 // ---------------------------------------------------------------------------
@@ -310,10 +368,59 @@ test("login unauthorized raises AuthError", async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Full happy-path orchestration: exact call sequence (NO consume, NO durationMs)
+// waitForConsume (extend-poll loop)
 // ---------------------------------------------------------------------------
 
-test("full upload call sequence: create -> lock -> uploads -> PUT chunks -> GET status -> release", async () => {
+test("waitForConsume polls extend until progress reaches 100", async () => {
+  const f = recordingFetch({
+    patch: [
+      makeResponse({ json: { lockInfo: { progress: 30 } } }),
+      makeResponse({ json: { lockInfo: { progress: 70 } } }),
+      makeResponse({ json: { lockInfo: { progress: 100 } } }),
+    ],
+  });
+  const client = makeClient(f);
+  const clock = new FakeClock();
+  const seen: string[] = [];
+
+  const progress = await waitForConsume(client, "{dev-1}", "lock-1", 60000, 2, 300, {
+    sleepFn: clock.sleepFn,
+    nowFn: clock.nowFn,
+    onProgress: (m) => seen.push(m),
+  });
+
+  assert.equal(progress, 100);
+  assert.equal(f.calls.length, 3);
+  assert.ok(f.calls.every((c) => c.method === "PATCH" && c.url.endsWith("/virtual/extend")));
+  assert.deepEqual(clock.sleeps, [2, 2, 2]);
+  assert.ok(f.calls.every((c) => JSON.stringify(c.body) === JSON.stringify({ ttlMs: 60000, token: "lock-1" })));
+  assert.deepEqual(seen, [
+    "Consume progress: 30%",
+    "Consume progress: 70%",
+    "Consume progress: 100%",
+  ]);
+});
+
+test("waitForConsume times out when progress never reaches 100", async () => {
+  const f = recordingFetch({ patch: [makeResponse({ json: { lockInfo: { progress: 40 } } })] });
+  const client = makeClient(f);
+  const clock = new FakeClock();
+
+  await assert.rejects(
+    () =>
+      waitForConsume(client, "{dev-1}", "lock-1", 60000, 2, 5, {
+        sleepFn: clock.sleepFn,
+        nowFn: clock.nowFn,
+      }),
+    ApiError,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Full happy-path orchestration: exact call sequence
+// ---------------------------------------------------------------------------
+
+test("full upload call sequence: create -> uploads -> PUT chunks -> GET status -> lock -> consume -> extend -> release", async () => {
   // File of 2.5 chunks -> 3 PUTs with chunk=0,1,2.
   const data = Buffer.alloc(250, 0x78); // "x"
   const p = tmpFile("clip.mkv", data);
@@ -326,12 +433,15 @@ test("full upload call sequence: create -> lock -> uploads -> PUT chunks -> GET 
     ],
     patch: [
       makeResponse({ json: { lockInfo: { token: "lock-1" } } }), // lock
+      makeResponse({ json: { lockInfo: { token: "lock-1" } } }), // consume
+      makeResponse({ json: { lockInfo: { progress: 100 } } }), // extend (poll)
       makeResponse({ json: {} }), // release
     ],
     put: [makeResponse({ json: {} })], // reused for every chunk
-    get: [makeResponse({ json: { status: "consuming" } })], // upload status
+    get: [makeResponse({ json: { uploadProgressPercent: 100 } })], // upload status
   });
   const client = makeClient(f);
+  const clock = new FakeClock();
 
   const result = await uploadVideo(client, {
     filePath: p,
@@ -340,30 +450,34 @@ test("full upload call sequence: create -> lock -> uploads -> PUT chunks -> GET 
     ttlMs: 300000,
     requestedChunkSize: 1048576,
     durationMs: 30000,
+    pollIntervalS: 2,
+    consumeTimeoutS: 300,
+    sleepFn: clock.sleepFn,
+    nowFn: clock.nowFn,
   });
 
   const base = HOST + "/rest/v4/devices";
   const methodsUrls = f.calls.map((c) => [c.method, c.url]);
-  // No deprecated /virtual/consume call: status is read from the uploads
-  // endpoint and the import auto-starts on completion.
+  // The file is uploaded BEFORE any lock; the lock only covers the import.
   assert.deepEqual(methodsUrls, [
     ["POST", base + "/*/virtual"],
-    ["PATCH", base + "/{dev-1}/virtual/lock"],
     ["POST", base + "/{dev-1}/virtual/uploads"],
     ["PUT", base + "/{dev-1}/virtual/uploads/clip.mkv?chunk=0"],
     ["PUT", base + "/{dev-1}/virtual/uploads/clip.mkv?chunk=1"],
     ["PUT", base + "/{dev-1}/virtual/uploads/clip.mkv?chunk=2"],
     ["GET", base + "/{dev-1}/virtual/uploads/clip.mkv"],
+    ["PATCH", base + "/{dev-1}/virtual/lock"],
+    ["PATCH", base + "/{dev-1}/virtual/consume"],
+    ["PATCH", base + "/{dev-1}/virtual/extend"],
     ["PATCH", base + "/{dev-1}/virtual/release"],
   ]);
 
-  // No consume call anywhere.
-  assert.ok(!f.calls.some((c) => c.url.includes("/virtual/consume")), "must not call /virtual/consume");
+  // Nothing was cancelled on a clean run.
+  assert.ok(!f.calls.some((c) => c.method === "DELETE"));
 
   // Bodies on the way through.
   assert.deepEqual(f.calls[0]!.body, { name: "Cam" });
-  assert.deepEqual(f.calls[1]!.body, { ttlMs: 300000 });
-  assert.deepEqual(f.calls[2]!.body, {
+  assert.deepEqual(f.calls[1]!.body, {
     items: [
       {
         filename: "clip.mkv", sizeB: 250, md5: md5B64, startTimeMs: 1700000000000,
@@ -384,8 +498,16 @@ test("full upload call sequence: create -> lock -> uploads -> PUT chunks -> GET 
   );
   assert.ok(puts.every((c) => c.headers!["Content-Type"] === "application/octet-stream"));
 
-  // Release carries the lockInfo.token.
-  assert.deepEqual(f.calls[7]!.body, { token: "lock-1" });
+  // lock / consume / extend / release bodies.
+  const [lock, consume, extend, release] = f.calls.filter((c) => c.method === "PATCH");
+  assert.deepEqual(lock!.body, { ttlMs: 300000 });
+  assert.deepEqual(consume!.body, {
+    token: "lock-1",
+    uploadId: "clip.mkv",
+    startTimeMs: 1700000000000,
+  });
+  assert.deepEqual(extend!.body, { ttlMs: 300000, token: "lock-1" });
+  assert.deepEqual(release!.body, { token: "lock-1" });
 
   // Bearer attached to every authenticated call.
   assert.ok(f.calls.every((c) => c.headers!.Authorization === "Bearer tok"));
@@ -393,18 +515,24 @@ test("full upload call sequence: create -> lock -> uploads -> PUT chunks -> GET 
   assert.equal(result.deviceId, "{dev-1}");
   assert.equal(result.chunkCount, 3);
   assert.equal(result.chunkSizeB, 100);
-  assert.deepEqual(result.status, { status: "consuming" });
+  assert.equal(result.consumeProgress, 100);
 });
 
 test("existing device id skips the create step", async () => {
   const p = tmpFile("clip.mp4", Buffer.alloc(50, 0x79));
   const f = recordingFetch({
     post: [makeResponse({ json: { items: [{ uploadId: "clip.mp4" }] } })],
-    patch: [makeResponse({ json: { token: "L" } }), makeResponse({ json: {} })],
+    patch: [
+      makeResponse({ json: { lockInfo: { token: "L" } } }), // lock
+      makeResponse({ json: { lockInfo: { token: "L" } } }), // consume
+      makeResponse({ json: { lockInfo: { progress: 100 } } }), // extend
+      makeResponse({ json: {} }), // release
+    ],
     put: [makeResponse({ json: {} })],
-    get: [makeResponse({ json: {} })],
+    get: [makeResponse({ json: { uploadProgressPercent: 100 } })],
   });
   const client = makeClient(f);
+  const clock = new FakeClock();
 
   await uploadVideo(client, {
     filePath: p,
@@ -413,29 +541,34 @@ test("existing device id skips the create step", async () => {
     ttlMs: 1000,
     requestedChunkSize: 1024,
     deviceId: "{existing}",
+    sleepFn: clock.sleepFn,
+    nowFn: clock.nowFn,
   });
 
   const base = HOST + "/rest/v4/devices";
   const methodsUrls = f.calls.map((c) => `${c.method} ${c.url}`);
-  // No create-virtual POST; first call is the lock.
-  assert.equal(f.calls[0]!.method, "PATCH");
-  assert.equal(f.calls[0]!.url, base + "/{existing}/virtual/lock");
+  // No create-virtual POST; first call is the create-upload POST.
+  assert.equal(f.calls[0]!.method, "POST");
+  assert.equal(f.calls[0]!.url, base + "/{existing}/virtual/uploads");
   assert.ok(!methodsUrls.includes("POST " + base + "/*/virtual"));
 });
 
-test("release is called even when a step fails", async () => {
+// ---------------------------------------------------------------------------
+// Failure paths: cancel the upload, release only a lock we actually hold
+// ---------------------------------------------------------------------------
+
+test("failure before the lock cancels the upload and never locks", async () => {
+  // Upload-status GET fails before any lock is acquired: cancel the upload,
+  // but there is no lock token yet so release must NOT be called.
   const p = tmpFile("clip.mkv", Buffer.alloc(10, 0x7a));
   const f = recordingFetch({
     post: [
       makeResponse({ json: { id: "{dev-9}" } }),
       makeResponse({ json: { items: [{ uploadId: "clip.mkv" }] } }),
     ],
-    patch: [
-      makeResponse({ json: { lockInfo: { token: "lock-9" } } }), // lock OK
-      makeResponse({ json: {} }), // release still runs
-    ],
     put: [makeResponse({ json: {} })],
     get: [makeResponse({ status: 500, text: "status boom" })], // status GET FAILS
+    delete: [makeResponse({ json: {} })],
   });
   const client = makeClient(f);
 
@@ -451,11 +584,91 @@ test("release is called even when a step fails", async () => {
     ApiError,
   );
 
+  // lock/consume/extend/release were never reached.
+  assert.ok(!f.calls.some((c) => c.method === "PATCH"));
+  const deletes = f.calls.filter((c) => c.method === "DELETE");
+  assert.equal(deletes.length, 1);
+  assert.ok(deletes[0]!.url.endsWith("/uploads/clip.mkv"));
+});
+
+test("a consume timeout cancels the upload and still releases, cancel first", async () => {
+  const p = tmpFile("clip.mkv", Buffer.alloc(10, 0x7a));
+  const f = recordingFetch({
+    post: [
+      makeResponse({ json: { id: "{dev-9}" } }),
+      makeResponse({ json: { items: [{ uploadId: "clip.mkv" }] } }),
+    ],
+    patch: [
+      makeResponse({ json: { lockInfo: { token: "lock-9" } } }), // lock OK
+      makeResponse({ json: { lockInfo: { token: "lock-9" } } }), // consume OK
+      makeResponse({ json: { lockInfo: { progress: 10 } } }), // extend: stuck at 10%
+      makeResponse({ json: {} }), // release
+    ],
+    put: [makeResponse({ json: {} })],
+    get: [makeResponse({ json: { uploadProgressPercent: 100 } })],
+    delete: [makeResponse({ json: {} })],
+  });
+  const client = makeClient(f);
+  const clock = new FakeClock();
+
+  await assert.rejects(
+    () =>
+      uploadVideo(client, {
+        filePath: p,
+        name: "Cam",
+        startTimeMs: 1,
+        ttlMs: 1000,
+        requestedChunkSize: 1024,
+        pollIntervalS: 2,
+        consumeTimeoutS: 5,
+        sleepFn: clock.sleepFn,
+        nowFn: clock.nowFn,
+      }),
+    ApiError,
+  );
+
   const base = HOST + "/rest/v4/devices";
+  const deletes = f.calls.filter((c) => c.method === "DELETE");
+  assert.equal(deletes.length, 1);
+  assert.equal(deletes[0]!.url, base + "/{dev-9}/virtual/uploads/clip.mkv");
+
   const releases = f.calls.filter((c) => c.method === "PATCH" && c.url.endsWith("/release"));
   assert.equal(releases.length, 1);
-  assert.equal(releases[0]!.url, base + "/{dev-9}/virtual/release");
   assert.deepEqual(releases[0]!.body, { token: "lock-9" });
+
+  // Cancel happens before release.
+  assert.ok(f.calls.indexOf(deletes[0]!) < f.calls.indexOf(releases[0]!));
+});
+
+test("an incomplete upload status throws before locking", async () => {
+  // Server reports the raw upload itself is not fully received yet: fail fast
+  // instead of locking/consuming a partial file.
+  const p = tmpFile("clip.mkv", Buffer.alloc(10, 0x7a));
+  const f = recordingFetch({
+    post: [
+      makeResponse({ json: { id: "{dev-9}" } }),
+      makeResponse({ json: { items: [{ uploadId: "clip.mkv" }] } }),
+    ],
+    put: [makeResponse({ json: {} })],
+    get: [makeResponse({ json: { uploadProgressPercent: 42 } })],
+    delete: [makeResponse({ json: {} })],
+  });
+  const client = makeClient(f);
+
+  await assert.rejects(
+    () =>
+      uploadVideo(client, {
+        filePath: p,
+        name: "Cam",
+        startTimeMs: 1,
+        ttlMs: 1000,
+        requestedChunkSize: 1024,
+      }),
+    (err: unknown) =>
+      err instanceof ApiError && err.message.includes("uploadProgressPercent=42"),
+  );
+
+  assert.ok(!f.calls.some((c) => c.method === "PATCH"));
 });
 
 // ---------------------------------------------------------------------------

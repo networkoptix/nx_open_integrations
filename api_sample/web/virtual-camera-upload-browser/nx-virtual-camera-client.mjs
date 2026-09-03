@@ -7,36 +7,43 @@
  * virtual camera has no real RTSP source; you push it pre-recorded media and
  * the server ingests it as if it had been captured at the given start time.
  *
- * This file holds the pure, framework-free API logic so it can be (a) imported
- * by the page (app.mjs) and (b) unit-tested offline with node:test and a fake
- * fetch — the same pattern every other web sample uses. The DOM lives in
- * app.mjs; the dev proxy (CORS + self-signed TLS) lives in proxy.mjs/server.mjs.
- *
- * THE CORRECTED v4 VIRTUAL-CAMERA UPLOAD FLOW (matches the Python source):
+ * THE v4 VIRTUAL-CAMERA UPLOAD FLOW (matches the Python source):
  *
  *   1. Log in:    POST   {server}/rest/v4/login/sessions
  *                   { username, password, setCookie:false }   -> { token }
  *   2. Create:    POST   {server}/rest/v4/devices/(asterisk)/virtual  { name }
  *                   -> the new device (read its "id")        [skip with deviceId]
- *   3. Lock:      PATCH  {server}/rest/v4/devices/{id}/virtual/lock  { ttlMs }
- *                   -> token at lockInfo.token (defensive: also top-level)
- *   4. Create upload: POST {server}/rest/v4/devices/{id}/virtual/uploads
- *                   { items: [{ filename, sizeB, md5, startTimeMs, chunkSizeB }] }
- *                   -> server chunkSizeB + uploadId (startTimeMs declared HERE;
- *                      durationMs is OPTIONAL — the server derives duration from
- *                      the file's own metadata when it is omitted)
- *   5. Upload bytes:  PUT  {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
+ *
+ *   -- Upload the file to the server (no lock needed for this part) --
+ *   3. Create upload: POST {server}/rest/v4/devices/{id}/virtual/uploads
+ *                   { items: [{ filename, sizeB, md5, startTimeMs, durationMs,
+ *                               chunkSizeB }] }
+ *                   -> server chunkSizeB + uploadId (durationMs is OPTIONAL —
+ *                      the server derives duration from the file's own metadata
+ *                      when it is omitted). NO lock/token is needed here.
+ *   4. Upload bytes:  PUT  {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
  *                   raw chunk bytes, Content-Type: application/octet-stream
- *   6. Status:    GET    {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
- *                   -> import auto-starts once all chunks arrive; this reports it.
- *                   (PATCH .../virtual/consume is DEPRECATED — NOT used.)
- *   7. Release:   PATCH  {server}/rest/v4/devices/{id}/virtual/release  { token }
- *                   (always run, even on error, so the lock is freed)
+ *   5. Status:    GET    {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
+ *                   -> confirms uploadProgressPercent reached 100 (all bytes in)
+ *
+ *   -- Import the uploaded file into the virtual camera's archive --
+ *   6. Lock:      PATCH  {server}/rest/v4/devices/{id}/virtual/lock  { ttlMs }
+ *                   -> token at lockInfo.token (defensive: also top-level)
+ *   7. Consume:   PATCH  {server}/rest/v4/devices/{id}/virtual/consume
+ *                   { token, uploadId, startTimeMs }
+ *                   -> starts importing the already-uploaded file as footage
+ *   8. Poll:      PATCH  {server}/rest/v4/devices/{id}/virtual/extend
+ *                   { ttlMs, token }
+ *                   -> renews the lock AND reports lockInfo.progress (0-100);
+ *                      called repeatedly until progress reaches 100
+ *   9. Release:   PATCH  {server}/rest/v4/devices/{id}/virtual/release  { token }
+ *                   (always run once a lock is held, even on error)
  *   + Log out:    DELETE {server}/rest/v4/login/sessions/<token>  (best-effort)
  *
- * The `(asterisk)` in step 2 is the current-server wildcard — part of the path, not a
- * placeholder. The uploadId in steps 5/6 is the server-returned uploadId, or
- * the file's name if none is echoed.
+ *   On any failure after the upload exists, we best-effort cancel it first:
+ *   DELETE {server}/rest/v4/devices/{id}/virtual/uploads/{uploadId} (valid while
+ *   the upload is "uploading or consuming") — so a failed run does not leave an
+ *   orphaned upload/consume in progress on the server.
  *
  * WHY EVERY CALL GOES THROUGH THE PROXY (read the README):
  *   A local Nx server is a different origin and sends no CORS headers, and it
@@ -59,6 +66,13 @@ export const API = "/rest/v4";
 export const DEFAULT_TTL_MS = 300 * 1000; // 5 minutes
 export const DEFAULT_CHUNK_SIZE_B = 1024 * 1024; // 1 MiB
 
+// How often to poll `.../virtual/extend` while waiting for consume to finish,
+// and how long to wait before giving up. No CLI here: override per run via
+// the uploadVideo(client, file, opts) object (`pollIntervalMs` /
+// `consumeTimeoutMs`).
+export const DEFAULT_POLL_INTERVAL_MS = 2000; // 2 seconds
+export const DEFAULT_CONSUME_TIMEOUT_MS = 300000; // 5 minutes
+
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
@@ -78,7 +92,7 @@ export class ApiError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Pure helpers (no network = easy to test)
+// Pure helpers (no I/O over the network = easy to test)
 // ---------------------------------------------------------------------------
 
 /**
@@ -124,9 +138,11 @@ export function md5OfBytes(bytes) {
 
 /**
  * Build the { items: [...] } body for create-upload.
- * startTimeMs is declared HERE (not at a separate consume step). The modern v4
- * flow drops the deprecated `.../virtual/consume` call and starts the import
- * automatically once all chunks arrive.
+ *
+ * startTimeMs and durationMs are required by the create-upload schema even
+ * though startTimeMs is ALSO passed again at the consume step: the create-
+ * upload call reserves the archive period for this file, and consume is what
+ * actually triggers the import of the already-uploaded bytes into that period.
  *
  * durationMs is OPTIONAL: when known, the server uses it to reserve the
  * archive period; when omitted, the server tries to derive the duration from
@@ -163,9 +179,9 @@ export function parseDeviceId(data) {
 }
 
 /**
- * Pull the lock token from a lock response, defensively. The v4 reply is shaped
- * { id, lockInfo: { token, ... } } — token lives under lockInfo. Older/edge
- * shapes may put it at the top level, so we check both.
+ * Pull the lock token from a lock/consume/extend response, defensively. The v4
+ * reply is shaped { id, lockInfo: { token, ... } } — token lives under
+ * lockInfo. Older/edge shapes may put it at the top level, so we check both.
  */
 export function parseLockToken(data) {
   const d = unwrap(data);
@@ -176,6 +192,23 @@ export function parseLockToken(data) {
     if (d.token) return d.token;
   }
   throw new ApiError("Lock response did not contain a token.");
+}
+
+/**
+ * Pull lockInfo.progress (consume progress, 0-100) from a lock/consume/extend
+ * response, defensively. Missing/unrecognised shapes -> `defaultValue`.
+ */
+export function parseLockProgress(data, defaultValue = 0) {
+  const d = unwrap(data);
+  if (d && typeof d === "object" && d.lockInfo && typeof d.lockInfo === "object") {
+    const raw = d.lockInfo.progress;
+    if (raw !== undefined && raw !== null) {
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return defaultValue;
+      return Math.trunc(value);
+    }
+  }
+  return defaultValue;
 }
 
 /**
@@ -198,6 +231,26 @@ export function parseUploadItem(data, requestedChunkSize, fallbackUploadId) {
   chunkSizeB = Number(chunkSizeB);
   if (!Number.isFinite(chunkSizeB) || chunkSizeB <= 0) chunkSizeB = requestedChunkSize;
   return { uploadId, chunkSizeB };
+}
+
+/**
+ * Pull uploadProgressPercent from an upload-status reply, defensively.
+ *
+ * Missing/unrecognised shapes default to 100: chunk PUTs are synchronous, so
+ * by the time all chunks have been sent without error the upload is complete
+ * even if this particular server reply omits the field.
+ */
+export function parseUploadProgress(data, defaultValue = 100) {
+  const d = unwrap(data);
+  if (d && typeof d === "object") {
+    const raw = d.uploadProgressPercent;
+    if (raw !== undefined && raw !== null) {
+      const value = Number(raw);
+      if (!Number.isFinite(value)) return defaultValue;
+      return Math.trunc(value);
+    }
+  }
+  return defaultValue;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,13 +312,21 @@ export class NxVirtualCameraClient {
     }
   }
 
+  /**
+   * Shared JSON request helper for POST/PATCH/DELETE. `body` may be omitted
+   * (DELETE .../uploads/{uploadId} carries none) — then no JSON body or
+   * Content-Type is sent.
+   */
   async _send(method, url, body, what) {
+    const hasBody = body !== undefined && body !== null;
     let response;
     try {
       response = await this.fetchImpl(url, {
         method,
-        headers: this._authHeader({ "Content-Type": "application/json" }),
-        body: JSON.stringify(body),
+        headers: hasBody
+          ? this._authHeader({ "Content-Type": "application/json" })
+          : this._authHeader(),
+        body: hasBody ? JSON.stringify(body) : undefined,
       });
     } catch (exc) {
       throw new ApiError(
@@ -306,7 +367,7 @@ export class NxVirtualCameraClient {
     try {
       await this.fetchImpl(url, { method: "DELETE", headers: this._authHeader() });
     } catch {
-      // best effort
+      // logout is cleanup; never let it crash the program
     } finally {
       this.token = null;
     }
@@ -320,15 +381,7 @@ export class NxVirtualCameraClient {
     return parseDeviceId(data);
   }
 
-  // -- 3. lock --------------------------------------------------------------
-
-  async lockDevice(deviceId, ttlMs) {
-    const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/lock`;
-    const data = await this._send("PATCH", url, { ttlMs }, "Lock virtual device");
-    return parseLockToken(data);
-  }
-
-  // -- 4. create upload -----------------------------------------------------
+  // -- 3. create upload -----------------------------------------------------
 
   async createUpload(deviceId, filename, sizeB, md5B64, startTimeMs, requestedChunkSize, durationMs = null) {
     const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/uploads`;
@@ -337,7 +390,7 @@ export class NxVirtualCameraClient {
     return parseUploadItem(data, requestedChunkSize, filename);
   }
 
-  // -- 5. upload one chunk --------------------------------------------------
+  // -- 4. upload one chunk --------------------------------------------------
 
   async uploadChunk(deviceId, uploadId, index, bytes) {
     const url =
@@ -363,13 +416,12 @@ export class NxVirtualCameraClient {
     return response;
   }
 
-  // -- 6. upload status -----------------------------------------------------
+  // -- 5. upload status -----------------------------------------------------
 
   /**
-   * GET .../virtual/uploads/{uploadId} -> the upload/import status.
-   * There is NO separate consume call: PATCH .../virtual/consume is deprecated.
-   * Completing the chunk PUTs starts the import automatically (using the
-   * startTimeMs given at create-upload); this GET reports progress.
+   * GET .../virtual/uploads/{uploadId} -> the raw upload progress
+   * (uploadProgressPercent), confirming all chunk bytes were received. This
+   * says nothing about the archive import — that is driven by consume below.
    */
   async uploadStatus(deviceId, uploadId) {
     const url =
@@ -395,7 +447,49 @@ export class NxVirtualCameraClient {
     }
   }
 
-  // -- 7. release -----------------------------------------------------------
+  /**
+   * DELETE .../virtual/uploads/{uploadId} — best-effort cleanup, valid while
+   * the upload is in an uploading or consuming state.
+   */
+  async cancelUpload(deviceId, uploadId) {
+    const url =
+      `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}` +
+      `/virtual/uploads/${encodeURIComponent(uploadId)}`;
+    return this._send("DELETE", url, undefined, "Cancel upload");
+  }
+
+  // -- 6. lock --------------------------------------------------------------
+
+  async lockDevice(deviceId, ttlMs) {
+    const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/lock`;
+    const data = await this._send("PATCH", url, { ttlMs }, "Lock virtual device");
+    return parseLockToken(data);
+  }
+
+  // -- 7. consume -----------------------------------------------------------
+
+  /**
+   * PATCH .../virtual/consume { token, uploadId, startTimeMs } -> starts
+   * importing the already-uploaded file as camera footage.
+   */
+  async consume(deviceId, lockToken, uploadId, startTimeMs) {
+    const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/consume`;
+    const body = { token: lockToken, uploadId, startTimeMs };
+    return this._send("PATCH", url, body, "Start consume");
+  }
+
+  // -- 8. extend (poll progress + renew lock) -------------------------------
+
+  /**
+   * PATCH .../virtual/extend { ttlMs, token } -> renews the lock and reports
+   * lockInfo.progress (0-100), the consume progress.
+   */
+  async extend(deviceId, lockToken, ttlMs) {
+    const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/extend`;
+    return this._send("PATCH", url, { ttlMs, token: lockToken }, "Extend lock");
+  }
+
+  // -- 9. release -----------------------------------------------------------
 
   async release(deviceId, lockToken) {
     const url = `${this.serverUrl}${API}/devices/${encodeURIComponent(deviceId)}/virtual/release`;
@@ -411,27 +505,90 @@ async function safeText(response) {
   }
 }
 
+/** Default sleep: a real timer. Tests inject their own so nothing waits. */
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ---------------------------------------------------------------------------
-// Orchestration (steps 2-7) — separated so it is easy to test end-to-end.
+// Orchestration -- separated so it is easy to test end-to-end.
 // ---------------------------------------------------------------------------
 
 /**
- * Run the full create -> lock -> create-upload -> chunk PUTs -> status ->
- * release sequence for a selected browser File (or any { name, size,
- * arrayBuffer() } object). NO consume call; durationMs is optional.
+ * Poll `.../virtual/extend` until lockInfo.progress reaches 100.
  *
- * The lock is always released in a finally block, even if a step fails.
+ * Each extend call both renews the lock (so it cannot expire mid-import) and
+ * reports progress. Throws ApiError if `timeoutMs` elapses first.
+ *
+ * `sleepFn` and `nowFn` are injectable so tests never actually sleep.
+ *
+ * @param {NxVirtualCameraClient} client
+ * @param {string} deviceId
+ * @param {string} lockToken
+ * @param {number} ttlMs
+ * @param {object} [opts]
+ * @param {number} [opts.pollIntervalMs]
+ * @param {number} [opts.timeoutMs]
+ * @param {function} [opts.sleepFn]  (ms) => Promise
+ * @param {function} [opts.nowFn]    () => milliseconds
+ * @param {function} [opts.onProgress]
+ * @returns {Promise<number>} the final progress (100).
+ */
+export async function waitForConsume(client, deviceId, lockToken, ttlMs, opts = {}) {
+  const {
+    pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    timeoutMs = DEFAULT_CONSUME_TIMEOUT_MS,
+    sleepFn = defaultSleep,
+    nowFn = () => Date.now(),
+    onProgress = null,
+  } = opts;
+
+  const deadline = nowFn() + timeoutMs;
+  let progress = 0;
+  while (progress < 100) {
+    if (nowFn() >= deadline) {
+      throw new ApiError(
+        `Consume did not reach 100% within ${timeoutMs / 1000}s ` +
+          `(last progress: ${progress}%).`,
+      );
+    }
+    await sleepFn(pollIntervalMs);
+    const data = await client.extend(deviceId, lockToken, ttlMs);
+    progress = parseLockProgress(data, progress);
+    if (onProgress) onProgress(`Consume progress: ${progress}%`);
+  }
+  return progress;
+}
+
+/**
+ * Run the full flow for a selected browser File (or any { name, size,
+ * arrayBuffer() } object): create -> create-upload -> chunk PUTs -> upload
+ * status -> lock -> consume -> extend(poll) -> release.
+ *
+ * The file is uploaded to the server BEFORE the device is locked (create-upload
+ * takes no lock/token). Locking, consuming and polling only happen once the raw
+ * bytes are confirmed fully received. On any failure once the upload exists,
+ * the upload is best-effort cancelled (DELETE .../uploads/{uploadId}) before
+ * the lock (if one was acquired) is released, so a failed run does not leave an
+ * orphaned upload/consume on the server.
  *
  * @param {NxVirtualCameraClient} client
  * @param {File|{name:string,size:number,arrayBuffer:Function}} file
  * @param {object} opts
  * @param {string} opts.name        Name for a new virtual device.
  * @param {number} opts.startTimeMs Archive start (epoch ms).
- * @param {number} [opts.ttlMs]     Lock TTL (default DEFAULT_TTL_MS).
+ * @param {number} [opts.ttlMs]     Lock TTL (default DEFAULT_TTL_MS). Also the
+ *        ttlMs sent with every extend poll.
  * @param {number} [opts.requestedChunkSize] (default DEFAULT_CHUNK_SIZE_B).
  * @param {number} [opts.durationMs] Clip length in ms (optional; server derives
  *        it from the file's own metadata when omitted).
  * @param {string} [opts.deviceId]  Upload to an EXISTING device (skip create).
+ * @param {number} [opts.pollIntervalMs] Gap between extend polls (default
+ *        DEFAULT_POLL_INTERVAL_MS). No form field — override it here.
+ * @param {number} [opts.consumeTimeoutMs] Give up after this long (default
+ *        DEFAULT_CONSUME_TIMEOUT_MS). No form field — override it here.
+ * @param {function} [opts.sleepFn] Injected for tests: (ms) => Promise.
+ * @param {function} [opts.nowFn]   Injected for tests: () => milliseconds.
  * @param {function} [opts.onProgress] Progress callback (message string).
  * @returns {Promise<object>} summary of the run.
  */
@@ -443,6 +600,10 @@ export async function uploadVideo(client, file, opts = {}) {
     requestedChunkSize = DEFAULT_CHUNK_SIZE_B,
     durationMs = null,
     deviceId: existingId = null,
+    pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
+    consumeTimeoutMs = DEFAULT_CONSUME_TIMEOUT_MS,
+    sleepFn = defaultSleep,
+    nowFn = () => Date.now(),
     onProgress = null,
   } = opts;
 
@@ -468,25 +629,21 @@ export async function uploadVideo(client, file, opts = {}) {
     note(`Using existing virtual device ${deviceId}`);
   }
 
-  const lockToken = await client.lockDevice(deviceId, ttlMs);
-  note("Lock acquired");
+  const { uploadId, chunkSizeB: serverChunkSize } = await client.createUpload(
+    deviceId,
+    filename,
+    sizeB,
+    md5B64,
+    startTimeMs,
+    requestedChunkSize,
+    durationMs,
+  );
+  note(`Upload created (id ${uploadId}, chunk ${serverChunkSize} B)`);
 
-  let uploadId;
-  let serverChunkSize;
+  let lockToken = null;
   let chunkCount = 0;
-  let status = null;
+  let consumeProgress = 0;
   try {
-    ({ uploadId, chunkSizeB: serverChunkSize } = await client.createUpload(
-      deviceId,
-      filename,
-      sizeB,
-      md5B64,
-      startTimeMs,
-      requestedChunkSize,
-      durationMs,
-    ));
-    note(`Upload created (id ${uploadId}, chunk ${serverChunkSize} B)`);
-
     const plan = chunkPlan(sizeB, serverChunkSize);
     for (const { index, offset, length } of plan) {
       const slice = allBytes.subarray(offset, offset + length);
@@ -495,12 +652,40 @@ export async function uploadVideo(client, file, opts = {}) {
       note(`Uploaded chunk ${index + 1}/${plan.length}`);
     }
 
-    // No consume call (deprecated): the import auto-starts on completion.
-    status = await client.uploadStatus(deviceId, uploadId);
-    note(`Upload complete; server is importing footage at ${startTimeMs}ms`);
+    const uploadProgress = parseUploadProgress(await client.uploadStatus(deviceId, uploadId));
+    if (uploadProgress < 100) {
+      throw new ApiError(
+        `Upload did not complete: server reports uploadProgressPercent=${uploadProgress}.`,
+      );
+    }
+    note("Upload confirmed complete");
+
+    lockToken = await client.lockDevice(deviceId, ttlMs);
+    note("Lock acquired");
+
+    await client.consume(deviceId, lockToken, uploadId, startTimeMs);
+    note("Consume started");
+
+    consumeProgress = await waitForConsume(client, deviceId, lockToken, ttlMs, {
+      pollIntervalMs,
+      timeoutMs: consumeTimeoutMs,
+      sleepFn,
+      nowFn,
+      onProgress: note,
+    });
+  } catch (exc) {
+    try {
+      await client.cancelUpload(deviceId, uploadId);
+      note("Cancelled upload after failure");
+    } catch {
+      // best-effort cleanup; do not mask the original error
+    }
+    throw exc;
   } finally {
-    await client.release(deviceId, lockToken);
-    note("Released lock");
+    if (lockToken !== null) {
+      await client.release(deviceId, lockToken);
+      note("Released lock");
+    }
   }
 
   return {
@@ -511,7 +696,7 @@ export async function uploadVideo(client, file, opts = {}) {
     sizeB,
     startTimeMs,
     md5: md5B64,
-    status,
+    consumeProgress,
   };
 }
 

@@ -21,7 +21,7 @@ them. Each folder still ships a `package.json` for the `npm test` shortcut.
 | [`rest-event-log`](rest-event-log) | Scoped token, manual 307, v4 time window + parsing | REST v4 | 30 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 33 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 25 |
-| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 28 |
+| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 39 |
 | [`jsonrpc-subscribe-events`](jsonrpc-subscribe-events) | Subscribe to the live event log over a JSON-RPC WebSocket | JSON-RPC | 16 |
 | [`jsonrpc-subscribe-events-cloud-user`](jsonrpc-subscribe-events-cloud-user) | Same as above, but via a scoped cloud token and the cloud relay | JSON-RPC | 39 |
 
@@ -57,10 +57,3 @@ node --test                                     # offline; no account or network
   hard-coded.
 - `--insecure` disables TLS verification for lab/self-signed certs.
 - `--dotenv` points at a shared `.env` (copy `../../.env.example`).
-
-## Relation to the other languages
-
-Every folder here has a matching [`../python`](../python) port with identical
-behavior and matching offline tests, and a matching [`../typescript`](../typescript)
-port that runs on the same runtime. The browser samples live in
-[`../web`](../web), and the C# versions in [`../csharp`](../csharp).

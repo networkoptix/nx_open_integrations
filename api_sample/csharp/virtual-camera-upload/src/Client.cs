@@ -4,12 +4,7 @@
 // push it pre-recorded media and the server ingests it as if it had been captured
 // at the given time.
 //
-// C# port of ../../python/virtual-camera-upload on the latest /rest/v4 API. Uses
-// the built-in HttpClient + System.Text.Json — no third-party packages. The file
-// is read in chunks, so a large clip is never slurped into memory all at once.
-//
-// Auth is DIRECT to ONE server with a LOCAL server account, exactly like
-// ../rest-list-cameras: NX_SERVER_HOST / NX_SERVER_USER / NX_SERVER_PASSWORD.
+// C# port of ../../python/virtual-camera-upload.
 //
 // THE VIRTUAL-CAMERA UPLOAD FLOW:
 //
@@ -17,24 +12,36 @@
 //                   -> { "token": ... }
 //   2. Create:    POST   {host}/rest/v4/devices/*/virtual  { "name": ... }
 //                   -> the new device (read its "id")          [skip with --device-id]
-//   3. Lock:      PATCH  {host}/rest/v4/devices/{id}/virtual/lock  { "ttlMs": ... }
-//                   -> token at lockInfo.token ({id, lockInfo:{token, ...}})
-//   4. Create upload: POST {host}/rest/v4/devices/{id}/virtual/uploads
-//                   { "items": [{filename, sizeB, md5, startTimeMs, chunkSizeB}] }
-//                   -> per-item info incl. the chunkSizeB the server wants
-//                   (startTimeMs is declared HERE, not at a consume step)
-//   5. Upload bytes:  PUT  {host}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
+//
+//   -- Upload the file to the server (no lock needed for this part) --
+//   3. Create upload: POST {host}/rest/v4/devices/{id}/virtual/uploads
+//                   { "items": [{filename, sizeB, md5, startTimeMs, durationMs,
+//                                chunkSizeB}] }
+//                   -> per-item info incl. the chunkSizeB the server wants and the
+//                   server-assigned uploadId
+//   4. Upload bytes:  PUT  {host}/rest/v4/devices/{id}/virtual/uploads/{uploadId}?chunk=<n>
 //                   raw chunk bytes, Content-Type: application/octet-stream
-//   6. Status:    GET    {host}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
-//                   -> the import auto-starts once all chunks arrive; this reports it
-//                   (PATCH .../virtual/consume is DEPRECATED -- not used)
-//   7. Release:   PATCH  {host}/rest/v4/devices/{id}/virtual/release  { "token": <lock> }
-//                   (always run, even on error, so the lock is freed)
+//   5. Status:    GET    {host}/rest/v4/devices/{id}/virtual/uploads/{uploadId}
+//                   -> confirms uploadProgressPercent reached 100 (all bytes received)
+//
+//   -- Import the uploaded file into the virtual camera's archive --
+//   6. Lock:      PATCH  {host}/rest/v4/devices/{id}/virtual/lock  { "ttlMs": ... }
+//                   -> token at lockInfo.token ({id, lockInfo:{token, ...}})
+//   7. Consume:   PATCH  {host}/rest/v4/devices/{id}/virtual/consume
+//                   { "token": <lock>, "uploadId": ..., "startTimeMs": ... }
+//                   -> starts importing the already-uploaded file as camera footage
+//   8. Poll:      PATCH  {host}/rest/v4/devices/{id}/virtual/extend
+//                   { "ttlMs": ..., "token": <lock> }
+//                   -> renews the lock AND reports lockInfo.progress (0-100); call
+//                   this repeatedly until progress reaches 100
+//   9. Release:   PATCH  {host}/rest/v4/devices/{id}/virtual/release  { "token": <lock> }
+//                   (always run once a lock is held, even on error, so it is freed)
 //   + Log out:    DELETE {host}/rest/v4/login/sessions/<token>
 //
-// The `/*/` in step 2 is the current-server wildcard -- it is part of the path,
-// not a placeholder. The uploadId used in steps 5/6 is the server-returned
-// uploadId, or the file's name if none is echoed.
+//   On any failure after the upload exists, we best-effort cancel it first:
+//   DELETE {host}/rest/v4/devices/{id}/virtual/uploads/{uploadId} (valid while the
+//   upload is "uploading or consuming") -- so a failed run does not leave an
+//   orphaned upload/consume in progress on the server.
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -68,7 +75,7 @@ public sealed record UploadResult(
     int ChunkSizeB,
     long SizeB,
     long StartTimeMs,
-    string? Status);
+    int ConsumeProgress);
 
 public sealed class NxVirtualCameraClient
 {
@@ -154,20 +161,12 @@ public sealed class NxVirtualCameraClient
         return ParseDeviceId(json);
     }
 
-    // -- 3. lock -------------------------------------------------------------
+    // -- 3. create upload ----------------------------------------------------
 
-    /// <summary>PATCH .../virtual/lock {"ttlMs": ...} -> the lock token.</summary>
-    public async Task<string> LockDeviceAsync(string deviceId, long ttlMs, CancellationToken cancellationToken = default)
-    {
-        string url = $"{_host}{Api}/devices/{deviceId}/virtual/lock";
-        var body = new Dictionary<string, object> { ["ttlMs"] = ttlMs };
-        string json = await PatchJsonAsync(url, body, "Lock virtual device", cancellationToken);
-        return ParseLockToken(json);
-    }
-
-    // -- 4. create upload ----------------------------------------------------
-
-    /// <summary>POST .../virtual/uploads -> (uploadId, server chunk size in bytes).</summary>
+    /// <summary>POST .../virtual/uploads -> (uploadId, server chunk size in bytes).
+    ///
+    /// Takes no lock and needs none: the bytes are pushed to the server first, and
+    /// the device is only locked later, for the import (consume) step.</summary>
     public async Task<UploadInfo> CreateUploadAsync(
         string deviceId, string filename, long sizeB, string md5Base64,
         long startTimeMs, int requestedChunkSize, long? durationMs = null,
@@ -179,7 +178,7 @@ public sealed class NxVirtualCameraClient
         return ParseUploadItem(json, requestedChunkSize, filename);
     }
 
-    // -- 5. upload one chunk -------------------------------------------------
+    // -- 4. upload one chunk -------------------------------------------------
 
     /// <summary>PUT raw chunk bytes at ?chunk=&lt;index&gt; with octet-stream content type.</summary>
     public async Task UploadChunkAsync(
@@ -221,13 +220,13 @@ public sealed class NxVirtualCameraClient
         }
     }
 
-    // -- 6. upload status ----------------------------------------------------
+    // -- 5. upload status ----------------------------------------------------
 
-    /// <summary>GET .../virtual/uploads/{uploadId} -> the upload/consume status.
+    /// <summary>GET .../virtual/uploads/{uploadId} -> the raw upload progress JSON
+    /// (uploadProgressPercent), confirming all chunk bytes were received.
     ///
-    /// There is NO separate consume call: PATCH .../virtual/consume is deprecated.
-    /// Completing the chunk PUTs to .../virtual/uploads/{uploadId} starts the import
-    /// automatically (using the startTimeMs given at create). This GET reports progress.</summary>
+    /// This reports the transfer of the BYTES only. Importing those bytes into the
+    /// camera archive is a separate, explicit step: lock -> consume -> extend(poll).</summary>
     public async Task<string> UploadStatusAsync(
         string deviceId, string uploadId, CancellationToken cancellationToken = default)
     {
@@ -263,7 +262,67 @@ public sealed class NxVirtualCameraClient
         }
     }
 
-    // -- 7. release ----------------------------------------------------------
+    /// <summary>DELETE .../virtual/uploads/{uploadId} -- best-effort cleanup, valid
+    /// while the upload is in an uploading or consuming state.</summary>
+    public async Task CancelUploadAsync(
+        string deviceId, string uploadId, CancellationToken cancellationToken = default)
+    {
+        string url = $"{_host}{Api}/devices/{deviceId}/virtual/uploads/"
+            + Uri.EscapeDataString(uploadId);
+
+        using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        AddAuth(request);
+        await SendAndCheckAsync(request, url, "Cancel upload", cancellationToken);
+    }
+
+    // -- 6. lock -------------------------------------------------------------
+
+    /// <summary>PATCH .../virtual/lock {"ttlMs": ...} -> the lock token.
+    /// Only needed for the import (consume) step, not for uploading the bytes.</summary>
+    public async Task<string> LockDeviceAsync(string deviceId, long ttlMs, CancellationToken cancellationToken = default)
+    {
+        string url = $"{_host}{Api}/devices/{deviceId}/virtual/lock";
+        var body = new Dictionary<string, object> { ["ttlMs"] = ttlMs };
+        string json = await PatchJsonAsync(url, body, "Lock virtual device", cancellationToken);
+        return ParseLockToken(json);
+    }
+
+    // -- 7. consume ----------------------------------------------------------
+
+    /// <summary>PATCH .../virtual/consume {token, uploadId, startTimeMs} -> starts
+    /// importing the already-uploaded file as camera footage.</summary>
+    public async Task ConsumeAsync(
+        string deviceId, string lockToken, string uploadId, long startTimeMs,
+        CancellationToken cancellationToken = default)
+    {
+        string url = $"{_host}{Api}/devices/{deviceId}/virtual/consume";
+        var body = new Dictionary<string, object>
+        {
+            ["token"] = lockToken,
+            ["uploadId"] = uploadId,
+            ["startTimeMs"] = startTimeMs,
+        };
+        await PatchJsonAsync(url, body, "Start consume", cancellationToken);
+    }
+
+    // -- 8. extend (poll progress + renew lock) ------------------------------
+
+    /// <summary>PATCH .../virtual/extend {ttlMs, token} -> renews the lock and
+    /// reports lockInfo.progress (0-100), the consume progress. Returns the raw
+    /// JSON body so the caller can read the progress with ParseLockProgress.</summary>
+    public async Task<string> ExtendAsync(
+        string deviceId, string lockToken, long ttlMs, CancellationToken cancellationToken = default)
+    {
+        string url = $"{_host}{Api}/devices/{deviceId}/virtual/extend";
+        var body = new Dictionary<string, object>
+        {
+            ["ttlMs"] = ttlMs,
+            ["token"] = lockToken,
+        };
+        return await PatchJsonAsync(url, body, "Extend lock", cancellationToken);
+    }
+
+    // -- 9. release ----------------------------------------------------------
 
     /// <summary>PATCH .../virtual/release {"token": ...} -> free the lock.</summary>
     public async Task ReleaseAsync(
@@ -357,6 +416,11 @@ public sealed class NxVirtualCameraClient
     public const long DefaultTtlSeconds = 300;
     public const int DefaultChunkSize = 1024 * 1024; // 1 MiB
 
+    // How often to poll `.../virtual/extend` while waiting for consume to finish,
+    // and how long to wait before giving up. Both in SECONDS.
+    public const double DefaultPollIntervalSeconds = 2;
+    public const double DefaultConsumeTimeoutSeconds = 300;
+
     /// <summary>Turn the --start-time value into epoch milliseconds.
     ///
     /// Accepts an ISO 8601 string (2026-06-15T12:00:00Z) or a raw epoch-ms number.
@@ -445,7 +509,7 @@ public sealed class NxVirtualCameraClient
         return plan;
     }
 
-    /// <summary>Read each chunk of the file lazily, calling the action with (index, bytes).</summary>
+    /// <summary>Read each chunk of the file lazily, yielding (index, bytes).</summary>
     public static IEnumerable<(int Index, byte[] Data)> IterFileChunks(string path, int chunkSize)
     {
         long totalSize = new FileInfo(path).Length;
@@ -467,10 +531,10 @@ public sealed class NxVirtualCameraClient
 
     /// <summary>Build the { "items": [...] } body for the create-upload request.
     ///
-    /// startTimeMs is declared HERE (at create-upload), not at a separate consume
-    /// step: the modern v4 flow drops the deprecated `.../virtual/consume` call and
-    /// starts the import automatically once all chunks reach `.../virtual/uploads/
-    /// {uploadId}`.
+    /// startTimeMs and durationMs are required by the create-upload schema even
+    /// though startTimeMs is ALSO passed again at the consume step: the create-
+    /// upload call reserves the archive period for this file, and consume is what
+    /// actually triggers the import of the already-uploaded bytes into that period.
     ///
     /// durationMs is OPTIONAL: when known, the server uses it to reserve the
     /// archive period; when omitted, the server tries to derive the duration from
@@ -525,6 +589,23 @@ public sealed class NxVirtualCameraClient
         }
     }
 
+    /// <summary>Like ParseRoot, but never throws: used by the progress readers,
+    /// which fall back to a caller-supplied default instead of failing.</summary>
+    private static bool TryParseRoot(string json, out JsonElement root)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            root = doc.RootElement.Clone();
+            return true;
+        }
+        catch (JsonException)
+        {
+            root = default;
+            return false;
+        }
+    }
+
     /// <summary>Pull the bearer token from a login response: { "token": ... }.</summary>
     public static string ExtractToken(string json)
     {
@@ -566,7 +647,7 @@ public sealed class NxVirtualCameraClient
         throw new ApiException("Create-virtual response did not contain a device id.");
     }
 
-    /// <summary>Pull the lock token from a lock response, defensively.
+    /// <summary>Pull the lock token from a lock/consume/extend response, defensively.
     ///
     /// The v4 lock reply is shaped { "id": ..., "lockInfo": { "token": ..., ... } },
     /// so the token lives under "lockInfo". Older/edge shapes may put it at the top
@@ -590,6 +671,42 @@ public sealed class NxVirtualCameraClient
             }
         }
         throw new ApiException("Lock response did not contain a token.");
+    }
+
+    /// <summary>Pull lockInfo.progress (the consume progress, 0-100) from a lock/
+    /// consume/extend response, defensively. Missing, unparseable, or non-numeric
+    /// shapes fall back to `defaultValue`.</summary>
+    public static int ParseLockProgress(string json, int defaultValue = 0)
+    {
+        if (!TryParseRoot(json, out JsonElement root)) return defaultValue;
+        JsonElement data = Unwrap(root);
+        if (data.ValueKind == JsonValueKind.Object
+            && data.TryGetProperty("lockInfo", out JsonElement lockInfo)
+            && lockInfo.ValueKind == JsonValueKind.Object
+            && lockInfo.TryGetProperty("progress", out JsonElement progressEl)
+            && progressEl.ValueKind != JsonValueKind.Null)
+        {
+            return TryReadInt(progressEl, defaultValue);
+        }
+        return defaultValue;
+    }
+
+    /// <summary>Pull uploadProgressPercent from an upload-status reply, defensively.
+    ///
+    /// Missing/unrecognised shapes fall back to `defaultValue`, which is 100:
+    /// chunk PUTs are synchronous, so by the time all chunks have been sent without
+    /// error the upload is complete even if this server reply omits the field.</summary>
+    public static int ParseUploadProgress(string json, int defaultValue = 100)
+    {
+        if (!TryParseRoot(json, out JsonElement root)) return defaultValue;
+        JsonElement data = Unwrap(root);
+        if (data.ValueKind == JsonValueKind.Object
+            && data.TryGetProperty("uploadProgressPercent", out JsonElement el)
+            && el.ValueKind != JsonValueKind.Null)
+        {
+            return TryReadInt(el, defaultValue);
+        }
+        return defaultValue;
     }
 
     /// <summary>Read the create-upload reply -> (uploadId, chunkSizeB), defensively.

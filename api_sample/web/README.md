@@ -24,7 +24,7 @@ Browser versions now cover the full shared sample set, plus the web-only live-vi
 | [`webrtc-live-view`](webrtc-live-view) | Cloud login + list cameras + **live video** via `@networkoptix/webrtc-stream-manager` | REST v4 + WebRTC | 31 |
 | [`media-http-stream`](media-http-stream) | Direct **or** cloud login → play live/archive **video** in an HTML5 `<video>` over `media.webm` (proxy converts the `?auth` token to a bearer header and streams the body) | REST v4 | 35 |
 | [`rest-rule-schedule-browser`](rest-rule-schedule-browser) | Direct **or** cloud login → list event rules, multi-select with checkboxes, pick any **days + time window**, and `PATCH` the v4 schedule onto every selected rule; proxy forwards the PATCH method/body/bearer across the relay 307 | REST v4 | 52 |
-| [`virtual-camera-upload-browser`](virtual-camera-upload-browser) | Direct **or** cloud login → create a virtual camera and upload footage to it from the browser | REST v4 | 25 |
+| [`virtual-camera-upload-browser`](virtual-camera-upload-browser) | Direct **or** cloud login → create a virtual camera and upload footage to it from the browser | REST v4 | 39 |
 
 ## Other browser demos (outside the shared catalog)
 

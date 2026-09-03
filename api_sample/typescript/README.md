@@ -1,7 +1,8 @@
 # Nx API Samples — TypeScript
 
-TypeScript versions of the Nx API samples, with full parity to the Python and
-Node sets. All REST samples target the latest **`/rest/v4`** API.
+TypeScript versions of the Nx API samples, covering the shared catalog (a few
+Python-only and Node-only samples have no TypeScript version yet). All REST
+samples target the latest **`/rest/v4`** API.
 
 **No build step, zero runtime dependencies.** The samples run directly on
 **Node 22.6+** via native *type stripping* — Node erases the type annotations and
@@ -34,7 +35,7 @@ in one place and type-checked across all six samples.
 | [`rest-event-log`](rest-event-log) | Scoped token + relay 307 + event window/parsing + `--list-event-types` manifest | REST v4 | 30 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file — both auth modes, `media.{format}` streaming, relay 307 | REST v4 | 29 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (Weekdays/Weekend/24x7 presets), both auth modes | REST v4 | 25 |
-| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 27 |
+| [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 39 |
 
 ## Requirements
 
@@ -90,10 +91,3 @@ npm run typecheck  # tsc --noEmit across all samples + nx-types.ts
   Node samples.
 - **Bearer-token only**, latest **`/rest/v4`**, and the relay's **307 followed
   manually with the bearer re-attached** where the relay is involved.
-
-## Relation to the other languages
-
-Each folder mirrors the matching [`../node_js`](../node_js) and [`../python`](../python)
-sample with the same behavior and matching offline tests. TypeScript uses
-`--dotenv` (like Node). The browser samples live in [`../web`](../web), and the
-C# versions in [`../csharp`](../csharp).

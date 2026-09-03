@@ -75,6 +75,24 @@ public static class Program
             return 2;
         }
 
+        // How often to poll .../virtual/extend while the import runs, and how long
+        // to keep polling before giving up. Both in seconds.
+        double pollIntervalSeconds =
+            args.PollInterval ?? NxVirtualCameraClient.DefaultPollIntervalSeconds;
+        if (pollIntervalSeconds <= 0)
+        {
+            Console.Error.WriteLine("--poll-interval must be a positive number of seconds.");
+            return 2;
+        }
+
+        double consumeTimeoutSeconds =
+            args.ConsumeTimeout ?? NxVirtualCameraClient.DefaultConsumeTimeoutSeconds;
+        if (consumeTimeoutSeconds <= 0)
+        {
+            Console.Error.WriteLine("--consume-timeout must be a positive number of seconds.");
+            return 2;
+        }
+
         using HttpClient http = BuildHttpClient(args.Insecure, args.Debug);
         var client = new NxVirtualCameraClient(http, config.Host!);
 
@@ -87,6 +105,8 @@ public static class Program
                 client, args.File!, args.Name, startTimeMs, ttlMs, chunkSize,
                 durationMs: args.DurationMs,
                 deviceId: args.DeviceId,
+                pollIntervalSeconds: pollIntervalSeconds,
+                consumeTimeoutSeconds: consumeTimeoutSeconds,
                 onProgress: m => Console.WriteLine($"  {m}"));
 
             Console.WriteLine(

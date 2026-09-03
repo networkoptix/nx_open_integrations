@@ -37,8 +37,8 @@ class FakeResponse:
 class RecordingSession:
     """Records the ordered sequence of calls and serves queued responses.
 
-    Each verb (post/patch/put/delete) pops from its own response queue (or a
-    single shared default). Every call is appended to `calls` as a dict so a
+    Each verb (post/patch/put/delete/get) pops from its own response queue (or
+    a single shared default). Every call is appended to `calls` as a dict so a
     test can assert the exact method + URL + body sequence.
     """
 
@@ -57,7 +57,8 @@ class RecordingSession:
         queue = self._queues[verb]
         if not queue:
             return FakeResponse(200, {})
-        # Reuse the last response if the queue runs dry (handy for many PUTs).
+        # Reuse the last response if the queue runs dry (handy for many PUTs
+        # or many extend polls).
         return queue.pop(0) if len(queue) > 1 else queue[0]
 
     def post(self, url, json=None, headers=None, timeout=None):
@@ -92,6 +93,22 @@ def make_client(session):
     client = sample.NxVirtualCameraClient(HOST, "admin", "pw", session=session)
     client.token = "tok"
     return client
+
+
+class FakeClock:
+    """A controllable stand-in for time.monotonic()/time.sleep() so
+    wait_for_consume can be tested without any real waiting."""
+
+    def __init__(self, start=0.0):
+        self.now = start
+        self.sleeps = []
+
+    def time_fn(self):
+        return self.now
+
+    def sleep_fn(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +260,21 @@ def test_parse_lock_token_missing_raises():
         sample.parse_lock_token({"nope": 1})
 
 
+def test_parse_lock_progress_reads_lockinfo():
+    data = {"id": "d1", "lockInfo": {"token": "t", "progress": 42}}
+    assert sample.parse_lock_progress(data) == 42
+
+
+def test_parse_lock_progress_missing_uses_default():
+    assert sample.parse_lock_progress({"id": "d1"}, default=7) == 7
+    assert sample.parse_lock_progress({}, default=0) == 0
+
+
+def test_parse_lock_progress_non_numeric_uses_default():
+    data = {"lockInfo": {"progress": "not-a-number"}}
+    assert sample.parse_lock_progress(data, default=5) == 5
+
+
 def test_parse_upload_item_uses_server_chunk_size():
     data = {"items": [{"uploadId": "clip.mkv", "chunkSizeB": 4096}]}
     upload_id, chunk = sample.parse_upload_item(data, 1048576, "clip.mkv")
@@ -270,6 +302,21 @@ def test_parse_upload_item_invalid_chunk_size_falls_back():
     assert chunk == 999
 
 
+def test_parse_upload_progress_reads_field():
+    assert sample.parse_upload_progress({"uploadProgressPercent": 63}) == 63
+
+
+def test_parse_upload_progress_missing_defaults_to_100():
+    # Chunk PUTs are synchronous, so no field present after a clean upload
+    # loop is treated as "done", not "unknown".
+    assert sample.parse_upload_progress({}) == 100
+
+
+def test_parse_upload_progress_non_numeric_uses_default():
+    data = {"uploadProgressPercent": "oops"}
+    assert sample.parse_upload_progress(data, default=11) == 11
+
+
 # ---------------------------------------------------------------------------
 # Client: login
 # ---------------------------------------------------------------------------
@@ -294,6 +341,45 @@ def test_login_unauthorized_raises_autherror():
 
 
 # ---------------------------------------------------------------------------
+# wait_for_consume (extend-poll loop)
+# ---------------------------------------------------------------------------
+
+def test_wait_for_consume_polls_until_100():
+    session = RecordingSession(patch=[
+        FakeResponse(200, {"lockInfo": {"progress": 30}}),
+        FakeResponse(200, {"lockInfo": {"progress": 70}}),
+        FakeResponse(200, {"lockInfo": {"progress": 100}}),
+    ])
+    client = make_client(session)
+    clock = FakeClock()
+    seen = []
+
+    progress = sample.wait_for_consume(
+        client, "{dev-1}", "lock-1", ttl_ms=60000, poll_interval_s=2,
+        timeout_s=300, sleep_fn=clock.sleep_fn, time_fn=clock.time_fn,
+        on_progress=seen.append)
+
+    assert progress == 100
+    assert len(session.calls) == 3
+    assert clock.sleeps == [2, 2, 2]
+    assert all(c["json"] == {"ttlMs": 60000, "token": "lock-1"}
+              for c in session.calls)
+    assert seen == ["Consume progress: 30%", "Consume progress: 70%",
+                    "Consume progress: 100%"]
+
+
+def test_wait_for_consume_times_out():
+    session = RecordingSession(patch=[FakeResponse(200, {"lockInfo": {"progress": 40}})])
+    client = make_client(session)
+    clock = FakeClock()
+
+    with pytest.raises(sample.ApiError):
+        sample.wait_for_consume(
+            client, "{dev-1}", "lock-1", ttl_ms=60000, poll_interval_s=2,
+            timeout_s=5, sleep_fn=clock.sleep_fn, time_fn=clock.time_fn)
+
+
+# ---------------------------------------------------------------------------
 # Full happy-path orchestration: exact call sequence
 # ---------------------------------------------------------------------------
 
@@ -313,37 +399,39 @@ def test_full_upload_call_sequence(tmp_path):
         ],
         patch=[
             FakeResponse(200, {"lockInfo": {"token": "lock-1"}}),  # lock
-            FakeResponse(200, {}),                    # release
+            FakeResponse(200, {"lockInfo": {"token": "lock-1"}}),  # consume
+            FakeResponse(200, {"lockInfo": {"progress": 100}}),    # extend (poll)
+            FakeResponse(200, {}),                                 # release
         ],
         put=[FakeResponse(200, {})],  # reused for every chunk
-        get=[FakeResponse(200, {"status": "consuming"})],  # upload status
+        get=[FakeResponse(200, {"uploadProgressPercent": 100})],  # upload status
     )
     client = make_client(session)
+    clock = FakeClock()
 
-    result = upload = sample.upload_video(
+    result = sample.upload_video(
         client, str(path), name="Cam", start_time_ms=1700000000000,
-        ttl_ms=300000, requested_chunk_size=1048576, duration_ms=30000)
+        ttl_ms=300000, requested_chunk_size=1048576, duration_ms=30000,
+        poll_interval_s=2, consume_timeout_s=300,
+        sleep_fn=clock.sleep_fn, time_fn=clock.time_fn)
 
     methods_urls = [(c["method"], c["url"]) for c in session.calls]
     base = HOST + "/rest/v4/devices"
-    # No deprecated /virtual/consume call: status is read from the uploads
-    # endpoint and the import auto-starts on completion.
     assert methods_urls == [
         ("POST", base + "/*/virtual"),
-        ("PATCH", base + "/{dev-1}/virtual/lock"),
         ("POST", base + "/{dev-1}/virtual/uploads"),
         ("PUT", base + "/{dev-1}/virtual/uploads/clip.mkv"),
         ("PUT", base + "/{dev-1}/virtual/uploads/clip.mkv"),
         ("PUT", base + "/{dev-1}/virtual/uploads/clip.mkv"),
         ("GET", base + "/{dev-1}/virtual/uploads/clip.mkv"),
+        ("PATCH", base + "/{dev-1}/virtual/lock"),
+        ("PATCH", base + "/{dev-1}/virtual/consume"),
+        ("PATCH", base + "/{dev-1}/virtual/extend"),
         ("PATCH", base + "/{dev-1}/virtual/release"),
     ]
 
-    # Bodies / params on the way through.
-    create_virtual, lock, create_upload = (session.calls[0], session.calls[1],
-                                           session.calls[2])
+    create_virtual, create_upload = session.calls[0], session.calls[1]
     assert create_virtual["json"] == {"name": "Cam"}
-    assert lock["json"] == {"ttlMs": 300000}
     assert create_upload["json"] == {"items": [{
         "filename": "clip.mkv", "sizeB": 250, "md5": md5_b64,
         "startTimeMs": 1700000000000, "chunkSizeB": 1048576,
@@ -355,15 +443,21 @@ def test_full_upload_call_sequence(tmp_path):
     assert all(p["headers"]["Content-Type"] == "application/octet-stream"
                for p in puts)
 
-    release = session.calls[7]
+    lock, consume, extend, release = (c for c in session.calls
+                                      if c["method"] == "PATCH")
+    assert lock["json"] == {"ttlMs": 300000}
+    assert consume["json"] == {"token": "lock-1", "uploadId": "clip.mkv",
+                               "startTimeMs": 1700000000000}
+    assert extend["json"] == {"ttlMs": 300000, "token": "lock-1"}
     assert release["json"] == {"token": "lock-1"}
 
     # Bearer attached to every authenticated call.
     assert all(c["headers"]["Authorization"] == "Bearer tok" for c in session.calls)
 
-    assert upload["device_id"] == "{dev-1}"
+    assert result["device_id"] == "{dev-1}"
     assert result["chunk_count"] == 3
     assert result["chunk_size_b"] == 100
+    assert result["consume_progress"] == 100
 
 
 def test_existing_device_skips_create(tmp_path):
@@ -372,24 +466,59 @@ def test_existing_device_skips_create(tmp_path):
 
     session = RecordingSession(
         post=[FakeResponse(200, {"items": [{"uploadId": "clip.mp4"}]})],
-        patch=[FakeResponse(200, {"token": "L"}), FakeResponse(200, {}),
-               FakeResponse(200, {})],
+        patch=[
+            FakeResponse(200, {"lockInfo": {"token": "L"}}),      # lock
+            FakeResponse(200, {"lockInfo": {"token": "L"}}),      # consume
+            FakeResponse(200, {"lockInfo": {"progress": 100}}),   # extend
+            FakeResponse(200, {}),                                # release
+        ],
         put=[FakeResponse(200, {})],
+        get=[FakeResponse(200, {"uploadProgressPercent": 100})],
     )
     client = make_client(session)
+    clock = FakeClock()
 
     sample.upload_video(client, str(path), name="ignored",
                         start_time_ms=1, ttl_ms=1000,
-                        requested_chunk_size=1024, device_id="{existing}")
+                        requested_chunk_size=1024, device_id="{existing}",
+                        sleep_fn=clock.sleep_fn, time_fn=clock.time_fn)
 
     methods_urls = [(c["method"], c["url"]) for c in session.calls]
     base = HOST + "/rest/v4/devices"
-    # No create-virtual POST; first call is the lock.
-    assert methods_urls[0] == ("PATCH", base + "/{existing}/virtual/lock")
+    # No create-virtual POST; first call is create-upload.
+    assert methods_urls[0] == ("POST", base + "/{existing}/virtual/uploads")
     assert ("POST", base + "/*/virtual") not in methods_urls
 
 
-def test_release_called_even_when_a_step_fails(tmp_path):
+def test_upload_failure_before_lock_cancels_upload_and_skips_release(tmp_path):
+    # Upload-status GET fails before any lock is acquired: cancel the upload,
+    # but there is no lock token yet so release must NOT be called.
+    path = tmp_path / "clip.mkv"
+    path.write_bytes(b"z" * 10)
+
+    session = RecordingSession(
+        post=[FakeResponse(200, {"id": "{dev-9}"}),
+              FakeResponse(200, {"items": [{"uploadId": "clip.mkv"}]})],
+        put=[FakeResponse(200, {})],
+        get=[FakeResponse(500, text="status boom")],  # status GET FAILS
+        delete=[FakeResponse(200, {})],
+    )
+    client = make_client(session)
+
+    with pytest.raises(sample.ApiError):
+        sample.upload_video(client, str(path), name="Cam", start_time_ms=1,
+                            ttl_ms=1000, requested_chunk_size=1024)
+
+    methods = [c["method"] for c in session.calls]
+    assert "PATCH" not in methods  # lock/consume/extend/release never reached
+    delete_calls = [c for c in session.calls if c["method"] == "DELETE"]
+    assert len(delete_calls) == 1
+    assert delete_calls[0]["url"].endswith("/uploads/clip.mkv")
+
+
+def test_consume_failure_cancels_upload_and_still_releases(tmp_path):
+    # Consume times out after the lock was acquired: expect one cancel-upload
+    # DELETE and exactly one release, in that order.
     path = tmp_path / "clip.mkv"
     path.write_bytes(b"z" * 10)
 
@@ -398,10 +527,51 @@ def test_release_called_even_when_a_step_fails(tmp_path):
               FakeResponse(200, {"items": [{"uploadId": "clip.mkv"}]})],
         patch=[
             FakeResponse(200, {"lockInfo": {"token": "lock-9"}}),  # lock OK
-            FakeResponse(200, {}),                                  # release still runs
+            FakeResponse(200, {"lockInfo": {"token": "lock-9"}}),  # consume OK
+            FakeResponse(200, {"lockInfo": {"progress": 10}}),     # extend: stuck at 10%
+            FakeResponse(200, {}),                                 # release
         ],
         put=[FakeResponse(200, {})],
-        get=[FakeResponse(500, text="status boom")],  # status GET FAILS
+        get=[FakeResponse(200, {"uploadProgressPercent": 100})],
+        delete=[FakeResponse(200, {})],
+    )
+    client = make_client(session)
+    clock = FakeClock()
+
+    with pytest.raises(sample.ApiError):
+        sample.upload_video(client, str(path), name="Cam", start_time_ms=1,
+                            ttl_ms=1000, requested_chunk_size=1024,
+                            poll_interval_s=2, consume_timeout_s=5,
+                            sleep_fn=clock.sleep_fn, time_fn=clock.time_fn)
+
+    base = HOST + "/rest/v4/devices"
+    delete_calls = [c for c in session.calls if c["method"] == "DELETE"]
+    assert len(delete_calls) == 1
+    assert delete_calls[0]["url"] == base + "/{dev-9}/virtual/uploads/clip.mkv"
+
+    release_calls = [c for c in session.calls
+                     if c["method"] == "PATCH" and c["url"].endswith("/release")]
+    assert len(release_calls) == 1
+    assert release_calls[0]["json"] == {"token": "lock-9"}
+
+    # Cancel happens before release.
+    delete_index = session.calls.index(delete_calls[0])
+    release_index = session.calls.index(release_calls[0])
+    assert delete_index < release_index
+
+
+def test_incomplete_upload_status_raises_before_locking(tmp_path):
+    # Server reports the raw upload itself is not fully received yet: fail
+    # fast instead of locking/consuming a partial file.
+    path = tmp_path / "clip.mkv"
+    path.write_bytes(b"z" * 10)
+
+    session = RecordingSession(
+        post=[FakeResponse(200, {"id": "{dev-9}"}),
+              FakeResponse(200, {"items": [{"uploadId": "clip.mkv"}]})],
+        put=[FakeResponse(200, {})],
+        get=[FakeResponse(200, {"uploadProgressPercent": 42})],
+        delete=[FakeResponse(200, {})],
     )
     client = make_client(session)
 
@@ -409,12 +579,8 @@ def test_release_called_even_when_a_step_fails(tmp_path):
         sample.upload_video(client, str(path), name="Cam", start_time_ms=1,
                             ttl_ms=1000, requested_chunk_size=1024)
 
-    base = HOST + "/rest/v4/devices"
-    release_calls = [c for c in session.calls
-                     if c["method"] == "PATCH" and c["url"].endswith("/release")]
-    assert len(release_calls) == 1
-    assert release_calls[0]["url"] == base + "/{dev-9}/virtual/release"
-    assert release_calls[0]["json"] == {"token": "lock-9"}
+    methods = [c["method"] for c in session.calls]
+    assert "PATCH" not in methods
 
 
 # ---------------------------------------------------------------------------
