@@ -96,20 +96,20 @@ customization flag. Add an entry there if your product isn't listed.
 
 ```bash
 # Uses system_setting.conf by default:
-python3 configure_system.py
+python3 rest_configure_system_via_api.py
 
 # Load a different config file:
-python3 configure_system.py --file my_system.conf
+python3 rest_configure_system_via_api.py --file my_system.conf
 
 # Save the summary to a file as well as printing it:
-python3 configure_system.py --output
+python3 rest_configure_system_via_api.py --output
 
 # Suppress terminal output (e.g. for cron/CI):
-python3 configure_system.py --silent
+python3 rest_configure_system_via_api.py --silent
 ```
 
 ```
-usage: configure_system.py [-h] [-f FILE] [-o] [-s]
+usage: rest_configure_system_via_api.py [-h] [-f FILE] [-o] [-s]
 
   -f, --file     Specify the file to read system settings from (default: system_setting.conf)
   -o, --output   Save the summary result to a file
@@ -130,12 +130,12 @@ Test files mirror the source files 1:1:
 | Test file | Covers |
 |---|---|
 | `test_vms_system.py` | `VmsSystem`: config loading, local/cloud login, settings read/update, cloud bind/unbind (personal account and organization), the auto-discovery/camera-optimization/statistics toggles, site merging (`[hive]` parsing, `merge_sites()`, `get_merge_status()`), and full `setup_system()` runs. |
-| `test_configure_system.py` | `get_args()` and `main()` (with `VmsSystem` swapped for a fake, so it never touches the network). |
+| `test_rest_configure_system_via_api.py` | `get_args()` and `main()` (with `VmsSystem` swapped for a fake, so it never touches the network). |
 | `test_format_output.py` | The summary string formatting and result-file writing helpers. |
 
 ## Output
 
-- **`configure_system.log`** — every run appends execution details here
+- **`rest_configure_system_via_api.log`** — every run appends execution details here
   (requests made, success/failure, errors). Useful for troubleshooting a
   failed run.
 - **`{system_name}_{timestamp}_configure_result.log`** — a one-run summary,
@@ -150,7 +150,7 @@ small wrapper that loops over several config files, e.g.:
 
 ```bash
 for conf in configs/*.conf; do
-  python3 configure_system.py --file "$conf" --output --silent
+  python3 rest_configure_system_via_api.py --file "$conf" --output --silent
 done
 ```
 
@@ -186,9 +186,9 @@ Notes:
   one server should carry a `[hive]` section.
 - **Best-effort.** A follower that never becomes reachable (~5 min) or whose
   merge fails is logged and skipped; the remaining followers still merge. Check
-  `configure_system.log` afterwards to confirm the site is the size you expect.
+  `rest_configure_system_via_api.log` afterwards to confirm the site is the size you expect.
 - The summary a seed prints describes **its own** configuration. Merge outcomes
-  go to `configure_system.log`.
+  go to `rest_configure_system_via_api.log`.
 
 ## Extending
 
@@ -203,24 +203,24 @@ matching key to `system_setting.conf`.
 |---|---|---|
 | `[ERROR] VmsSystem object initialization was not successful` | Missing/misnamed key in `system_setting.conf`, or `cloud_hosts.json` not found. | Check the config against the table above; confirm both files are in the working directory. |
 | `[ERROR] Can't get the current system settings for ...` | Login failed, or the server is unreachable. | Confirm `ip_address`/`port`, and that `local_admin_password` is correct for an already-initialized system. |
-| Cloud connection stays `UNKNOWN` | Settings couldn't be read from the server at all. | Check `configure_system.log` for the underlying request error. |
+| Cloud connection stays `UNKNOWN` | Settings couldn't be read from the server at all. | Check `rest_configure_system_via_api.log` for the underlying request error. |
 | `organizationId is empty` warning, cloud bind fails | `connect_to_organization = True` but `organization_id` wasn't set. | Set `organization_id` in `[system_settings]`, or set `connect_to_organization = False`. |
 | Product/cloud host not found | `product` in `system_setting.conf` doesn't match any entry in `cloud_hosts.json`. | Use one of the listed products (`Nx Witness`, `Nx EVOS`), or add your own entry. |
 | `follower ... never became reachable; skipping` | The follower never accepted the shared admin password within ~5 min: it isn't up, isn't reachable from the seed, or was configured with a different `local_admin_password`. | Confirm the endpoint in `[hive] merge`, and that every server in the hive uses the same `local_admin_password`. |
-| Site ends up smaller than expected | One or more merges were skipped — merging is best-effort by design. | Search `configure_system.log` for `merge`; re-running the seed merges whatever is still separate. |
+| Site ends up smaller than expected | One or more merges were skipped — merging is best-effort by design. | Search `rest_configure_system_via_api.log` for `merge`; re-running the seed merges whatever is still separate. |
 | Name change reported as successful but the name is unchanged | A v3-era `systemName` reaching a v4 server: the `PATCH` returns `200` and does nothing. | Use `siteName`. See the note in [What the code does](#what-the-code-does-nx-v4-rest-api). |
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `configure_system.py` | Entry point. Parses CLI args and drives the setup. Run this directly. |
+| `rest_configure_system_via_api.py` | Entry point. Parses CLI args and drives the setup. Run this directly. |
 | `vms_system.py` | `VmsSystem` class: all REST/CDB calls and setup logic. |
 | `format_output.py` | Formats the summary for the terminal and the result log file. |
 | `test_vms_system.py` | Offline tests for `vms_system.py` (mocked HTTP). |
-| `test_configure_system.py` | Offline tests for `configure_system.py` (mocked `VmsSystem`). |
+| `test_rest_configure_system_via_api.py` | Offline tests for `rest_configure_system_via_api.py` (mocked `VmsSystem`). |
 | `test_format_output.py` | Offline tests for `format_output.py`. |
 | `requirements.txt` | `requests` + `pytest`. |
 | `system_setting.conf` | System configuration template — copy and edit this. |
 | `cloud_hosts.json` | Maps powered-by-Nx products to their cloud host and customization. |
-| `configure_system.log` | Generated at runtime — execution log. |
+| `rest_configure_system_via_api.log` | Generated at runtime — execution log. |

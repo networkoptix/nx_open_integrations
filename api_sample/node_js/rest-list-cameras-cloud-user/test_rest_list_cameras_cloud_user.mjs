@@ -1,8 +1,8 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 /**
- * Offline tests for rest_cloud_sample.mjs. No network, no account needed.
+ * Offline tests for rest_list_cameras_cloud_user.mjs. No network, no account needed.
  *
- * Run from this folder:  node --test test_rest_cloud_sample.mjs
+ * Run from this folder:  node --test test_rest_list_cameras_cloud_user.mjs
  */
 
 import assert from "node:assert/strict";
@@ -14,7 +14,7 @@ import {
   resolveConfig,
   AuthError,
   ApiError,
-} from "./rest_cloud_sample.mjs";
+} from "./rest_list_cameras_cloud_user.mjs";
 
 function makeResponse({ status = 200, json = null, text = "", headers = {} } = {}) {
   const lower = {};

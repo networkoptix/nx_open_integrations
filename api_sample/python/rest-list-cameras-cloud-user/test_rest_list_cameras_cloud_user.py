@@ -1,6 +1,6 @@
 # Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 """
-Offline tests for rest_cloud_sample.py. No network, no account needed.
+Offline tests for rest_list_cameras_cloud_user.py. No network, no account needed.
 
 Run from this folder:  pytest -v
 """
@@ -9,7 +9,7 @@ import argparse
 
 import pytest
 
-import rest_cloud_sample as sample
+import rest_list_cameras_cloud_user as sample
 
 
 class FakeResponse:

@@ -1,6 +1,6 @@
 # Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 """
-Offline tests for cdb_oauth2_sample.py. No network, no account needed.
+Offline tests for cdb_oauth2_list_systems.py. No network, no account needed.
 
 Run from this folder:  pytest -v
 """
@@ -9,7 +9,7 @@ import argparse
 
 import pytest
 
-import cdb_oauth2_sample as sample
+import cdb_oauth2_list_systems as sample
 
 
 # ---------------------------------------------------------------------------

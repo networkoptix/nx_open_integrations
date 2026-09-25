@@ -1,8 +1,8 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 /**
- * Offline tests for cdb_oauth2_sample.mjs. No network, no account needed.
+ * Offline tests for cdb_oauth2_list_systems.mjs. No network, no account needed.
  *
- * Run from this folder:  node --test test_cdb_oauth2_sample.mjs
+ * Run from this folder:  node --test test_cdb_oauth2_list_systems.mjs
  */
 
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import {
   resolveConfig,
   AuthError,
   ApiError,
-} from "./cdb_oauth2_sample.mjs";
+} from "./cdb_oauth2_list_systems.mjs";
 
 function makeResponse({ status = 200, json = null, text = "" } = {}) {
   return {

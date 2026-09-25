@@ -58,10 +58,10 @@ cp ../../.env.example ../../.env   # then set NX_CLOUD_SITE_ID
 ## Run
 
 ```bash
-python rest_cloud_sample.py --env-file ../../.env --insecure
+python rest_list_cameras_cloud_user.py --env-file ../../.env --insecure
 
 # Or fully on the command line:
-python rest_cloud_sample.py \
+python rest_list_cameras_cloud_user.py \
   --cloud-host https://nxvms.com \
   --user you@example.com \
   --password 'your-password' \
@@ -98,6 +98,6 @@ pytest -v
 
 | File | Purpose |
 |------|---------|
-| `rest_cloud_sample.py` | The sample. Run it directly. |
-| `test_rest_cloud_sample.py` | Offline tests (mocked HTTP). |
+| `rest_list_cameras_cloud_user.py` | The sample. Run it directly. |
+| `test_rest_list_cameras_cloud_user.py` | Offline tests (mocked HTTP). |
 | `requirements.txt` | `requests` + `pytest`. |

@@ -17,7 +17,7 @@ import sys
 import vms_system
 import format_output
 
-logging.basicConfig(filename="configure_system.log",
+logging.basicConfig(filename="rest_configure_system_via_api.log",
                     filemode='a',
                     format='%(asctime)s %(levelname)s %(message)s',
                     datefmt="%Y-%m-%d %H:%M:%S",
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_args(argv):
-    parser = argparse.ArgumentParser("configure_system.py",
+    parser = argparse.ArgumentParser("rest_configure_system_via_api.py",
                                      formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("-f", "--file", action='store', default="system_setting.conf",

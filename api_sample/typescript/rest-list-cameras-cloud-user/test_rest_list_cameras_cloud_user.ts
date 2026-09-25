@@ -1,8 +1,8 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 /**
- * Offline tests for rest_cloud_sample.ts. No network, no account needed.
+ * Offline tests for rest_list_cameras_cloud_user.ts. No network, no account needed.
  *
- * Run from this folder:  node --test test_rest_cloud_sample.ts
+ * Run from this folder:  node --test test_rest_list_cameras_cloud_user.ts
  */
 
 import assert from "node:assert/strict";
@@ -17,7 +17,7 @@ import {
   AuthError,
   ApiError,
   type ClientOptions,
-} from "./rest_cloud_sample.ts";
+} from "./rest_list_cameras_cloud_user.ts";
 
 interface FakeResponseSpec {
   status?: number;

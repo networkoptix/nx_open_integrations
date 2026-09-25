@@ -23,13 +23,13 @@ These samples run directly on **Node 22.6+** via native type stripping — no
 build step. The `.ts` files execute as-is; the types are erased at load time.
 
 ```bash
-node cdb_oauth2_sample.ts --dotenv ../../.env
+node cdb_oauth2_list_systems.ts --dotenv ../../.env
 
 # Fully on the command line:
-node cdb_oauth2_sample.ts --host https://nxvms.com --user you@example.com --password 'pw'
+node cdb_oauth2_list_systems.ts --host https://nxvms.com --user you@example.com --password 'pw'
 
 # 2FA account:
-node cdb_oauth2_sample.ts --dotenv ../../.env --mfa-code 123456
+node cdb_oauth2_list_systems.ts --dotenv ../../.env --mfa-code 123456
 ```
 
 > `--dotenv` is used instead of `--env-file` (a Node built-in); see the
@@ -38,7 +38,7 @@ node cdb_oauth2_sample.ts --dotenv ../../.env --mfa-code 123456
 ## Run the tests
 
 ```bash
-node --test test_cdb_oauth2_sample.ts
+node --test test_cdb_oauth2_list_systems.ts
 ```
 
 ## Type-check
@@ -64,8 +64,8 @@ npm run typecheck
 
 | File | Purpose |
 |------|---------|
-| `cdb_oauth2_sample.ts` | The sample (`NxCloudOAuthClient` + CLI). |
-| `test_cdb_oauth2_sample.ts` | Offline tests (`node:test`, mocked `fetch`). |
+| `cdb_oauth2_list_systems.ts` | The sample (`NxCloudOAuthClient` + CLI). |
+| `test_cdb_oauth2_list_systems.ts` | Offline tests (`node:test`, mocked `fetch`). |
 
 Types are shared in [`../nx-types.ts`](../nx-types.ts); dev-only tooling
 (`typescript`, `@types/node`) lives in [`../package.json`](../package.json).

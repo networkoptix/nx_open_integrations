@@ -47,16 +47,16 @@ cp ../../.env.example ../../.env   # then set NX_CLOUD_HOST / USER / PASSWORD
 ## Run
 
 ```bash
-python cdb_oauth2_sample.py --env-file ../../.env
+python cdb_oauth2_list_systems.py --env-file ../../.env
 
 # Or fully on the command line:
-python cdb_oauth2_sample.py \
+python cdb_oauth2_list_systems.py \
   --host https://nxvms.com \
   --user you@example.com \
   --password 'your-password'
 
 # 2FA account:
-python cdb_oauth2_sample.py --env-file ../../.env --mfa-code 123456
+python cdb_oauth2_list_systems.py --env-file ../../.env --mfa-code 123456
 ```
 
 ## Run the tests
@@ -89,6 +89,6 @@ pytest -v
 
 | File | Purpose |
 |------|---------|
-| `cdb_oauth2_sample.py` | The sample. Run it directly. |
-| `test_cdb_oauth2_sample.py` | Offline tests (mocked HTTP). |
+| `cdb_oauth2_list_systems.py` | The sample. Run it directly. |
+| `test_cdb_oauth2_list_systems.py` | Offline tests (mocked HTTP). |
 | `requirements.txt` | `requests` + `pytest`. |

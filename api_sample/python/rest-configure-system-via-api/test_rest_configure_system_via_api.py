@@ -1,6 +1,6 @@
 # Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 """
-Offline tests for configure_system.py. No network, no server needed.
+Offline tests for rest_configure_system_via_api.py. No network, no server needed.
 
 main() is tested with vms_system.VmsSystem replaced by a fake, so nothing
 here ever constructs a real VmsSystem or touches the network -- that's
@@ -11,7 +11,7 @@ Run from this folder:  pytest -v
 
 import pytest
 
-import configure_system as sample
+import rest_configure_system_via_api as sample
 import vms_system
 
 
@@ -130,7 +130,7 @@ def test_main_failure_returns_error_code(monkeypatch, tmp_path, capsys):
 def test_main_defaults_to_sys_argv(monkeypatch, tmp_path, capsys):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(vms_system, "VmsSystem", FakeVmsSystem)
-    monkeypatch.setattr("sys.argv", ["configure_system.py", "-s"])
+    monkeypatch.setattr("sys.argv", ["rest_configure_system_via_api.py", "-s"])
 
     exit_code = sample.main()
 

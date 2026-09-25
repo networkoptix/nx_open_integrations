@@ -18,13 +18,13 @@ The cloud lists **Sites**, not cameras. To list a site's cameras you need a
 ## Run
 
 ```bash
-node cdb_oauth2_sample.mjs --dotenv ../../.env
+node cdb_oauth2_list_systems.mjs --dotenv ../../.env
 
 # Fully on the command line:
-node cdb_oauth2_sample.mjs --host https://nxvms.com --user you@example.com --password 'pw'
+node cdb_oauth2_list_systems.mjs --host https://nxvms.com --user you@example.com --password 'pw'
 
 # 2FA account:
-node cdb_oauth2_sample.mjs --dotenv ../../.env --mfa-code 123456
+node cdb_oauth2_list_systems.mjs --dotenv ../../.env --mfa-code 123456
 ```
 
 > `--dotenv` is used instead of `--env-file` (a Node built-in); see the
@@ -33,7 +33,7 @@ node cdb_oauth2_sample.mjs --dotenv ../../.env --mfa-code 123456
 ## Run the tests
 
 ```bash
-node --test test_cdb_oauth2_sample.mjs   # or: npm test
+node --test test_cdb_oauth2_list_systems.mjs   # or: npm test
 ```
 
 ## CLI flags
@@ -52,6 +52,6 @@ node --test test_cdb_oauth2_sample.mjs   # or: npm test
 
 | File | Purpose |
 |------|---------|
-| `cdb_oauth2_sample.mjs` | The sample (`NxCloudOAuthClient` + CLI). |
-| `test_cdb_oauth2_sample.mjs` | Offline tests (`node:test`, mocked `fetch`). |
+| `cdb_oauth2_list_systems.mjs` | The sample (`NxCloudOAuthClient` + CLI). |
+| `test_cdb_oauth2_list_systems.mjs` | Offline tests (`node:test`, mocked `fetch`). |
 | `package.json` | `type: module`, `npm test` script. No dependencies. |

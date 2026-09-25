@@ -21,6 +21,8 @@ latest **`/rest/v4`** API.
 | [`rest-event-log`](rest-event-log) | Scoped token, manual 307, v4 time window + parsing | REST v4 | 22 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 36 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
+| [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) | Read PTZ capabilities, then move/stop/abs-move and drive presets and tours, both auth modes | REST v4 | 23 |
+| [`rest-configure-system-via-api`](rest-configure-system-via-api) | First-time site setup: name, admin password, cloud bind (personal or organization), default toggles | REST v4 + CDB | 82 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 42 |
 
 New to these? Read them top to bottom — that's the difficulty order.

@@ -36,16 +36,16 @@ use `import type`.
 
 ```bash
 # Run the sample (Node 22.6+, no build):
-node rest_cloud_sample.ts --dotenv ../../.env
+node rest_list_cameras_cloud_user.ts --dotenv ../../.env
 
 # Fully on the command line:
-node rest_cloud_sample.ts \
+node rest_list_cameras_cloud_user.ts \
   --cloud-host https://nxvms.com \
   --user you@example.com --password 'pw' \
   --site-id <your-site-id>
 
 # Run the offline tests:
-node --test test_rest_cloud_sample.ts
+node --test test_rest_list_cameras_cloud_user.ts
 
 # Type-check the whole TypeScript sample set (dev-only typescript + @types/node):
 npm run typecheck
@@ -69,8 +69,8 @@ npm run typecheck
 
 | File | Purpose |
 |------|---------|
-| `rest_cloud_sample.ts` | The sample (`NxCloudSiteClient` + CLI), typed against `../nx-types.ts`. |
-| `test_rest_cloud_sample.ts` | Offline tests (`node:test`, mocked `fetch`). |
+| `rest_list_cameras_cloud_user.ts` | The sample (`NxCloudSiteClient` + CLI), typed against `../nx-types.ts`. |
+| `test_rest_list_cameras_cloud_user.ts` | Offline tests (`node:test`, mocked `fetch`). |
 
 Dependencies live in the shared [`../package.json`](../package.json):
 `type: module`, `npm test` / `npm run typecheck` scripts, and dev-only

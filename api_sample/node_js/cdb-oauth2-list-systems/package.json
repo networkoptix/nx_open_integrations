@@ -8,10 +8,10 @@
     "node": ">=18"
   },
   "bin": {
-    "cdb-oauth2-list-systems": "./cdb_oauth2_sample.mjs"
+    "cdb-oauth2-list-systems": "./cdb_oauth2_list_systems.mjs"
   },
   "scripts": {
-    "start": "node cdb_oauth2_sample.mjs",
-    "test": "node --test test_cdb_oauth2_sample.mjs"
+    "start": "node cdb_oauth2_list_systems.mjs",
+    "test": "node --test test_cdb_oauth2_list_systems.mjs"
   }
 }

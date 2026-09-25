@@ -26,10 +26,10 @@ full follow-the-redirect-with-bearer pattern).
 ## Run
 
 ```bash
-node rest_cloud_sample.mjs --dotenv ../../.env
+node rest_list_cameras_cloud_user.mjs --dotenv ../../.env
 
 # Fully on the command line:
-node rest_cloud_sample.mjs \
+node rest_list_cameras_cloud_user.mjs \
   --cloud-host https://nxvms.com \
   --user you@example.com --password 'pw' \
   --site-id <your-site-id>
@@ -41,7 +41,7 @@ node rest_cloud_sample.mjs \
 ## Run the tests
 
 ```bash
-node --test test_rest_cloud_sample.mjs   # or: npm test
+node --test test_rest_list_cameras_cloud_user.mjs   # or: npm test
 ```
 
 ## CLI flags
@@ -59,6 +59,6 @@ node --test test_rest_cloud_sample.mjs   # or: npm test
 
 | File | Purpose |
 |------|---------|
-| `rest_cloud_sample.mjs` | The sample (`NxCloudSiteClient` + CLI). |
-| `test_rest_cloud_sample.mjs` | Offline tests (`node:test`, mocked `fetch`). |
+| `rest_list_cameras_cloud_user.mjs` | The sample (`NxCloudSiteClient` + CLI). |
+| `test_rest_list_cameras_cloud_user.mjs` | Offline tests (`node:test`, mocked `fetch`). |
 | `package.json` | `type: module`, `npm test` script. No dependencies. |

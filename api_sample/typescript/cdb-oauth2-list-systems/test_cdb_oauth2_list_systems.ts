@@ -1,8 +1,8 @@
 // Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 /**
- * Offline tests for cdb_oauth2_sample.ts. No network, no account needed.
+ * Offline tests for cdb_oauth2_list_systems.ts. No network, no account needed.
  *
- * Run from this folder:  node --test test_cdb_oauth2_sample.ts
+ * Run from this folder:  node --test test_cdb_oauth2_list_systems.ts
  */
 
 import assert from "node:assert/strict";
@@ -16,8 +16,8 @@ import {
   resolveConfig,
   AuthError,
   ApiError,
-} from "./cdb_oauth2_sample.ts";
-import type { CliArgs } from "./cdb_oauth2_sample.ts";
+} from "./cdb_oauth2_list_systems.ts";
+import type { CliArgs } from "./cdb_oauth2_list_systems.ts";
 
 interface FakeResponseInit {
   status?: number;

@@ -34,6 +34,9 @@ that language has no version of that sample.
 | Set an event rule's **schedule** (`GET` rules + `PATCH` one) | **rest-rule-schedule** | [py](python/rest-rule-schedule) | [node](node_js/rest-rule-schedule) | [ts](typescript/rest-rule-schedule) | [web](web/rest-rule-schedule-browser) | [c#](csharp/rest-rule-schedule) | Server **or** cloud bearer (v4, `events/rules`) |
 | Upload footage to a **virtual camera** | **virtual-camera-upload** | [py](python/virtual-camera-upload) | [node](node_js/virtual-camera-upload) | [ts](typescript/virtual-camera-upload) | [web](web/virtual-camera-upload-browser) | [c#](csharp/virtual-camera-upload) | Server **or** cloud bearer (v4, `devices/*/footage`) |
 | Get **live-pushed** events instead of polling | **jsonrpc-subscribe-events** | — | [node](node_js/jsonrpc-subscribe-events) | — | — | — | Server bearer (v4, JSON-RPC WebSocket) |
+| Log a **web app** into Nx Cloud the way a production app should — redirect-based OAuth2 | **cdb-oauth2-authorization-code-login-browser** | — | — | — | [web](web/cdb-oauth2-authorization-code-login-browser) | — | OAuth2 `authorization_code` |
+| Set up a **brand-new site**: name it, set the admin password, connect it to the Cloud | **rest-configure-system-via-api** | [py](python/rest-configure-system-via-api) | — | — | — | — | Server bearer (v4) + Cloud CDB |
+| Drive a **PTZ camera** — move, stop, presets, tours | **rest-operate-ptz-via-api** | [py](python/rest-operate-ptz-via-api) | — | — | — | — | Server **or** cloud bearer (v4, via relay) |
 | Get **live-pushed** events instead of polling, using my **cloud** account | **jsonrpc-subscribe-events-cloud-user** | — | [node](node_js/jsonrpc-subscribe-events-cloud-user) | — | — | — | Cloud token scoped by `cloudSystemId` (v4, JSON-RPC WebSocket via relay) |
 
 ## 2. Suggested learning path
@@ -75,6 +78,9 @@ Each sample builds on the one before it. New here? Go top to bottom:
 | `rest-rule-schedule` | REST `/rest/v4` | `GET events/rules` + `PATCH events/rules/{id}` to set a rule's v4 structured schedule (Weekdays/Weekend/24x7 presets), both auth modes | ●●●● Advanced |
 | `virtual-camera-upload` | REST `/rest/v4` | Create a virtual camera and upload footage to it, both auth modes | ●●●● Advanced |
 | `jsonrpc-subscribe-events` | JSON-RPC (WebSocket) | Authenticate a WebSocket with `setSession`, subscribe to the live event log, receive pushed `update` notifications | ●●● Intermediate |
+| `cdb-oauth2-authorization-code-login-browser` | Cloud CDB | The real redirect-based OAuth2 `authorization_code` grant — the flow a production web app should use — then list Sites and drill into one Site's servers and cameras. Talks to the cloud directly, so unlike the other browser samples it needs **no dev proxy** | ●●●● Advanced |
+| `rest-configure-system-via-api` | REST `/rest/v4` + Cloud CDB | First-time site setup end to end: `site/setup`, admin password, cloud bind (personal **or** organization), and the default toggles. Python only, and the only multi-module sample | ●●●● Advanced |
+| `rest-operate-ptz-via-api` | REST `/rest/v4` | Read a camera's PTZ capabilities, then move / stop / abs-move it and drive presets and tours. Both auth modes, manual relay 307. Python only | ●●●● Advanced |
 | `jsonrpc-subscribe-events-cloud-user` | JSON-RPC (WebSocket) | Same as above but using scoped cloud token, and cloud relay. | ●●●● Advanced |
 
 ---
