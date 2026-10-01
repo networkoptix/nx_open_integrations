@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/ -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nx REST v4: back up and restore the Site database</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        margin: 0 auto; padding: 24px 16px; max-width: 46rem;
+      }
+      h1 { font-size: 1.3rem; margin: 0 0 4px; }
+      p.lede { margin: 0 0 20px; opacity: 0.8; }
+      fieldset { border: 1px solid rgba(128,128,128,0.4); border-radius: 8px; margin: 0 0 18px; padding: 14px 16px; }
+      legend { font-weight: 600; padding: 0 6px; }
+      label { display: block; margin: 10px 0 4px; font-weight: 500; }
+      input[type="text"], input[type="password"], input[type="file"] {
+        width: 100%; box-sizing: border-box; padding: 7px 9px;
+        border: 1px solid rgba(128,128,128,0.5); border-radius: 6px; font: inherit;
+      }
+      button { margin-top: 12px; padding: 8px 16px; font: inherit; border-radius: 6px; cursor: pointer; }
+      .danger { border: 1px solid #b3261e; }
+      .status { margin-top: 16px; padding: 10px 12px; border-radius: 6px; min-height: 1.2em; }
+      .status.ok { background: rgba(32,128,64,0.15); }
+      .status.error { background: rgba(179,38,30,0.15); }
+      .status.busy { background: rgba(128,128,128,0.15); }
+      .note { font-size: 0.88rem; opacity: 0.8; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+  </head>
+  <body>
+    <h1>Back up and restore the Site database</h1>
+    <p class="lede">
+      REST v4, <code>GET</code> and <code>POST /rest/v4/site/database</code>,
+      against <code id="host-label">(loading...)</code> through this
+      page's dev proxy.
+    </p>
+
+    <fieldset>
+      <legend>Sign in</legend>
+      <p class="note">
+        A local <strong>administrator</strong> account on the server. Both calls
+        require an administrator on a fresh session, so this page logs in again
+        immediately before each one.
+      </p>
+      <label for="user">Username</label>
+      <input id="user" type="text" autocomplete="username" placeholder="admin" />
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+    </fieldset>
+
+    <fieldset>
+      <legend>Back up</legend>
+      <p class="note">
+        Downloads the whole Site database as an opaque binary file. Note that
+        the browser holds the entire dump in memory before saving it; the
+        Python, Node.js and TypeScript versions stream it to disk instead.
+      </p>
+      <button id="backup" type="button">Download a dump</button>
+    </fieldset>
+
+    <form id="restore-form">
+      <fieldset class="danger">
+        <legend>Restore</legend>
+        <p class="note">
+          <strong>This replaces the entire site configuration and restarts the
+          server.</strong> Servers, cameras, users, groups, layouts, rules,
+          licences and storage settings are all overwritten by the dump.
+        </p>
+        <label for="dump">Dump file</label>
+        <input id="dump" name="dump" type="file" required />
+        <label for="confirm">
+          Type the server address shown above to confirm
+        </label>
+        <input id="confirm" type="text" autocomplete="off" placeholder="https://..." />
+        <button type="submit">Restore this dump</button>
+      </fieldset>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

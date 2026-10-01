@@ -1,0 +1,8 @@
+# Runtime dependency: the HTTP client used by the sample.
+requests>=2.28
+# urllib3 2 raises on a body shorter than its Content-Length; 1.26 silently
+# ends the stream, which would save a truncated dump as a complete one.
+urllib3>=2
+
+# Dev/test dependency: the test runner. Not needed to run the sample itself.
+pytest>=7.0

@@ -1,0 +1,14 @@
+{
+  "name": "nx-rest-backup-site-database-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: back up and restore one site's database over /rest/v4, with a zero-dependency dev proxy that streams the dump and reports upstream socket errors.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_backup_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

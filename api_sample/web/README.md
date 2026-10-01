@@ -19,6 +19,7 @@ Browser versions now cover the full shared sample set, plus the web-only live-vi
 | [`cdb-refresh-token-browser`](cdb-refresh-token-browser) | Login + `sessionStorage` persistence + refresh without re-sending the password (see its security note) | Cloud CDB | 33 |
 | [`rest-get-token-browser`](rest-get-token-browser) | Smallest server-auth demo: get a token from one mediaserver, use it, revoke it, then show the same token rejected — as a four-step timeline | REST v4 | 27 |
 | [`rest-list-cameras-local-browser`](rest-list-cameras-local-browser) | Direct login to one VMS server + list its cameras (proxy forwards `/server/*`) | REST v4 | 21 |
+| [`rest-backup-site-database-browser`](rest-backup-site-database-browser) | Download the Site database as a file and load one back, with a proxy that streams the dump and reports upstream socket errors so a restart can be told from a failure | REST v4 | 49 |
 | [`rest-list-cameras-browser`](rest-list-cameras-browser) | Cloud-user login + list a site's cameras via the relay | REST v4 | 21 |
 | [`rest-event-log-browser`](rest-event-log-browser) | Cloud login + read a site's event log over `/rest/v4/events/log` (event types from the manifest) | REST v4 | 23 |
 | [`webrtc-live-view`](webrtc-live-view) | Cloud login + list cameras + **live video** via `@networkoptix/webrtc-stream-manager` | REST v4 + WebRTC | 31 |

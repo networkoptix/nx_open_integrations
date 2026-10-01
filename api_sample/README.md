@@ -38,6 +38,7 @@ that language has no version of that sample.
 | Set up a **brand-new site**: name it, set the admin password, connect it to the Cloud | **rest-configure-system-via-api** | [py](python/rest-configure-system-via-api) | — | — | — | — | Server bearer (v4) + Cloud CDB |
 | Drive a **PTZ camera** — move, stop, presets, tours | **rest-operate-ptz-via-api** | [py](python/rest-operate-ptz-via-api) | — | — | — | — | Server **or** cloud bearer (v4, via relay) |
 | Get **live-pushed** events instead of polling, using my **cloud** account | **jsonrpc-subscribe-events-cloud-user** | — | [node](node_js/jsonrpc-subscribe-events-cloud-user) | — | — | — | Cloud token scoped by `cloudSystemId` (v4, JSON-RPC WebSocket via relay) |
+| Back up a site's **configuration** to a file, and load it back | **rest-backup-site-database** | [py](python/rest-backup-site-database) | [node](node_js/rest-backup-site-database) | [ts](typescript/rest-backup-site-database) | [web](web/rest-backup-site-database-browser) | [c#](csharp/rest-backup-site-database) | Server bearer (v4) |
 
 ## 2. Suggested learning path
 
@@ -82,6 +83,7 @@ Each sample builds on the one before it. New here? Go top to bottom:
 | `rest-configure-system-via-api` | REST `/rest/v4` + Cloud CDB | First-time site setup end to end: `site/setup`, admin password, cloud bind (personal **or** organization), and the default toggles. Python only, and the only multi-module sample | ●●●● Advanced |
 | `rest-operate-ptz-via-api` | REST `/rest/v4` | Read a camera's PTZ capabilities, then move / stop / abs-move it and drive presets and tours. Both auth modes, manual relay 307. Python only | ●●●● Advanced |
 | `jsonrpc-subscribe-events-cloud-user` | JSON-RPC (WebSocket) | Same as above but using scoped cloud token, and cloud relay. | ●●●● Advanced |
+| `rest-backup-site-database` | REST `/rest/v4` | Dump the whole Site database with `GET site/database` and load it back with `POST site/database`, streamed to and from disk as opaque bytes. Shows the fresh-session permission rule and the server restart that ends the session | ●●● Intermediate |
 
 ---
 

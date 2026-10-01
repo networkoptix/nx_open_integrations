@@ -24,6 +24,7 @@ latest **`/rest/v4`** API.
 | [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) | Read PTZ capabilities, then move/stop/abs-move and drive presets and tours, both auth modes | REST v4 | 23 |
 | [`rest-configure-system-via-api`](rest-configure-system-via-api) | First-time site setup: name, admin password, cloud bind (personal or organization), default toggles | REST v4 + CDB | 82 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 42 |
+| [`rest-backup-site-database`](rest-backup-site-database) | Dump the Site database to a file and load it back: `GET` and `POST site/database`, streamed as opaque bytes, fresh-session permissions | REST v4 | 68 |
 
 New to these? Read them top to bottom — that's the difficulty order.
 
