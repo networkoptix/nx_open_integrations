@@ -37,6 +37,7 @@ in one place and type-checked across all six samples.
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (Weekdays/Weekend/24x7 presets), both auth modes | REST v4 | 25 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 39 |
 | [`rest-backup-site-database`](rest-backup-site-database) | Dump the Site database to a file and load it back: `GET` and `POST site/database`, streamed as opaque bytes, fresh-session permissions | REST v4 | 79 |
+| [`rest-copy-device-agent-settings`](rest-copy-device-agent-settings) | Copy one device's analytics plugin settings onto another: `GET` and `PUT analytics/engines/{engineId}/deviceAgents/{deviceId}/settings`, download/apply subcommands | REST v4 | 116 |
 
 ## Requirements
 

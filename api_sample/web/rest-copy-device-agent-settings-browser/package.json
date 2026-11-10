@@ -1,0 +1,14 @@
+{
+  "name": "nx-rest-copy-device-agent-settings-browser",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser sample: download one device's Device Agent (analytics plugin) settings and apply them to another device over /rest/v4, with a zero-dependency dev proxy for CORS and self-signed TLS.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test_nx_device_agent_settings_client.mjs test_proxy.mjs",
+    "serve": "node server.mjs"
+  }
+}

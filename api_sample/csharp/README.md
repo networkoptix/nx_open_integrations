@@ -19,8 +19,7 @@ side-by-side runtime juggling is needed — the samples target the current LTS.
 
 ## Samples
 
-Full parity with the Python set — all ten samples, plus
-`rest-backup-site-database`.
+12 of the 15 samples in the shared catalog; the root README shows which ones have no C# version yet.
 
 | Folder | What it shows | API | Tests |
 |---|---|---|---|
@@ -35,6 +34,7 @@ Full parity with the Python set — all ten samples, plus
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 52 |
 | [`rest-backup-site-database`](rest-backup-site-database) | Dump the whole Site database to a file with `GET site/database` and load it back with `POST site/database`, streamed as opaque bytes; fresh-session login, `--yes` guard, no logout after the restart | REST v4 | 74 |
+| [`rest-copy-device-agent-settings`](rest-copy-device-agent-settings) | Download one device's analytics Device Agent settings and apply them to another: `GET`/`PUT analytics/engines/{engineId}/deviceAgents/{deviceId}/settings`, two subcommands (`download`/`apply`) | REST v4 | 101 |
 
 ## Project layout (per sample)
 

@@ -39,6 +39,7 @@ that language has no version of that sample.
 | Drive a **PTZ camera** — move, stop, presets, tours | **rest-operate-ptz-via-api** | [py](python/rest-operate-ptz-via-api) | — | — | — | — | Server **or** cloud bearer (v4, via relay) |
 | Get **live-pushed** events instead of polling, using my **cloud** account | **jsonrpc-subscribe-events-cloud-user** | — | [node](node_js/jsonrpc-subscribe-events-cloud-user) | — | — | — | Cloud token scoped by `cloudSystemId` (v4, JSON-RPC WebSocket via relay) |
 | Back up a site's **configuration** to a file, and load it back | **rest-backup-site-database** | [py](python/rest-backup-site-database) | [node](node_js/rest-backup-site-database) | [ts](typescript/rest-backup-site-database) | [web](web/rest-backup-site-database-browser) | [c#](csharp/rest-backup-site-database) | Server bearer (v4) |
+| Copy one device's **analytics plugin settings** onto another device | **rest-copy-device-agent-settings** | [py](python/rest-copy-device-agent-settings) | [node](node_js/rest-copy-device-agent-settings) | [ts](typescript/rest-copy-device-agent-settings) | [web](web/rest-copy-device-agent-settings-browser) | [c#](csharp/rest-copy-device-agent-settings) | Server bearer (v4) |
 
 ## 2. Suggested learning path
 
@@ -84,6 +85,7 @@ Each sample builds on the one before it. New here? Go top to bottom:
 | `rest-operate-ptz-via-api` | REST `/rest/v4` | Read a camera's PTZ capabilities, then move / stop / abs-move it and drive presets and tours. Both auth modes, manual relay 307. Python only | ●●●● Advanced |
 | `jsonrpc-subscribe-events-cloud-user` | JSON-RPC (WebSocket) | Same as above but using scoped cloud token, and cloud relay. | ●●●● Advanced |
 | `rest-backup-site-database` | REST `/rest/v4` | Dump the whole Site database with `GET site/database` and load it back with `POST site/database`, streamed to and from disk as opaque bytes. Shows the fresh-session permission rule and the server restart that ends the session | ●●● Intermediate |
+| `rest-copy-device-agent-settings` | REST `/rest/v4` | Download a Device Agent's (analytics plugin's) settings with `GET analytics/engines/{engineId}/deviceAgents/{deviceId}/settings`, then apply them to another device with a `PUT` to the same endpoint. | ●● Easy |
 
 ---
 

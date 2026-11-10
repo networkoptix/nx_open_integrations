@@ -1,0 +1,17 @@
+{
+  "name": "nx-rest-copy-device-agent-settings",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nx VMS REST API sample: copy one device's Device Agent (analytics plugin) settings onto another device, v4 (Node.js).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rest-copy-device-agent-settings": "./rest_copy_device_agent_settings.mjs"
+  },
+  "scripts": {
+    "start": "node rest_copy_device_agent_settings.mjs",
+    "test": "node --test test_rest_copy_device_agent_settings.mjs"
+  }
+}

@@ -19,6 +19,7 @@ latest **`/rest/v4`** API.
 | [`rest-list-cameras`](rest-list-cameras) | Local-user login + list devices + logout | REST v4 | 10 |
 | [`rest-list-cameras-cloud-user`](rest-list-cameras-cloud-user) | Scoped cloud token + site access via the relay | REST v4 | 10 |
 | [`rest-event-log`](rest-event-log) | Scoped token, manual 307, v4 time window + parsing | REST v4 | 22 |
+| [`rest-copy-device-agent-settings`](rest-copy-device-agent-settings) | Copy one device's analytics plugin settings onto another: `GET` and `PUT analytics/engines/{engineId}/deviceAgents/{deviceId}/settings`, download/apply subcommands | REST v4 | 102 |
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 36 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
 | [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) | Read PTZ capabilities, then move/stop/abs-move and drive presets and tours, both auth modes | REST v4 | 23 |
@@ -30,7 +31,7 @@ New to these? Read them top to bottom — that's the difficulty order.
 
 ## Other Python samples (outside the shared catalog)
 
-These two have no port in the other languages yet, so they are not in the table
+These have no port in the other languages yet, so they are not in the table
 above.
 
 - [`rest-configure-system-via-api`](rest-configure-system-via-api) — first-time
