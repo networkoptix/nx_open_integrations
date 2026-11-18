@@ -36,6 +36,7 @@ in one place and type-checked across all six samples.
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file — both auth modes, `media.{format}` streaming, relay 307 | REST v4 | 29 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (Weekdays/Weekend/24x7 presets), both auth modes | REST v4 | 25 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 39 |
+| [`rest-configure-site`](rest-configure-site) | Very first setup of a factory-default server: name, admin password, three settings, optional Cloud connection owned by the account or an organization | REST v4 + CDB | 240 |
 | [`rest-backup-site-database`](rest-backup-site-database) | Dump the Site database to a file and load it back: `GET` and `POST site/database`, streamed as opaque bytes, fresh-session permissions | REST v4 | 79 |
 | [`rest-copy-device-agent-settings`](rest-copy-device-agent-settings) | Copy one device's analytics plugin settings onto another: `GET` and `PUT analytics/engines/{engineId}/deviceAgents/{deviceId}/settings`, download/apply subcommands | REST v4 | 116 |
 

@@ -23,7 +23,8 @@ latest **`/rest/v4`** API.
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 36 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 38 |
 | [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) | Read PTZ capabilities, then move/stop/abs-move and drive presets and tours, both auth modes | REST v4 | 23 |
-| [`rest-configure-system-via-api`](rest-configure-system-via-api) | First-time site setup: name, admin password, cloud bind (personal or organization), default toggles | REST v4 + CDB | 82 |
+| [`rest-configure-system-via-api`](rest-configure-system-via-api) | Superseded by `rest-configure-site`, which does the same in four languages. First-time site setup: name, admin password, cloud bind (personal or organization), default toggles | REST v4 + CDB | 82 |
+| [`rest-configure-site`](rest-configure-site) | Very first setup of a factory-default server: name, admin password, three settings, optional Cloud connection owned by the account or an organization | REST v4 + CDB | 226 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 42 |
 | [`rest-backup-site-database`](rest-backup-site-database) | Dump the Site database to a file and load it back: `GET` and `POST site/database`, streamed as opaque bytes, fresh-session permissions | REST v4 | 68 |
 
@@ -36,7 +37,7 @@ above.
 
 - [`rest-configure-system-via-api`](rest-configure-system-via-api) — first-time
   setup for one VMS server/site: set its name and local admin password, and
-  optionally connect it to the Cloud.
+  optionally connect it to the Cloud. Superseded by `rest-configure-site`.
 - [`rest-operate-ptz-via-api`](rest-operate-ptz-via-api) — drive a PTZ
   (Pan-Tilt-Zoom) camera on one server/site, local or cloud-relayed: report the
   camera's PTZ capabilities, then issue the requested command.

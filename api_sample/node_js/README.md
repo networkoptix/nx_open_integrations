@@ -22,6 +22,7 @@ them. Each folder still ships a `package.json` for the `npm test` shortcut.
 | [`media-http-stream`](media-http-stream) | Save a live/archive video clip to a file via `media.{format}`, both auth modes, relay 307 | REST v4 | 33 |
 | [`rest-rule-schedule`](rest-rule-schedule) | Set an event rule's v4 schedule: `GET events/rules` + `PATCH events/rules/{id}` (presets + by-comment), both auth modes | REST v4 | 25 |
 | [`virtual-camera-upload`](virtual-camera-upload) | Create a virtual camera and upload footage to it, both auth modes | REST v4 | 39 |
+| [`rest-configure-site`](rest-configure-site) | Very first setup of a factory-default server: name, admin password, three settings, optional Cloud connection owned by the account or an organization | REST v4 + CDB | 228 |
 | [`rest-backup-site-database`](rest-backup-site-database) | Dump the Site database to a file and load it back: `GET` and `POST site/database`, streamed as opaque bytes, fresh-session permissions | REST v4 | 79 |
 | [`rest-copy-device-agent-settings`](rest-copy-device-agent-settings) | Copy one device's analytics plugin settings onto another: `GET` and `PUT analytics/engines/{engineId}/deviceAgents/{deviceId}/settings` | REST v4 | 123 |
 | [`jsonrpc-subscribe-events`](jsonrpc-subscribe-events) | Subscribe to the live event log over a JSON-RPC WebSocket | JSON-RPC | 16 |
