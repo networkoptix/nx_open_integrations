@@ -32,7 +32,7 @@ protected:
     virtual std::string manifestString() const override;
 
     virtual bool pushUncompressedVideoFrame(
-        const nx::sdk::analytics::IUncompressedVideoFrame* videoFrame) override;
+        nx::sdk::Ptr<const nx::sdk::analytics::IUncompressedVideoFrame> videoFrame) override;
 
     virtual void doSetNeededMetadataTypes(
         nx::sdk::Result<void>* outValue,
@@ -46,7 +46,7 @@ private:
         int64_t timestampUs);
 
     MetadataPacketList processFrame(
-        const nx::sdk::analytics::IUncompressedVideoFrame* videoFrame);
+        nx::sdk::Ptr<const nx::sdk::analytics::IUncompressedVideoFrame> videoFrame);
 
 private:
     const std::string kPersonObjectType = "nx.base.Person";

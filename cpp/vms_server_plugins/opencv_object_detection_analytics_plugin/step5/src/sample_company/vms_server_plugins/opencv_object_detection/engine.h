@@ -4,7 +4,7 @@
 
 #include <filesystem>
 
-#include <nx/sdk/analytics/helpers/plugin.h>
+#include <nx/sdk/analytics/helpers/integration.h>
 #include <nx/sdk/analytics/helpers/engine.h>
 #include <nx/sdk/analytics/i_uncompressed_video_frame.h>
 

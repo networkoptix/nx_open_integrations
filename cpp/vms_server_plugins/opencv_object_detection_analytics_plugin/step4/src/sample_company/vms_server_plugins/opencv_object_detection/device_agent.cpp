@@ -53,9 +53,9 @@ std::string DeviceAgent::manifestString() const
 {
     // Tell the Server that the plugin can generate the events and objects of certain types.
     // Id values are strings and should be unique. Format of ids:
-    // `{vendor_id}.{plugin_id}.{event_type_id/object_type_id}`.
+    // `{vendor_id}.{integration_id}.{event_type_id/object_type_id}`.
     //
-    // See the plugin manifest for the explanation of vendor_id and plugin_id.
+    // See the Integration manifest for the explanation of vendor_id and integration_id.
     return /*suppress newline*/ 1 + R"json(
 {
     "eventTypes": [
@@ -82,15 +82,15 @@ std::string DeviceAgent::manifestString() const
 /**
  * Called when the Server sends a new uncompressed frame from a camera.
  */
-bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* videoFrame)
+bool DeviceAgent::pushUncompressedVideoFrame(Ptr<const IUncompressedVideoFrame> videoFrame)
 {
     m_terminated = m_terminated || m_objectDetector->isTerminated();
     if (m_terminated)
     {
         if (!m_terminatedPrevious)
         {
-            pushPluginDiagnosticEvent(
-                IPluginDiagnosticEvent::Level::error,
+            pushIntegrationDiagnosticEvent(
+                IIntegrationDiagnosticEvent::Level::error,
                 "Plugin is in broken state.",
                 "Disable the plugin.");
             m_terminatedPrevious = true;
@@ -106,8 +106,7 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
         const MetadataPacketList metadataPackets = processFrame(videoFrame);
         for (const Ptr<IMetadataPacket>& metadataPacket: metadataPackets)
         {
-            metadataPacket->addRef();
-            pushMetadataPacket(metadataPacket.get());
+            pushMetadataPacket(metadataPacket);
         }
     }
 
@@ -162,7 +161,7 @@ Ptr<IMetadataPacket> DeviceAgent::generateEventMetadataPacket()
     eventMetadata->setCaption("New sample plugin track started");
     eventMetadata->setDescription("New track #" + std::to_string(m_trackIndex) + " started");
 
-    eventMetadataPacket->addItem(eventMetadata.get());
+    eventMetadataPacket->addItem(eventMetadata);
 
     // Generate index for the next track.
     ++m_trackIndex;
@@ -196,7 +195,7 @@ Ptr<ObjectMetadataPacket> DeviceAgent::detectionsToObjectMetadataPacket(
             objectMetadata->setTypeId(kDogObjectType);
         // There is no "else", because only the detections with those types are generated.
 
-        objectMetadataPacket->addItem(objectMetadata.get());
+        objectMetadataPacket->addItem(objectMetadata);
     }
     objectMetadataPacket->setTimestampUs(timestampUs);
 
@@ -224,9 +223,9 @@ void DeviceAgent::reinitializeObjectTrackerOnFrameSizeChanges(const Frame& frame
 }
 
 DeviceAgent::MetadataPacketList DeviceAgent::processFrame(
-    const IUncompressedVideoFrame* videoFrame)
+    Ptr<const IUncompressedVideoFrame> videoFrame)
 {
-    const Frame frame(videoFrame, m_frameIndex);
+    const Frame frame(videoFrame.get(), m_frameIndex);
 
     reinitializeObjectTrackerOnFrameSizeChanges(frame);
 
@@ -243,16 +242,16 @@ DeviceAgent::MetadataPacketList DeviceAgent::processFrame(
     }
     catch (const ObjectDetectionError& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Object detection error.",
             e.what());
         m_terminated = true;
     }
     catch (const ObjectTrackingError& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Object tracking error.",
             e.what());
         m_terminated = true;

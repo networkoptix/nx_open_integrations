@@ -117,7 +117,7 @@ Ptr<ObjectMetadataPacket> convertDetectionsToObjectMetadataPacket(
         objectMetadata->setTrackId(detection->trackId);
         objectMetadata->setTypeId(kPersonObjectType);
 
-        objectMetadataPacket->addItem(objectMetadata.get());
+        objectMetadataPacket->addItem(objectMetadata);
     }
     objectMetadataPacket->setTimestampUs(timestampUs);
 
@@ -156,7 +156,7 @@ MetadataPacketList convertEventsToEventMetadataPackets(const EventList& events)
         eventMetadata->setTypeId(event->type());
         eventMetadata->setIsActive(event->isActive);
 
-        eventMetadataPacket->addItem(eventMetadata.get());
+        eventMetadataPacket->addItem(eventMetadata);
         eventMetadataPacket->setTimestampUs(event->timestampUs);
 
         eventMetadataPackets.push_back(eventMetadataPacket);
@@ -312,7 +312,7 @@ Result<const ISettingsResponse*> DeviceAgent::settingsReceived()
     return nullptr;
 }
 
-bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* videoFrame) noexcept
+bool DeviceAgent::pushUncompressedVideoFrame(Ptr<const IUncompressedVideoFrame> videoFrame) noexcept
 {
     if (!m_config)
         return true;
@@ -322,8 +322,8 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
     {
         if (!m_terminatedPrevious)
         {
-            pushPluginDiagnosticEvent(
-                IPluginDiagnosticEvent::Level::error,
+            pushIntegrationDiagnosticEvent(
+                IIntegrationDiagnosticEvent::Level::error,
                 "Plugin is in broken state.",
                 "Disable the plugin.");
             m_terminatedPrevious = true;
@@ -351,8 +351,7 @@ void DeviceAgent::pushMetadataPackets(const MetadataPacketList& metadataPackets)
 {
     for (const Ptr<IMetadataPacket>& metadataPacket: metadataPackets)
     {
-        metadataPacket->addRef();
-        pushMetadataPacket(metadataPacket.get());
+        pushMetadataPacket(metadataPacket);
     }
 }
 
@@ -405,11 +404,11 @@ void DeviceAgent::updateConfigOnFpsChange(const Frame& frame)
     }
 }
 
-void DeviceAgent::processFrame(const IUncompressedVideoFrame* nxFrame) noexcept
+void DeviceAgent::processFrame(Ptr<const IUncompressedVideoFrame> nxFrame) noexcept
 {
     ++m_frameIndex;
 
-    Frame frame(nxFrame, m_frameIndex);
+    Frame frame(nxFrame.get(), m_frameIndex);
 
     if (m_frameIndex == 0)
         m_fpsChangeTimestampUs = frame.timestampUs;
@@ -421,12 +420,12 @@ void DeviceAgent::processFrame(const IUncompressedVideoFrame* nxFrame) noexcept
     try
     {
         objectDetectionResult = m_objectDetectionProcessor->run(
-            frame, needToDetectObjects(nxFrame));
+            frame, needToDetectObjects(nxFrame.get()));
     }
     catch (const FrameProcessingError& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Frame processing error.",
             e.what());
         m_terminated = true;
@@ -468,8 +467,8 @@ void DeviceAgent::processFrame(const IUncompressedVideoFrame* nxFrame) noexcept
     }
     catch (const std::exception& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Metadata sending error.",
             e.what());
         m_terminated = true;
@@ -595,8 +594,8 @@ void DeviceAgent::parseSettings() noexcept
     }
     catch (const CpuIsIncompatibleError& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Error loading plugin.",
             "Error loading plugin: "s + e.what());
         m_terminated = true;
@@ -604,8 +603,8 @@ void DeviceAgent::parseSettings() noexcept
     }
     catch (const std::exception& e)
     {
-        pushPluginDiagnosticEvent(
-            IPluginDiagnosticEvent::Level::error,
+        pushIntegrationDiagnosticEvent(
+            IIntegrationDiagnosticEvent::Level::error,
             "Error loading plugin.",
             "Error loading plugin: "s + e.what());
         m_terminated = true;

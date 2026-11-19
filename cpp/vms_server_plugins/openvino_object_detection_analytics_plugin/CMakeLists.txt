@@ -1,6 +1,6 @@
 ## Copyright 2019-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.28)
 include(${CMAKE_CURRENT_LIST_DIR}/../common/initial_config.cmake)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
@@ -15,12 +15,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(metadataSdkDir "" CACHE PATH "Path to unpacked VMS Metadata SDK zip.")
-if(metadataSdkDir STREQUAL ""
-    OR NOT EXISTS ${metadataSdkDir}/src/nx/sdk
-    OR NOT EXISTS ${metadataSdkDir}/nx_kit/src/nx/kit
-)
-    message(FATAL_ERROR "Define metadataSdkDir cache variable to point to the unzipped SDK.")
+set(nxSdkDir "" CACHE PATH "Path to unpacked VMS Server Plugin SDK zip (Metadata SDK before 6.1).")
+
+# metadataSdkDir is the name used before SDK 6.1 (Metadata SDK); still accepted.
+if(nxSdkDir STREQUAL "" AND NOT "${metadataSdkDir}" STREQUAL "")
+    message(WARNING "metadataSdkDir is deprecated, use nxSdkDir instead.")
+    set(nxSdkDir "${metadataSdkDir}" CACHE PATH "" FORCE)
+endif()
+
+if(NOT EXISTS "${nxSdkDir}/src/nx/sdk" OR NOT EXISTS "${nxSdkDir}/nx_kit/src/nx/kit")
+    message(FATAL_ERROR "Define nxSdkDir cache variable to point to the unzipped SDK.")
 endif()
 
 if(WIN32)
@@ -34,7 +38,7 @@ endif()
 if(UNIX)
     set(LINUX_PROFILE_HOST "${CMAKE_CURRENT_LIST_DIR}/../common/cmake/conan_profiles/gcc.profile")
     set(OPENCV_PACKAGE "opencv/4.10.0@_/_#381886e5d0949db615c809d7d8cc8619")
-elseif()
+else()
     set(OPENCV_PACKAGE "opencv/4.10.0@")
 endif()
 
@@ -118,14 +122,14 @@ target_include_directories(opencv_tbm PRIVATE ${opencv_INCLUDE_DIRS})
 # Define nx_kit lib, static.
 
 set(nxKitLibraryType "STATIC" CACHE STRING "" FORCE)
-set(nxKitWithTests "YES" CACHE STRING "" FORCE)
+set(nxKitWithTests "NO" CACHE STRING "" FORCE)
 
-add_subdirectory(${metadataSdkDir}/nx_kit ${CMAKE_CURRENT_BINARY_DIR}/nx_kit)
+add_subdirectory(${nxSdkDir}/nx_kit ${CMAKE_CURRENT_BINARY_DIR}/nx_kit)
 
 #--------------------------------------------------------------------------------------------------
 # Define nx_sdk lib, static, depends on nx_kit.
 
-set(SDK_SRC_DIR "${metadataSdkDir}/src")
+set(SDK_SRC_DIR "${nxSdkDir}/src")
 file(GLOB_RECURSE SDK_SRC "${SDK_SRC_DIR}/*")
 
 add_library(nx_sdk STATIC ${SDK_SRC})

@@ -50,8 +50,12 @@ set(conanNxRemote http://artifactory.nxvms.dev/artifactory/api/conan/conan
     CACHE INTERNAL "The URL of Conan remote containing packages needed for the build."
 )
 
+# The nx remote only works with revisions enabled, which is off by default in Conan 1.x (nx_open
+# enables it in its conan_config/conan.conf). Enable it for the Conan calls made from CMake.
+set(ENV{CONAN_REVISIONS_ENABLED} 1)
+
 execute_process(
-    COMMAND ${CONAN_CMD} remote add nx ${conanNxRemote}
+    COMMAND ${CONAN_CMD} remote add nx ${conanNxRemote} --force
 )
 
 if(UNIX)

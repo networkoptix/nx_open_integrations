@@ -37,7 +37,7 @@ protected:
     virtual std::string manifestString() const noexcept override;
     virtual nx::sdk::Result<const nx::sdk::ISettingsResponse*> settingsReceived() override;
     virtual bool pushUncompressedVideoFrame(
-        const nx::sdk::analytics::IUncompressedVideoFrame* videoFrame) noexcept override;
+        nx::sdk::Ptr<const nx::sdk::analytics::IUncompressedVideoFrame> videoFrame) noexcept override;
     virtual void doSetNeededMetadataTypes(
         nx::sdk::Result<void>* outValue,
         const nx::sdk::analytics::IMetadataTypes* neededMetadataTypes) override;
@@ -49,7 +49,7 @@ private:
     int calcObjectDetectionPeriod() const;
     void pushMetadataPackets(const MetadataPacketList& metadataPackets);
     void updateConfigOnFpsChange(const Frame &frame);
-    void processFrame(const nx::sdk::analytics::IUncompressedVideoFrame* nxFrame) noexcept;
+    void processFrame(nx::sdk::Ptr<const nx::sdk::analytics::IUncompressedVideoFrame> nxFrame) noexcept;
     void parseSettings() noexcept;
     RoiLineList parseLinesSettings();
     RoiAreaList parseAreasSettings();

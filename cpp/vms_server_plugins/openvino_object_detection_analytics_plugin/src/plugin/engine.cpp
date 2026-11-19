@@ -8,7 +8,7 @@
 #include <nx/kit/debug.h>
 #include <nx/kit/json.h>
 #include <nx/sdk/analytics/helpers/engine.h>
-#include <nx/sdk/analytics/helpers/plugin.h>
+#include <nx/sdk/analytics/helpers/integration.h>
 #include <nx/sdk/analytics/i_device_agent.h>
 #include <nx/sdk/i_device_info.h>
 #include <nx/sdk/analytics/i_uncompressed_video_frame.h>
@@ -22,9 +22,9 @@ namespace nx::vms_server_plugins::analytics::openvino_object_detection {
 using namespace nx::sdk;
 using namespace nx::sdk::analytics;
 
-Engine::Engine(Plugin* plugin) noexcept:
+Engine::Engine(Integration* integration) noexcept:
     nx::sdk::analytics::Engine(NX_DEBUG_ENABLE_OUTPUT),
-    m_plugin(plugin)
+    m_integration(integration)
 {
     obtainPluginHomeDir();
 }
@@ -40,7 +40,7 @@ void Engine::doObtainDeviceAgent(Result<IDeviceAgent*>* outResult, const IDevice
 
 void Engine::obtainPluginHomeDir() noexcept
 {
-    const auto utilityProvider = m_plugin->utilityProvider();
+    const auto utilityProvider = m_integration->utilityProvider();
     NX_KIT_ASSERT(utilityProvider);
 
     m_pluginHomeDir = std::filesystem::path(utilityProvider->homeDir());
@@ -266,12 +266,12 @@ static const std::string kPluginManifest = R"json(
 
 } // namespace
 
-extern "C" NX_PLUGIN_API nx::sdk::IPlugin* createNxPlugin()
+extern "C" NX_PLUGIN_API nx::sdk::IIntegration* createNxPlugin()
 {
-    return new nx::sdk::analytics::Plugin(
+    return new nx::sdk::analytics::Integration(
         kPluginManifest,
-        [](nx::sdk::analytics::Plugin* plugin)
+        [](nx::sdk::analytics::Integration* integration)
         {
-            return new nx::vms_server_plugins::analytics::openvino_object_detection::Engine(plugin);
+            return new nx::vms_server_plugins::analytics::openvino_object_detection::Engine(integration);
         });
 }

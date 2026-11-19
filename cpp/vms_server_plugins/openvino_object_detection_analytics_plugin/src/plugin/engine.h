@@ -5,7 +5,7 @@
 #include <filesystem>
 
 #include <nx/sdk/analytics/helpers/engine.h>
-#include <nx/sdk/analytics/helpers/plugin.h>
+#include <nx/sdk/analytics/helpers/integration.h>
 #include <nx/sdk/analytics/i_device_agent.h>
 #include <nx/sdk/i_device_info.h>
 #include <nx/sdk/analytics/i_uncompressed_video_frame.h>
@@ -16,7 +16,7 @@ namespace nx::vms_server_plugins::analytics::openvino_object_detection {
 class Engine: public nx::sdk::analytics::Engine
 {
 public:
-    Engine(nx::sdk::analytics::Plugin* plugin) noexcept;
+    Engine(nx::sdk::analytics::Integration* integration) noexcept;
     virtual ~Engine() noexcept override;
 
     std::filesystem::path pluginHomeDir() const noexcept { return m_pluginHomeDir; }
@@ -32,7 +32,7 @@ private:
 
 private:
     std::filesystem::path m_pluginHomeDir; /**< Can be empty. */
-    nx::sdk::analytics::Plugin* const m_plugin;
+    nx::sdk::analytics::Integration* const m_integration;
 };
 
 } // namespace nx::vms_server_plugins::analytics::openvino_object_detection

@@ -38,9 +38,9 @@ std::string DeviceAgent::manifestString() const
 {
     // Tell the Server that the plugin can generate the events and objects of certain types.
     // Id values are strings and should be unique. Format of ids:
-    // `{vendor_id}.{plugin_id}.{event_type_id/object_type_id}`.
+    // `{vendor_id}.{integration_id}.{event_type_id/object_type_id}`.
     //
-    // See the plugin manifest for the explanation of vendor_id and plugin_id.
+    // See the Integration manifest for the explanation of vendor_id and integration_id.
     return /*suppress newline*/ 1 + R"json(
 {
     "eventTypes": [
@@ -67,7 +67,7 @@ std::string DeviceAgent::manifestString() const
 /**
  * Called when the Server sends a new uncompressed frame from a camera.
  */
-bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* videoFrame)
+bool DeviceAgent::pushUncompressedVideoFrame(Ptr<const IUncompressedVideoFrame> videoFrame)
 {
     ++m_frameIndex;
     m_lastVideoFrameTimestampUs = videoFrame->timestampUs();
@@ -76,7 +76,7 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
     if (eventMetadataPacket)
     {
         // Send generated metadata packet to the Server.
-        pushMetadataPacket(eventMetadataPacket.releasePtr());
+        pushMetadataPacket(eventMetadataPacket);
     }
 
     return true; //< There were no errors while processing the video frame.
@@ -92,17 +92,11 @@ bool DeviceAgent::pushUncompressedVideoFrame(const IUncompressedVideoFrame* vide
  * pushMetadataPacket() when you generate one metadata packet and do not want to store it in the
  * class field, and use pullMetadataPackets otherwise.
  */
-bool DeviceAgent::pullMetadataPackets(std::vector<IMetadataPacket*>* metadataPackets)
+bool DeviceAgent::pullMetadataPackets(std::vector<Ptr<IMetadataPacket>>* metadataPackets)
 {
-    metadataPackets->push_back(generateObjectMetadataPacket().releasePtr());
+    metadataPackets->push_back(generateObjectMetadataPacket());
 
     return true; //< There were no errors while filling metadataPackets.
-}
-
-void DeviceAgent::doSetNeededMetadataTypes(
-    nx::sdk::Result<void>* /*outValue*/,
-    const nx::sdk::analytics::IMetadataTypes* /*neededMetadataTypes*/)
-{
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -129,7 +123,7 @@ Ptr<IMetadataPacket> DeviceAgent::generateEventMetadataPacket()
     eventMetadata->setCaption("New sample plugin track started");
     eventMetadata->setDescription("New track #" + std::to_string(m_trackIndex) + " started");
 
-    eventMetadataPacket->addItem(eventMetadata.get());
+    eventMetadataPacket->addItem(eventMetadata);
 
     // Generate index and track id for the next track.
     ++m_trackIndex;
@@ -162,7 +156,7 @@ Ptr<IMetadataPacket> DeviceAgent::generateObjectMetadataPacket()
     const float y = d * frameIndexInsideTrack;
     objectMetadata->setBoundingBox(Rect(x, y, width, height));
 
-    objectMetadataPacket->addItem(objectMetadata.get());
+    objectMetadataPacket->addItem(objectMetadata);
 
     return objectMetadataPacket;
 }

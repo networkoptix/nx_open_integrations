@@ -1,14 +1,24 @@
 ## Copyright 2018-present Network Optix, Inc. Licensed under MPL 2.0: www.mozilla.org/MPL/2.0/
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.28)
 project(opencv_object_detection_analytics_plugin)
 
-set(metadataSdkVersion "5.1.1.37512")
-set(metadataSdkDir "" CACHE PATH
-    "Path to unpacked VMS Metadata SDK zip. Tested with version ${metadataSdkVersion}.")
+set(nxSdkVersion "6.1.3.43301")
+set(nxSdkDir "" CACHE PATH
+    "Path to unpacked VMS Server Plugin SDK zip. Tested with version ${nxSdkVersion}.")
 
-if(metadataSdkDir STREQUAL "")
-    message(FATAL_ERROR "metadataSdkDir cache variable is undefined.")
+# metadataSdkDir is the name used before SDK 6.1 (Metadata SDK); still accepted.
+if(nxSdkDir STREQUAL "" AND NOT "${metadataSdkDir}" STREQUAL "")
+    message(WARNING "metadataSdkDir is deprecated, use nxSdkDir instead.")
+    set(nxSdkDir "${metadataSdkDir}" CACHE PATH "" FORCE)
+endif()
+
+if(NOT EXISTS "${nxSdkDir}/src/nx/sdk" OR NOT EXISTS "${nxSdkDir}/nx_kit/src/nx/kit")
+    message(FATAL_ERROR "Define nxSdkDir cache variable to point to the unzipped SDK.")
+endif()
+if(NOT EXISTS "${nxSdkDir}/src/nx/sdk/analytics/helpers/integration.h")
+    message(FATAL_ERROR "This plugin requires Server Plugin SDK 6.1 or later; "
+        "the SDK in ${nxSdkDir} is older.")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -36,14 +46,14 @@ endif()
 # Define nx_kit lib, static.
 
 set(nxKitLibraryType "STATIC" CACHE STRING "" FORCE)
-set(nxKitWithTests "YES" CACHE STRING "" FORCE)
+set(nxKitWithTests "NO" CACHE STRING "" FORCE)
 
-add_subdirectory(${metadataSdkDir}/nx_kit ${CMAKE_CURRENT_BINARY_DIR}/nx_kit)
+add_subdirectory(${nxSdkDir}/nx_kit ${CMAKE_CURRENT_BINARY_DIR}/nx_kit)
 
 #--------------------------------------------------------------------------------------------------
 # Define nx_sdk lib, static, depends on nx_kit.
 
-set(SDK_SRC_DIR ${metadataSdkDir}/src)
+set(SDK_SRC_DIR ${nxSdkDir}/src)
 file(GLOB_RECURSE SDK_SRC ${SDK_SRC_DIR}/*)
 
 add_library(nx_sdk STATIC ${SDK_SRC})
@@ -59,12 +69,24 @@ set(OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/s
 file(GLOB_RECURSE OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR}/*)
 
-add_library(opencv_object_detection_analytics_plugin SHARED 
+add_library(opencv_object_detection_analytics_plugin SHARED
     ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC})
-target_include_directories(opencv_object_detection_analytics_plugin PRIVATE 
-    ${OPENCV_ANALYTICS_PLUGIN_SRC_DIR})
-target_link_libraries(opencv_object_detection_analytics_plugin nx_kit nx_sdk)
+target_include_directories(opencv_object_detection_analytics_plugin PRIVATE
+    ${OPENCV_OBJECT_DETECTION_ANALYTICS_PLUGIN_SRC_DIR})
+target_link_libraries(opencv_object_detection_analytics_plugin PRIVATE nx_kit nx_sdk)
 
 target_compile_definitions(opencv_object_detection_analytics_plugin
     PRIVATE NX_PLUGIN_API=${API_EXPORT_MACRO}
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Export only the entry points the Server looks up - see src/nx/sdk/dynamic_libraries.md in the
+    # SDK.
+    set(exportsMapFile "${CMAKE_CURRENT_BINARY_DIR}/exports.map")
+    file(WRITE ${exportsMapFile}
+        "{ global: createNxPlugin; nxLibContext; nxSdkVersion; nxSetUnitTestOptions; local: *; };\n")
+    target_link_options(opencv_object_detection_analytics_plugin PRIVATE
+        "LINKER:--version-script=${exportsMapFile}"
+        "LINKER:--no-undefined"
+    )
+endif()
